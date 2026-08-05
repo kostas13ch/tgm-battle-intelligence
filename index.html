@@ -37,7 +37,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v1.1 · Incoming Attack Analyzer</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v1.2 · Safe Defense Recommender</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>Καταχώρηση, opponent intelligence, matchup planning και battle advisor.</p></div>
@@ -48,7 +48,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button class="quick-card" data-page="statsPage"><span>📊</span><strong>Στατιστικά</strong><small>Σύνοψη δεδομένων</small></button>
     </div>
     <div id="dashboardStats" class="metrics"></div>
-    <article class="panel"><h3>Νέα στη v1.1</h3><ul><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
+    <article class="panel"><h3>Νέα στη v1.2</h3><ul><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
   </section>
 
   <section id="battleFormPage" class="page hidden">
@@ -201,6 +201,33 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button id="runPlannerBtn">Ανάλυση setup</button>
       <div id="plannerOutput" class="counter-output">Συμπλήρωσε το setup και πάτησε «Ανάλυση setup».</div>
     </article>
+
+    <article class="panel">
+      <h3>🛡️ Safe Defense Recommender</h3>
+      <p class="card-meta">Όταν δεν γνωρίζεις το formation, συγκρίνει όλα τα πιθανά enemy formations και προτείνει το πιο ασφαλές δικό μας setup.</p>
+      <div class="form-grid two">
+        <label>Αντίπαλος<select id="safeOpponent"><option value="">Επίλεξε παίκτη</option></select></label>
+        <label>Τύπος μάχης<select id="safeMode"><option>Arsenal Rally</option><option>GW Building</option><option>Duel</option><option>Mansion</option><option>CVC</option><option>Other</option></select></label>
+      </div>
+      <div class="side-box">
+        <h4>Εισερχόμενη αναλογία</h4>
+        <div class="form-grid three">
+          <label>Bruisers %<input id="safeEnemyBruisers" type="number" step="0.1" value="40"></label>
+          <label>Hitmen %<input id="safeEnemyHitmen" type="number" step="0.1" value="30"></label>
+          <label>Bikers %<input id="safeEnemyBikers" type="number" step="0.1" value="30"></label>
+        </div>
+      </div>
+      <div class="form-grid two">
+        <label>Διαθέσιμο Bruiser ATK<input id="safeBruiserAtk" type="number" step="0.1"></label>
+        <label>Διαθέσιμο Hitman ATK<input id="safeHitmanAtk" type="number" step="0.1"></label>
+      </div>
+      <div class="form-grid two">
+        <label>Διαθέσιμο Biker ATK<input id="safeBikerAtk" type="number" step="0.1"></label>
+        <label>Ελάχιστο ποσοστό κάθε troop<input id="safeMinTroop" type="number" step="1" value="15"></label>
+      </div>
+      <button id="runSafeDefenseBtn">Βρες ασφαλέστερο setup</button>
+      <div id="safeDefenseOutput" class="counter-output">Βάλε την αναλογία που βλέπεις και πάτησε ανάλυση.</div>
+    </article>
     <article class="panel"><h3>Backup</h3><div class="actions"><button id="exportBtn">Εξαγωγή JSON</button><label class="file-button">Εισαγωγή JSON<input id="importInput" type="file" accept="application/json"></label><button id="clearAllBtn" class="danger">Διαγραφή όλων</button></div><p id="backupMessage" class="status"></p></article>
   </section>
 </main>
@@ -249,8 +276,17 @@ function runPlannerFromData(all){const opp=$("plannerOpponent").value,enemyF=$("
 
 async function runPlanner(){const all=await getAllBattles();$("plannerOutput").innerHTML=runPlannerFromData(all)}
 
-async function renderStats(){const b=await getAllBattles(),p=players(b);$("statsMetrics").innerHTML=cards([["Μάχες",b.length],["Παίκτες",p.length],["Formations",new Set(b.flatMap(x=>[x.attackerFormation,x.defenderFormation])).size],["Τύποι",new Set(b.map(x=>x.mode)).size]]);const options='<option value="">Επίλεξε παίκτη</option>'+p.map(x=>`<option value="${esc(key(x.name))}">${esc(x.name)}</option>`).join(""),c=$("counterOpponent").value,po=$("plannerOpponent").value;$("counterOpponent").innerHTML=options;$("plannerOpponent").innerHTML=options;$("counterOpponent").value=c;$("plannerOpponent").value=po;if(c)updateCounter()}
-forms.forEach(f=>{$("attackerFormation").add(new Option(f,f));$("defenderFormation").add(new Option(f,f));$("plannerEnemyFormation").add(new Option(f,f));$("plannerOurFormation").add(new Option(f,f))});$("plannerEnemyFormation").value="UNKNOWN";$("plannerOurFormation").value="Bruiser Square";document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{if(b.dataset.page==="battleFormPage")reset();page(b.dataset.page)});["attBruisers","attHitmen","attBikers","defBruisers","defHitmen","defBikers"].forEach(x=>$(x).oninput=preview);$("saveBattleBtn").onclick=save;$("resetFormBtn").onclick=reset;$("battleSearch").oninput=renderBattles;$("modeFilter").onchange=renderBattles;$("counterOpponent").onchange=updateCounter;$("plannerOpponent").onchange=()=>{};$("runPlannerBtn").onclick=runPlanner;$("runAdvisorBtn").onclick=runAdvisor;$("saveSetupBtn").onclick=saveCurrentSetup;$("applySetupBtn").onclick=applySetup;$("deleteSetupBtn").onclick=deleteSetup;$("exportBtn").onclick=async()=>{const payload={app:"TGM Battle Intelligence",version:"1.1",battles:await getAllBattles()},blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`tgm-backup-${new Date().toISOString().slice(0,10)}.json`;a.click()};$("importInput").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text()),items=Array.isArray(j)?j:j.battles;if(!Array.isArray(items))throw Error("Μη έγκυρο backup");await importBattles(items);$("backupMessage").textContent="Η εισαγωγή ολοκληρώθηκε.";renderStats()}catch(err){$("backupMessage").textContent=err.message}};$("clearAllBtn").onclick=async()=>{if(confirm("Διαγραφή όλων;")){await clearBattles();renderStats()}};renderSetupOptions();reset();page("dashboardPage");
+
+function candidateRatios(minPct){const out=[];for(let b=minPct;b<=70;b+=5){for(let h=minPct;h<=70;h+=5){const bi=100-b-h;if(bi<minPct||bi>70)continue;out.push({bruiser:b,hitman:h,biker:bi})}}return out}
+function formationRisk(ourF,enemyF){const ours=troopTypeFromFormation(ourF),enemy=troopTypeFromFormation(enemyF);if(ours===counterType(enemy))return 18;if(counterType(ours)===enemy)return-18;return 0}
+function ratioSafety(ratio,enemyRatio){const dom=dominantTroop(enemyRatio),ideal=counterType(dom);let s=0;if(ratio[ideal]>=40)s+=12;else if(ratio[ideal]<25)s-=10;const spread=Math.max(ratio.bruiser,ratio.hitman,ratio.biker)-Math.min(ratio.bruiser,ratio.hitman,ratio.biker);if(spread<=20)s+=6;else if(spread>=45)s-=6;return s}
+function atkSafety(ratio,atk){const weighted=(ratio.bruiser*atk.bruiser+ratio.hitman*atk.hitman+ratio.biker*atk.biker)/100;return weighted?Math.min(12,weighted/180):0}
+function historySafety(all,opp,mode,ourF){if(!opp)return 0;const relevant=opponentBattles(all,opp).filter(x=>x.mode===mode);const rows=relevant.map(x=>{const side=ourSide(x,opp),won=(side==="attacker"&&x.winnerSide==="attacker")||(side==="defender"&&x.winnerSide==="defender");return{won,formation:x[side+"Formation"]}}).filter(x=>x.formation===ourF);if(!rows.length)return 0;const wr=rows.filter(x=>x.won).length/rows.length;return(wr-.5)*20}
+function possibleEnemyForms(all,opp,enemyRatio){const likely=likelyEnemyFormations(all,opp,enemyRatio);return likely.length?likely:forms}
+async function runSafeDefense(){const all=await getAllBattles(),opp=$("safeOpponent").value,mode=$("safeMode").value,eb=Number($("safeEnemyBruisers").value||0),eh=Number($("safeEnemyHitmen").value||0),ebi=Number($("safeEnemyBikers").value||0),sum=eb+eh+ebi;if(Math.abs(sum-100)>.2){$("safeDefenseOutput").innerHTML=`<span class="score-bad">Η εισερχόμενη αναλογία πρέπει να κάνει 100%. Τώρα κάνει ${sum.toFixed(1)}%.</span>`;return}const minPct=Math.max(5,Math.min(30,Number($("safeMinTroop").value||15))),enemyRatio={bruiser:eb,hitman:eh,biker:ebi},atk={bruiser:Number($("safeBruiserAtk").value||0),hitman:Number($("safeHitmanAtk").value||0),biker:Number($("safeBikerAtk").value||0)},enemyForms=possibleEnemyForms(all,opp,enemyRatio),candidates=[];for(const ourF of forms){for(const ratio of candidateRatios(minPct)){const scenarioScores=enemyForms.map(enemyF=>50+formationRisk(ourF,enemyF)+ratioSafety(ratio,enemyRatio)+atkSafety(ratio,atk)+historySafety(all,opp,mode,ourF));const worst=Math.min(...scenarioScores),avgScore=scenarioScores.reduce((a,b)=>a+b,0)/scenarioScores.length;candidates.push({ourF,ratio,worst,avgScore})}}candidates.sort((a,b)=>b.worst-a.worst||b.avgScore-a.avgScore);const top=candidates.slice(0,3),best=top[0],confidence=Math.min(95,35+opponentBattles(all,opp).length*5+(enemyForms.length<forms.length?15:0));$("safeDefenseOutput").innerHTML=`<div class="plan-score ${best.worst>=65?"score-good":best.worst>=50?"score-mid":"score-bad"}">${best.worst.toFixed(0)}/100</div><div class="card-meta">Worst-case Safety Score — όχι πιθανότητα νίκης.</div><div class="rule-box"><strong>Πρόταση:</strong> ${esc(best.ourF)} · B ${best.ratio.bruiser}% · H ${best.ratio.hitman}% · Bi ${best.ratio.biker}%</div><div class="rule-box">Εξετάστηκαν ${enemyForms.length} πιθανά enemy formations: ${enemyForms.map(esc).join(", ")}.</div><div class="rule-box">Βαθμός εμπιστοσύνης δεδομένων: ${confidence.toFixed(0)}%.</div>${top.slice(1).map((x,i)=>`<div class="rule-box">Εναλλακτική ${i+1}: ${esc(x.ourF)} · B ${x.ratio.bruiser}% · H ${x.ratio.hitman}% · Bi ${x.ratio.biker}% · worst ${x.worst.toFixed(0)}</div>`).join("")}<div class="insight">Η επιλογή μεγιστοποιεί το χειρότερο σενάριο όταν το formation του αντιπάλου παραμένει άγνωστο.</div>`}
+
+async function renderStats(){const b=await getAllBattles(),p=players(b);$("statsMetrics").innerHTML=cards([["Μάχες",b.length],["Παίκτες",p.length],["Formations",new Set(b.flatMap(x=>[x.attackerFormation,x.defenderFormation])).size],["Τύποι",new Set(b.map(x=>x.mode)).size]]);const options='<option value="">Επίλεξε παίκτη</option>'+p.map(x=>`<option value="${esc(key(x.name))}">${esc(x.name)}</option>`).join(""),c=$("counterOpponent").value,po=$("plannerOpponent").value,so=$("safeOpponent").value;$("counterOpponent").innerHTML=options;$("plannerOpponent").innerHTML=options;$("safeOpponent").innerHTML=options;$("counterOpponent").value=c;$("plannerOpponent").value=po;$("safeOpponent").value=so;if(c)updateCounter()}
+forms.forEach(f=>{$("attackerFormation").add(new Option(f,f));$("defenderFormation").add(new Option(f,f));$("plannerEnemyFormation").add(new Option(f,f));$("plannerOurFormation").add(new Option(f,f))});$("plannerEnemyFormation").value="UNKNOWN";$("plannerOurFormation").value="Bruiser Square";document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{if(b.dataset.page==="battleFormPage")reset();page(b.dataset.page)});["attBruisers","attHitmen","attBikers","defBruisers","defHitmen","defBikers"].forEach(x=>$(x).oninput=preview);$("saveBattleBtn").onclick=save;$("resetFormBtn").onclick=reset;$("battleSearch").oninput=renderBattles;$("modeFilter").onchange=renderBattles;$("counterOpponent").onchange=updateCounter;$("plannerOpponent").onchange=()=>{};$("runPlannerBtn").onclick=runPlanner;$("runSafeDefenseBtn").onclick=runSafeDefense;$("runAdvisorBtn").onclick=runAdvisor;$("saveSetupBtn").onclick=saveCurrentSetup;$("applySetupBtn").onclick=applySetup;$("deleteSetupBtn").onclick=deleteSetup;$("exportBtn").onclick=async()=>{const payload={app:"TGM Battle Intelligence",version:"1.2",battles:await getAllBattles()},blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`tgm-backup-${new Date().toISOString().slice(0,10)}.json`;a.click()};$("importInput").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text()),items=Array.isArray(j)?j:j.battles;if(!Array.isArray(items))throw Error("Μη έγκυρο backup");await importBattles(items);$("backupMessage").textContent="Η εισαγωγή ολοκληρώθηκε.";renderStats()}catch(err){$("backupMessage").textContent=err.message}};$("clearAllBtn").onclick=async()=>{if(confirm("Διαγραφή όλων;")){await clearBattles();renderStats()}};renderSetupOptions();reset();page("dashboardPage");
 </script>
 </body>
 </html>
