@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v5.3</title>
+  <title>TGM Battle Intelligence v5.4</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.3 · Fixed Troops + True 3-Slot Weapons</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.4 · Merc Merge + Full Combat Stats</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -132,7 +132,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button class="quick-card" data-page="statsPage"><span>📊</span><strong>Στατιστικά</strong><small>Σύνοψη δεδομένων</small></button>
     </div>
     <div id="dashboardStats" class="metrics"></div>
-    <article class="panel"><h3>Νέα στη v5.1</h3><ul><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
+    <article class="panel"><h3>Νέα στη v5.4</h3><ul><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
   </section>
 
   <section id="battleFormPage" class="page hidden">
@@ -271,7 +271,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v5.1</h4>
+          <h4>🧬 Super Weapon Intelligence v5.4</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -997,18 +997,49 @@ async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
 }
 
 
+
 function numericTokens(result){
-  return(result?.data?.words||[]).map(w=>{const val=numericWordValue(w);if(val==null)return null;return{val,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2}}).filter(Boolean);
+  return (result?.data?.words||[]).map(w=>{
+    const val=numericWordValue(w); if(val==null)return null;
+    return {val,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,
+      x0:w.bbox.x0,x1:w.bbox.x1,y0:w.bbox.y0,y1:w.bbox.y1,text:String(w.text||"")};
+  }).filter(Boolean);
 }
 function detectCombatBubbles(result){
-  const toks=numericTokens(result),cand=[];
+  const toks=numericTokens(result), candidates=[];
+  // Every popup starts with a small activation count. The following values are vertically
+  // aligned in the same bubble: damage and (for Super Weapons) shield. Zero is valid.
   for(const a of toks.filter(t=>Number.isInteger(t.val)&&t.val>=1&&t.val<=20)){
-    const near=toks.filter(t=>t!==a&&t.val>=100&&Math.abs(t.cx-a.cx)<190&&t.cy>a.cy-10&&t.cy<a.cy+150).sort((x,y)=>Math.hypot(x.cx-a.cx,x.cy-a.cy)-Math.hypot(y.cx-a.cx,y.cy-a.cy));
-    if(!near.length)continue;
-    cand.push({x:a.cx,y:a.cy,activation:a.val,damage:near[0]?.val||0,shield:near[1]?.val||0,weapon:""});
+    const below=toks.filter(t=>t!==a &&
+      Math.abs(t.cx-a.cx)<125 &&
+      t.cy>a.cy+8 && t.cy<a.cy+145 &&
+      t.val>=0
+    ).sort((x,y)=>x.cy-y.cy || Math.abs(x.cx-a.cx)-Math.abs(y.cx-a.cx));
+
+    if(!below.length)continue;
+
+    // Keep at most the first two distinct rows below activation.
+    const vals=[];
+    for(const t of below){
+      if(vals.some(v=>Math.abs(v.cy-t.cy)<10))continue;
+      vals.push(t);
+      if(vals.length===2)break;
+    }
+    candidates.push({
+      x:a.cx,y:a.cy,activation:a.val,
+      damage:vals[0]?.val??0,
+      shield:vals[1]?.val??0,
+      weapon:""
+    });
   }
-  const uniq=[];for(const x of cand.sort((a,b)=>a.y-b.y||a.x-b.x)){if(uniq.some(u=>Math.abs(u.x-x.x)<70&&Math.abs(u.y-x.y)<55))continue;uniq.push(x)}
-  return uniq.slice(0,3).map((x,i)=>({...x,slot:i+1}));
+
+  // Deduplicate multiple OCR readings of the same popup.
+  const uniq=[];
+  for(const x of candidates.sort((a,b)=>a.y-b.y||a.x-b.x)){
+    if(uniq.some(u=>Math.abs(u.x-x.x)<65&&Math.abs(u.y-x.y)<52))continue;
+    uniq.push(x);
+  }
+  return uniq.slice(0,5).map((x,i)=>({...x,slot:i+1}));
 }
 function renderWeaponReview(){
   const box=$("weaponReviewOutput");if(!box)return;const names=Object.keys(SUPER_WEAPON_LIBRARY);
@@ -1035,6 +1066,73 @@ function parseWeaponCombat(result,sourceIndex,side){
   return[{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details",confidence:.9}];
 }
 
+
+const COMBAT_MODIFIER_PATTERNS=[
+  {rx:/enemy\s*atk\s*reduction/i,base:"EnemyAtkReduction"},
+  {rx:/enemy\s*def\s*reduction/i,base:"EnemyDefReduction"},
+  {rx:/enemy\s*hp\s*reduction/i,base:"EnemyHpReduction"},
+  {rx:/enemy\s*kill\s*rate\s*increase/i,base:"KillRate"},
+  {rx:/crew\s*dmg/i,base:"CrewDmg"},
+  {rx:/bruiser[s]?\s*dmg(?!\s*vs)/i,base:"BruiserDmg"},
+  {rx:/hitm[ae]n\s*dmg(?!\s*vs)/i,base:"HitmanDmg"},
+  {rx:/biker[s]?\s*dmg(?!\s*vs)/i,base:"BikerDmg"},
+  {rx:/bruiser[s]?\s*receive\s*reduced\s*damage/i,base:"BruiserReducedDamage"},
+  {rx:/hitm[ae]n\s*receive\s*reduced\s*damage/i,base:"HitmanReducedDamage"},
+  {rx:/biker[s]?\s*receive\s*reduced\s*damage/i,base:"BikerReducedDamage"},
+  {rx:/bruiser\s*dmg\s*vs\.?\s*hitm[ae]n/i,base:"BruiserCounterDmgIncrease"},
+  {rx:/hitm[ae]n\s*dmg\s*vs\.?\s*biker/i,base:"HitmanCounterDmgIncrease"},
+  {rx:/biker\s*dmg\s*vs\.?\s*bruiser/i,base:"BikerCounterDmgIncrease"},
+  {rx:/bruiser[s]?\s*counter(?:\s*dmg)?\s*reduction/i,base:"BruiserCounterDmgReduction"},
+  {rx:/hitm[ae]n\s*counter(?:\s*dmg)?\s*reduction/i,base:"HitmanCounterDmgReduction"},
+  {rx:/biker[s]?\s*counter(?:\s*dmg)?\s*reduction/i,base:"BikerCounterDmgReduction"}
+];
+function percentWordValue(w){
+  const txt=String(w?.text||"");
+  if(!/%/.test(txt))return null;
+  const v=ocrNumber(txt);
+  return v!=null&&v>=0&&v<3000?v:null;
+}
+function parseCombatModifierWords(result,sourceIndex){
+  const words=result?.data?.words||[],out=[];
+  if(!words.length)return out;
+  const rows=rowsFromWords(words);
+  const maxX=Math.max(...words.map(w=>w.bbox?.x1||0),1), mid=maxX/2;
+
+  for(const p of COMBAT_MODIFIER_PATTERNS){
+    let match=null;
+    // Labels often wrap over 2–3 OCR rows.
+    for(let span=1;span<=4&&!match;span++){
+      for(let i=0;i<=rows.length-span;i++){
+        const rs=rows.slice(i,i+span);
+        const txt=rs.map(r=>r.words.map(w=>w.text).join(" ")).join(" ");
+        if(p.rx.test(txt)){
+          const y0=Math.min(...rs.flatMap(r=>r.words.map(w=>w.bbox.y0)));
+          const y1=Math.max(...rs.flatMap(r=>r.words.map(w=>w.bbox.y1)));
+          match={txt,y0,y1,cy:(y0+y1)/2};
+          break;
+        }
+      }
+    }
+    if(!match)continue;
+
+    const candidates=words.map(w=>{
+      const v=percentWordValue(w); if(v==null)return null;
+      return {v,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,text:w.text};
+    }).filter(Boolean);
+
+    const nearest=(side)=>{
+      const pool=candidates.filter(x=>
+        (side==="att"?x.cx<mid*.78:x.cx>mid*1.22) &&
+        Math.abs(x.cy-match.cy)<55
+      ).sort((a,b)=>Math.abs(a.cy-match.cy)-Math.abs(b.cy-match.cy));
+      return pool[0]||null;
+    };
+    const a=nearest("att"), d=nearest("def");
+    if(a)out.push({target:`att${p.base}`,value:a.v,label:`att${p.base}`,sourceIndex,sourceLine:match.txt,confidence:.985});
+    if(d)out.push({target:`def${p.base}`,value:d.v,label:`def${p.base}`,sourceIndex,sourceLine:match.txt,confidence:.985});
+  }
+  return out;
+}
 function parseOcrText(text,side,sourceIndex){
   const lines=text.split(/\n/).map(normalizeOcrLine).filter(Boolean),suggestions=[];
   if(side==="Both"){
@@ -1090,6 +1188,7 @@ async function runOcrImport(){
       currentOcrSuggestions.push(...parseOcrText(text,shot.side||"Unknown",i));
       if((shot.reportType||"")==="Overview"){currentOcrSuggestions.push(...parseOverviewWords(result,i));}
       if((shot.reportType||"")==="Buff Preview")currentOcrSuggestions.push(...parseBuffPreviewText(text,i));
+      if((shot.reportType||"")==="Buff Comparison")currentOcrSuggestions.push(...parseCombatModifierWords(result,i));
       if((shot.reportType||"")==="Enforcers")currentOcrSuggestions.push(...parseEnforcerCombat(result,i,shot.side));
       if((shot.reportType||"")==="Super Weapons")currentOcrSuggestions.push(...parseWeaponCombat(result,i,shot.side));
       if((shot.reportType||"")==="Battle Details")currentOcrSuggestions.push(...await parseBattleDetailsWords(result,i,shot.dataUrl));
@@ -1102,7 +1201,7 @@ async function runOcrImport(){
   $("ocrRawText").value=allRaw.join("\n\n");$("ocrProgressFill").style.width="100%";renderShotReview();renderSmartImportSummary();
   renderOcrSuggestions();
   applyOcrSuggestions(true);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v5.1 εφαρμόζει αυτόματα μόνο τα ασφαλή Regular T4 rows. Mercenaries και weapon names περνούν από γρήγορο review πριν αποθηκευτούν.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v5.4 εφαρμόζει τα Regular T4 και προσθέτει αυτόματα τα Mercenaries μόλις επιλέξεις τύπο. Τα combat modifiers διαβάζονται και χωρικά από τα δύο Buff Comparison screenshots.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -1201,148 +1300,99 @@ initWeaponIntel();
 </script>
 
 <script>
-/* ===== TGM Battle Intelligence v5.3 reliability patch =====
-   1) Regular T4 totals are written directly to the real troop fields.
-   2) Super Weapon review/data is hard-limited to the 3 real combat slots.
-*/
+/* ===== TGM Battle Intelligence v5.4 reliability patch ===== */
 (function(){
-  const norm=s=>(s||"").replace(/\s+/g," ").trim();
-  const n=s=>{
-    const x=String(s||"").replace(/[^\d]/g,"");
-    return x?parseInt(x,10):0;
-  };
-  const setValue=(id,value)=>{
-    const el=document.getElementById(id);
-    if(!el || value==null || !Number.isFinite(Number(value))) return;
-    el.value=String(Number(value));
-    el.dispatchEvent(new Event("input",{bubbles:true}));
-    el.dispatchEvent(new Event("change",{bubbles:true}));
-  };
+  const $id=id=>document.getElementById(id);
 
-  function parseRegularBlock(side){
-    const re=side==="att"
-      ? /Επιτιθέμενος\s*[—-]\s*Regular T4/i
-      : /Αμυνόμενος\s*[—-]\s*Regular T4/i;
-    const els=[...document.querySelectorAll("#troopReviewOutput .rule-box")];
-    const box=els.find(el=>re.test(norm(el.textContent)));
-    if(!box) return null;
-    const t=norm(box.textContent);
-    const b=t.match(/Bruiser\s*([\d,.]+)/i);
-    const h=t.match(/Hitman\s*([\d,.]+)/i);
-    const bi=t.match(/Biker\s*([\d,.]+)/i);
-    if(!b||!h||!bi) return null;
-    return {Bruiser:n(b[1]),Hitman:n(h[1]),Biker:n(bi[1])};
+  function applyMergedTroopsNow(){
+    if(typeof currentTroopReview==="undefined")return;
+    for(const [side,p] of [["att","att"],["def","def"]]){
+      const r=currentTroopReview?.[side];
+      if(!r?.regular)continue;
+      const totals=typeof reviewSideTotals==="function"?reviewSideTotals(r):null;
+      if(!totals)continue;
+      for(const t of ["Bruiser","Hitman","Biker"]){
+        const total=$id(`${p}${t}s`),kills=$id(`${p}${t}Kills`),losses=$id(`${p}${t}BattleLosses`);
+        if(total)total.value=totals[t].total||0;
+        if(kills)kills.value=totals[t].kills||0;
+        if(losses)losses.value=totals[t].losses||0;
+      }
+    }
+    if(typeof preview==="function")preview();
+    if(typeof renderCompleteness==="function")renderCompleteness();
   }
 
-  function applyRegularT4(){
-    // Preferred source: parser's own structured review object.
-    if(typeof currentTroopReview!=="undefined"){
-      [["att","att"],["def","def"]].forEach(([side,p])=>{
-        const r=currentTroopReview?.[side]?.regular;
-        if(r){
-          setValue(`${p}Bruisers`,r.Bruiser?.total||0);
-          setValue(`${p}Hitmen`,r.Hitman?.total||0);
-          setValue(`${p}Bikers`,r.Biker?.total||0);
-          setValue(`${p}BruiserKills`,r.Bruiser?.kills||0);
-          setValue(`${p}HitmanKills`,r.Hitman?.kills||0);
-          setValue(`${p}BikerKills`,r.Biker?.kills||0);
-          setValue(`${p}BruiserBattleLosses`,r.Bruiser?.losses||0);
-          setValue(`${p}HitmanBattleLosses`,r.Hitman?.losses||0);
-          setValue(`${p}BikerBattleLosses`,r.Biker?.losses||0);
-        }
-      });
-    }
-
-    // Safe fallback: use the already-visible Regular T4 review values.
-    [["att","att"],["def","def"]].forEach(([side,p])=>{
-      const r=parseRegularBlock(side);
-      if(!r) return;
-      setValue(`${p}Bruisers`,r.Bruiser);
-      setValue(`${p}Hitmen`,r.Hitman);
-      setValue(`${p}Bikers`,r.Biker);
+  // Automatic merge immediately when the user chooses a Mercenary type.
+  function bindMercAutoMerge(){
+    const box=$id("troopReviewOutput");if(!box)return;
+    box.querySelectorAll("[data-merc-side]").forEach(sel=>{
+      if(sel.dataset.v54Bound)return;
+      sel.dataset.v54Bound="1";
+      const previous=sel.onchange;
+      sel.onchange=function(ev){
+        if(previous)previous.call(this,ev);
+        applyMergedTroopsNow();
+      };
     });
-
-    if(typeof preview==="function") preview();
   }
 
-  function forceThreeWeaponSlots(){
+  // Five Enforcers = five possible Super Weapon slots.
+  function normalizeWeaponSlots(){
     if(typeof currentWeaponReview!=="undefined"){
-      currentWeaponReview.att=(currentWeaponReview.att||[]).slice(0,3).map((x,i)=>({...x,slot:i+1}));
-      currentWeaponReview.def=(currentWeaponReview.def||[]).slice(0,3).map((x,i)=>({...x,slot:i+1}));
-    }
-
-    const review=document.getElementById("weaponReviewOutput");
-    if(review){
-      review.querySelectorAll("[data-weapon-index]").forEach(sel=>{
-        const idx=Number(sel.dataset.weaponIndex);
-        if(idx>=3){
-          const card=sel.closest(".review-card");
-          if(card) card.remove();
-        }
-      });
-      review.querySelectorAll(".rule-box").forEach(el=>{
-        el.innerHTML=el.innerHTML.replace(/\b[4-9]\s+active slots\b/gi,"3 active slots");
-      });
+      currentWeaponReview.att=(currentWeaponReview.att||[]).slice(0,5).map((x,i)=>({...x,slot:i+1}));
+      currentWeaponReview.def=(currentWeaponReview.def||[]).slice(0,5).map((x,i)=>({...x,slot:i+1}));
     }
   }
 
-  // Wrap the real application functions so saved/applied data is also corrected,
-  // not merely hidden on screen.
+  // Do NOT overwrite merged totals after Apply Troop Review.
   if(typeof applyTroopReview==="function"){
-    const originalApplyTroopReview=applyTroopReview;
+    const core=applyTroopReview;
     applyTroopReview=function(){
-      originalApplyTroopReview();
-      applyRegularT4();
+      core();
+      applyMergedTroopsNow();
+      bindMercAutoMerge();
     };
   }
-
+  if(typeof renderTroopReview==="function"){
+    const core=renderTroopReview;
+    renderTroopReview=function(){
+      core();
+      bindMercAutoMerge();
+    };
+  }
   if(typeof renderWeaponReview==="function"){
-    const originalRenderWeaponReview=renderWeaponReview;
+    const core=renderWeaponReview;
     renderWeaponReview=function(){
-      forceThreeWeaponSlots();
-      originalRenderWeaponReview();
-      forceThreeWeaponSlots();
+      normalizeWeaponSlots();
+      core();
     };
   }
-
   if(typeof applyWeaponReview==="function"){
-    const originalApplyWeaponReview=applyWeaponReview;
+    const core=applyWeaponReview;
     applyWeaponReview=function(){
-      forceThreeWeaponSlots();
-      originalApplyWeaponReview();
-      forceThreeWeaponSlots();
+      normalizeWeaponSlots();
+      core();
     };
   }
 
   function addNote(){
-    if(document.getElementById("v53ReliabilityNote")) return;
-    const anchor=[...document.querySelectorAll("h4")].find(el=>norm(el.textContent)==="🔫 Weapon Review" || norm(el.textContent)==="Weapon Review");
-    if(!anchor) return;
-    const note=document.createElement("div");
-    note.id="v53ReliabilityNote";
-    note.className="storage-warning";
-    note.innerHTML="<strong>v5.3:</strong> Τα Regular T4 γράφονται απευθείας στα Bruisers / Hitmen / Bikers. Τα Super Weapons περιορίζονται σε ακριβώς 3 πραγματικά combat slots ανά πλευρά, τόσο στο review όσο και στα δεδομένα που εφαρμόζονται/αποθηκεύονται.";
-    anchor.insertAdjacentElement("afterend",note);
+    if($id("v54Note"))return;
+    const h=[...document.querySelectorAll("h4")].find(x=>/Weapon Review/.test(x.textContent||""));
+    if(!h)return;
+    const n=document.createElement("div");
+    n.id="v54Note";n.className="storage-warning";
+    n.innerHTML="<strong>v5.4:</strong> Mercenaries προστίθενται αυτόματα μόλις επιλέξεις Bruiser/Hitman/Biker. Τα Enforcer/Super Weapon combat slots είναι έως 5 ανά πλευρά. Ο parser διαβάζει πλέον ξεχωριστά Enemy Kill Rate, DMG vs, Counter Reduction και Reduced Damage Received από τη θέση τους στο Buff Comparison.";
+    h.insertAdjacentElement("afterend",n);
   }
 
   function run(){
-    try{
-      applyRegularT4();
-      forceThreeWeaponSlots();
-      addNote();
-    }catch(e){console.warn("v5.3 patch",e);}
+    bindMercAutoMerge();
+    normalizeWeaponSlots();
+    addNote();
   }
-
-  document.addEventListener("DOMContentLoaded",()=>{
-    setTimeout(run,250);
-    setTimeout(run,1000);
-  });
-
-  const target=document.getElementById("battleFormPage")||document.documentElement;
-  new MutationObserver(()=>{
-    clearTimeout(window.__v53Timer);
-    window.__v53Timer=setTimeout(run,120);
-  }).observe(target,{childList:true,subtree:true});
+  document.addEventListener("DOMContentLoaded",()=>{setTimeout(run,300);setTimeout(run,1200)});
+  new MutationObserver(()=>{clearTimeout(window.__v54);window.__v54=setTimeout(run,120)})
+    .observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 
