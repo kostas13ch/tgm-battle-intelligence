@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.1 · Reliable Troops + Weapon Review</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.2 · Auto T4 + 3-Slot Weapon Review</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -1199,5 +1199,136 @@ if($("applyWeaponReviewBtn"))$("applyWeaponReviewBtn").onclick=applyWeaponReview
 renderTroopReview();renderWeaponReview();
 initWeaponIntel();
 </script>
+
+<script>
+/* ===== TGM Battle Intelligence v5.2 reliability patch ===== */
+(function(){
+  const norm = s => (s||"").replace(/\s+/g," ").trim();
+  const num = s => {
+    const m = String(s||"").replace(/[^\d]/g,"");
+    return m ? parseInt(m,10) : 0;
+  };
+  const fmt = n => Number(n||0).toLocaleString("en-US");
+
+  function getReviewSideBlocks(){
+    const all = [...document.querySelectorAll("body *")];
+    const start = all.find(el => /Επιτιθέμενος\s*[—-]\s*Regular T4/i.test(norm(el.textContent)));
+    const def = all.find(el => /Αμυνόμενος\s*[—-]\s*Regular T4/i.test(norm(el.textContent)));
+    return {start, def};
+  }
+
+  function parseRegularFromText(text){
+    let m = text.match(/Bruiser\s*([\d,.]+)\s*[·|•]\s*Hitman\s*([\d,.]+)\s*[·|•]\s*Biker\s*([\d,.]+)/i);
+    if(!m) return null;
+    return {b:num(m[1]), h:num(m[2]), bi:num(m[3])};
+  }
+
+  function findRegular(side){
+    const els=[...document.querySelectorAll("body *")];
+    const label = side==="atk" ? /Επιτιθέμενος\s*[—-]\s*Regular T4/i : /Αμυνόμενος\s*[—-]\s*Regular T4/i;
+    const anchor=els.find(el=>label.test(norm(el.textContent)));
+    if(!anchor) return null;
+    let node=anchor;
+    for(let i=0;i<8 && node;i++,node=node.parentElement){
+      const parsed=parseRegularFromText(norm(node.textContent));
+      if(parsed) return parsed;
+    }
+    return parseRegularFromText(norm(anchor.parentElement?.textContent));
+  }
+
+  function inputsAroundTroops(){
+    const labels=[...document.querySelectorAll("label,div,span,p,h1,h2,h3,h4")];
+    function sideInputs(sideText){
+      const head=labels.find(x=>norm(x.textContent)===sideText || norm(x.textContent).startsWith(sideText));
+      if(!head) return [];
+      let box=head;
+      for(let i=0;i<5 && box;i++,box=box.parentElement){
+        const ins=[...box.querySelectorAll('input[type="number"],input[inputmode="numeric"],input[type="text"]')];
+        if(ins.length>=3) return ins.slice(0,3);
+      }
+      return [];
+    }
+    return {
+      atk: sideInputs("Troops επιτιθέμενου"),
+      def: sideInputs("Troops αμυνόμενου")
+    };
+  }
+
+  function setNativeValue(el,value){
+    if(!el) return;
+    const proto = el.tagName==="INPUT" ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
+    const setter=Object.getOwnPropertyDescriptor(proto,"value")?.set;
+    if(setter) setter.call(el,String(value)); else el.value=String(value);
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+    el.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+
+  function autoApplyRegular(){
+    const rA=findRegular("atk"), rD=findRegular("def");
+    const ins=inputsAroundTroops();
+    if(rA && ins.atk.length>=3){
+      setNativeValue(ins.atk[0],rA.b); setNativeValue(ins.atk[1],rA.h); setNativeValue(ins.atk[2],rA.bi);
+    }
+    if(rD && ins.def.length>=3){
+      setNativeValue(ins.def[0],rD.b); setNativeValue(ins.def[1],rD.h); setNativeValue(ins.def[2],rD.bi);
+    }
+  }
+
+  /* Weapon Review: only keep the three actual combat positions.
+     We deliberately do NOT infer weapon identity from arbitrary OCR bubbles. */
+  function trimWeaponReview(){
+    const els=[...document.querySelectorAll("body *")];
+    const anchor=els.find(el=>norm(el.textContent)==="Weapon Review");
+    if(!anchor) return;
+    let root=anchor.parentElement;
+    for(let i=0;i<5 && root;i++,root=root.parentElement){
+      const txt=norm(root.textContent);
+      if(/active slots/i.test(txt) && /slot 1/i.test(txt)){ break; }
+    }
+    if(!root) return;
+
+    // Find elements that explicitly represent slot 4/5 within review and hide their nearest row/card.
+    [...root.querySelectorAll("*")].forEach(el=>{
+      const t=norm(el.textContent);
+      if(/^slot\s+[45]\b/i.test(t)){
+        let row=el;
+        for(let j=0;j<4 && row.parentElement && row.parentElement!==root;j++){
+          const rt=norm(row.parentElement.textContent);
+          if(rt.length<500 && /slot\s+[45]\b/i.test(rt)) row=row.parentElement; else break;
+        }
+        row.style.display="none";
+        row.dataset.v52HiddenFalseSlot="1";
+      }
+    });
+
+    // Correct displayed "N active slots" to max 3, without inventing names.
+    [...root.querySelectorAll("*")].forEach(el=>{
+      if(el.children.length===0 && /\b[45]\s+active slots\b/i.test(norm(el.textContent))){
+        el.textContent=el.textContent.replace(/\b[45]\s+active slots\b/i,"3 active slots");
+      }
+    });
+  }
+
+  function addV52Note(){
+    if(document.getElementById("v52ReliabilityNote")) return;
+    const els=[...document.querySelectorAll("body *")];
+    const anchor=els.find(el=>norm(el.textContent)==="Weapon Review");
+    if(!anchor) return;
+    const note=document.createElement("div");
+    note.id="v52ReliabilityNote";
+    note.style.cssText="margin:10px 0;padding:10px 12px;border:1px solid #6b5b1e;border-radius:10px;background:#17150c;color:#f4d35e;font-size:12px;line-height:1.4";
+    note.innerHTML="<b>v5.2:</b> Τα Regular T4 περνούν αυτόματα στα βασικά troop totals. Στο Weapon Review κρατάμε μόνο τα 3 πραγματικά combat slots· το όνομα του Super Weapon παραμένει για επιβεβαίωση, ώστε να μη δημιουργούνται ψεύτικες ταυτοποιήσεις από OCR.";
+    anchor.parentElement.insertBefore(note, anchor.nextSibling);
+  }
+
+  function run(){
+    try{ autoApplyRegular(); trimWeaponReview(); addV52Note(); }catch(e){ console.warn("v5.2 patch",e); }
+  }
+  document.addEventListener("DOMContentLoaded",()=>{setTimeout(run,250);setTimeout(run,1200);});
+  new MutationObserver(()=>{clearTimeout(window.__v52t);window.__v52t=setTimeout(run,150);})
+    .observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>
