@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v4.6 · Region-Aware Parser</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v4.7 · GW Mercenary-Aware Parser</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -132,7 +132,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button class="quick-card" data-page="statsPage"><span>📊</span><strong>Στατιστικά</strong><small>Σύνοψη δεδομένων</small></button>
     </div>
     <div id="dashboardStats" class="metrics"></div>
-    <article class="panel"><h3>Νέα στη v4.6</h3><ul><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
+    <article class="panel"><h3>Νέα στη v4.7</h3><ul><li>GW Mercenary-aware troop aggregation</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
   </section>
 
   <section id="battleFormPage" class="page hidden">
@@ -240,7 +240,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
           <div class="form-grid two"><label>🔵 Alive<input id="attAlive" type="number"></label><label>🔴 Alive<input id="defAlive" type="number"></label></div>
           <div class="form-grid two"><label>🔵 Associate Influence Rating<input id="attInfluenceRating" type="number" step="0.01"></label><label>🔴 Associate Influence Rating<input id="defInfluenceRating" type="number" step="0.01"></label></div>
 
-          <h4>T4 troop battle results</h4>
+          <h4>Troop battle results — Regular + Mercenary</h4>
           <div class="form-grid three"><label>🔵 Bruiser Kills<input id="attBruiserKills" type="number"></label><label>🔵 Hitman Kills<input id="attHitmanKills" type="number"></label><label>🔵 Biker Kills<input id="attBikerKills" type="number"></label></div>
           <div class="form-grid three"><label>🔴 Bruiser Kills<input id="defBruiserKills" type="number"></label><label>🔴 Hitman Kills<input id="defHitmanKills" type="number"></label><label>🔴 Biker Kills<input id="defBikerKills" type="number"></label></div>
           <div class="form-grid three"><label>🔵 Bruiser Losses<input id="attBruiserBattleLosses" type="number"></label><label>🔵 Hitman Losses<input id="attHitmanBattleLosses" type="number"></label><label>🔵 Biker Losses<input id="attBikerBattleLosses" type="number"></label></div>
@@ -286,7 +286,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
     <summary>📝 Raw OCR text</summary>
     <div class="details-body"><textarea id="ocrRawText" class="ocr-raw" placeholder="Το αναγνωρισμένο κείμενο θα εμφανιστεί εδώ."></textarea></div>
   </details>
-  <div class="ocr-warning">Ανέβαζε πάντα τα ίδια 9 screenshots με την ίδια σειρά. Το v4.5 χρησιμοποιεί τη θέση κάθε εικόνας ως βασικό fallback και το OCR ως επιπλέον έλεγχο. Πριν την αποθήκευση μπορείς πάντα να διορθώσεις το Review Queue.</div>
+  <div class="ocr-warning">Ανέβαζε πάντα τα ίδια 9 screenshots με την ίδια σειρά. Το v4.7 χρησιμοποιεί τη θέση κάθε εικόνας ως βασικό fallback και το OCR ως επιπλέον έλεγχο. Πριν την αποθήκευση μπορείς πάντα να διορθώσεις το Review Queue.</div>
 </article>
 
 <article class="panel">
@@ -778,36 +778,123 @@ function parseBuffPreviewText(text,sourceIndex){
   }
   return out
 }
+function battleDetailSideNumbers(rowWords,mid,side){
+  const ws=rowWords.filter(w=>{
+    const cx=((w.bbox?.x0||0)+(w.bbox?.x1||0))/2;
+    return side==="att"?cx<mid:cx>=mid;
+  });
+  return ws.map(numericWordValue).filter(v=>v!=null&&v>100);
+}
+function battleDetailRowSignal(rowWords){
+  const text=rowWords.map(w=>String(w.text||"")).join(" ").toLowerCase();
+  return {
+    text,
+    // Yellow mercenary rows can still be Bruiser / Hitman / Biker / Vehicle.
+    // We do not create a separate "Mercenary" troop type.
+    mercenary:/merc|mercenary|yellow/i.test(text),
+    bruiser:/bruis/i.test(text),
+    hitman:/hitm/i.test(text),
+    biker:/bik/i.test(text),
+    vehicle:/vehic|car/i.test(text)
+  };
+}
+function inferBattleDetailTypes(rows){
+  const types=["Bruiser","Hitman","Biker","Vehicle"];
+  const assigned=new Array(rows.length).fill(null),used=new Set();
+
+  // Prefer explicit OCR troop labels when Tesseract manages to read them.
+  rows.forEach((r,i)=>{
+    const sig=battleDetailRowSignal(r.words);
+    const t=sig.bruiser?"Bruiser":sig.hitman?"Hitman":sig.biker?"Biker":sig.vehicle?"Vehicle":null;
+    if(t&&!used.has(t)){assigned[i]=t;used.add(t)}
+  });
+
+  // In TGM Battle Details the troop rows keep their combat-type order.
+  // Mercenary rows do NOT advance to a new combat type: they are extra rows
+  // belonging to the same Bruiser/Hitman/Biker/Vehicle bucket.
+  let cursor=0;
+  for(let i=0;i<rows.length;i++){
+    if(assigned[i]){
+      cursor=Math.max(cursor,types.indexOf(assigned[i]));
+      continue;
+    }
+    const prev=assigned[i-1];
+    const sig=battleDetailRowSignal(rows[i].words);
+    if(sig.mercenary && prev){
+      assigned[i]=prev;
+      continue;
+    }
+    while(cursor<types.length && used.has(types[cursor]))cursor++;
+    assigned[i]=types[Math.min(cursor,types.length-1)];
+    used.add(assigned[i]);
+    cursor++;
+  }
+  return assigned;
+}
 function parseBattleDetailsWords(result,sourceIndex){
   const words=result?.data?.words||[],rows=rowsFromWords(words),out=[];
   if(!words.length)return out;
   const maxX=Math.max(...words.map(w=>w.bbox?.x1||0),1),mid=maxX/2;
+
+  // Candidate troop rows: each side normally contains Associates / Kills / Losses.
   const candidates=[];
   for(const r of rows){
-    const left=r.words.filter(w=>((w.bbox.x0+w.bbox.x1)/2)<mid).map(numericWordValue).filter(v=>v!=null&&v>100);
-    const right=r.words.filter(w=>((w.bbox.x0+w.bbox.x1)/2)>=mid).map(numericWordValue).filter(v=>v!=null&&v>100);
-    if(left.length>=2||right.length>=2){
-      const lmax=Math.max(0,...left),rmax=Math.max(0,...right);
-      if((left.length>=3&&left[0]>500000)||(right.length>=3&&right[0]>500000))candidates.push({cy:r.cy,left,right,text:r.words.map(w=>w.text).join(" ")});
+    const left=battleDetailSideNumbers(r.words,mid,"att");
+    const right=battleDetailSideNumbers(r.words,mid,"def");
+    const hasTroopSizedTotal=(left[0]>10000)||(right[0]>10000);
+    const hasTriplet=left.length>=3||right.length>=3;
+    if(hasTroopSizedTotal&&hasTriplet){
+      candidates.push({cy:r.cy,left,right,words:r.words,text:r.words.map(w=>w.text).join(" ")});
     }
   }
-  const main=candidates.slice(0,3);
-  const troops=["Bruiser","Hitman","Biker"];
-  main.forEach((r,i)=>{
-    const t=troops[i];
-    if(r.left.length){
-      const nums=r.left.filter(v=>v>=0);
-      if(nums[0]!=null)out.push({target:`att${t}s`,value:nums[0],label:`att${t}s`,sourceIndex,sourceLine:r.text,confidence:.9});
-      if(nums[1]!=null)out.push({target:`att${t}Kills`,value:nums[1],label:`att${t}Kills`,sourceIndex,sourceLine:r.text,confidence:.9});
-      if(nums[2]!=null)out.push({target:`att${t}BattleLosses`,value:nums[2],label:`att${t}BattleLosses`,sourceIndex,sourceLine:r.text,confidence:.9});
-    }
-    if(r.right.length){
-      const nums=r.right.filter(v=>v>=0);
-      if(nums[0]!=null)out.push({target:`def${t}s`,value:nums[0],label:`def${t}s`,sourceIndex,sourceLine:r.text,confidence:.9});
-      if(nums[1]!=null)out.push({target:`def${t}Kills`,value:nums[1],label:`def${t}Kills`,sourceIndex,sourceLine:r.text,confidence:.9});
-      if(nums[2]!=null)out.push({target:`def${t}BattleLosses`,value:nums[2],label:`def${t}BattleLosses`,sourceIndex,sourceLine:r.text,confidence:.9});
+
+  // Keep screen order, but allow extra mercenary rows.
+  candidates.sort((a,b)=>a.cy-b.cy);
+  const types=inferBattleDetailTypes(candidates);
+  const sums={};
+  for(const side of ["att","def"])for(const t of ["Bruiser","Hitman","Biker","Vehicle"]){
+    sums[`${side}${t}s`]=0;
+    sums[`${side}${t}Kills`]=0;
+    sums[`${side}${t}BattleLosses`]=0;
+  }
+
+  candidates.forEach((r,i)=>{
+    const t=types[i]||"Vehicle";
+    for(const [side,nums] of [["att",r.left],["def",r.right]]){
+      if(!nums.length)continue;
+      // Crucial v4.7 rule:
+      // regular + mercenary are ADDED into the same combat type.
+      if(nums[0]!=null)sums[`${side}${t}s`]+=nums[0];
+      if(nums[1]!=null)sums[`${side}${t}Kills`]+=nums[1];
+      if(nums[2]!=null)sums[`${side}${t}BattleLosses`]+=nums[2];
     }
   });
+
+  // The current main battle model uses Bruiser / Hitman / Biker ratios.
+  // Vehicles are intentionally not injected into those three ratio fields.
+  for(const side of ["att","def"])for(const t of ["Bruiser","Hitman","Biker"]){
+    const total=sums[`${side}${t}s`];
+    const kills=sums[`${side}${t}Kills`];
+    const losses=sums[`${side}${t}BattleLosses`];
+    if(total>0)out.push({target:`${side}${t}s`,value:total,label:`${side}${t}s · regular+mercenary`,sourceIndex,sourceLine:"Battle Details aggregated by combat type",confidence:.93});
+    if(kills>0)out.push({target:`${side}${t}Kills`,value:kills,label:`${side}${t}Kills · regular+mercenary`,sourceIndex,sourceLine:"Battle Details aggregated by combat type",confidence:.93});
+    if(losses>0)out.push({target:`${side}${t}BattleLosses`,value:losses,label:`${side}${t}BattleLosses · regular+mercenary`,sourceIndex,sourceLine:"Battle Details aggregated by combat type",confidence:.93});
+  }
+
+  // Preserve Vehicle/Car information in OCR raw/review without contaminating B/H/Bi ratios.
+  for(const side of ["att","def"]){
+    const vehicleTotal=sums[`${side}Vehicles`];
+    if(vehicleTotal>0)out.push({
+      target:`${side}VehicleBattleTotal`,
+      value:vehicleTotal,
+      label:`${side} Vehicles/Cars · regular+mercenary`,
+      sourceIndex,
+      sourceLine:"Vehicle/Car total detected; excluded from B/H/Bi ratio",
+      confidence:.86,
+      reviewOnly:true
+    });
+  }
+
   // Influence ratings: usually two decimals near bottom.
   const allText=result?.data?.text||"";
   const irLine=allText.split(/\n/).map(normalizeOcrLine).find(l=>/associate influence rating/i.test(l));
@@ -816,7 +903,7 @@ function parseBattleDetailsWords(result,sourceIndex){
     if(vals[0]!=null)out.push({target:"attInfluenceRating",value:vals[0],label:"attInfluenceRating",sourceIndex,sourceLine:irLine,confidence:.85});
     if(vals[1]!=null)out.push({target:"defInfluenceRating",value:vals[1],label:"defInfluenceRating",sourceIndex,sourceLine:irLine,confidence:.85});
   }
-  return out
+  return out;
 }
 function parseOcrText(text,side,sourceIndex){
   const lines=text.split(/\n/).map(normalizeOcrLine).filter(Boolean),suggestions=[];
@@ -974,7 +1061,7 @@ function frequencyRows(map,total){return Object.entries(map).sort((a,b)=>b[1]-a[
 async function runMeta(){const all=await getAllBattles();if(!all.length){$("metaOutput").innerHTML='<div class="empty">Δεν υπάρχουν μάχες.</div>';return}const forms={},modes={},tags={},weapons={},enforcers={};for(const b of all){[b.attackerFormation,b.defenderFormation].filter(Boolean).forEach(x=>forms[x]=(forms[x]||0)+1);if(b.mode)modes[b.mode]=(modes[b.mode]||0)+1;battleTags(b).forEach(x=>tags[x]=(tags[x]||0)+1);[b.attackerSuperWeapons,b.defenderSuperWeapons].filter(Boolean).flatMap(x=>x.split(",")).map(x=>x.trim()).filter(Boolean).forEach(x=>weapons[x]=(weapons[x]||0)+1);[b.attackerEnforcers,b.defenderEnforcers].filter(Boolean).flatMap(x=>x.split(",")).map(x=>x.trim()).filter(Boolean).forEach(x=>enforcers[x]=(enforcers[x]||0)+1)}$("metaOutput").innerHTML=`<div class="coach-grid"><div class="coach-card"><small>Reports</small><strong>${all.length}</strong></div><div class="coach-card"><small>Players</small><strong>${players(all).length}</strong></div></div><div class="observation"><strong>Formations</strong><div class="meta-table">${frequencyRows(forms,all.length*2)}</div></div><div class="observation"><strong>Battle types</strong><div class="meta-table">${frequencyRows(modes,all.length)}</div></div><div class="observation"><strong>Smart tags</strong><div class="meta-table">${frequencyRows(tags,all.length)}</div></div>${Object.keys(weapons).length?`<div class="observation"><strong>Super Weapons</strong><div class="meta-table">${frequencyRows(weapons,all.length*2)}</div></div>`:""}${Object.keys(enforcers).length?`<div class="observation"><strong>Enforcers</strong><div class="meta-table">${frequencyRows(enforcers,all.length*2)}</div></div>`:""}`}
 
 async function renderStats(){const b=await getAllBattles(),p=players(b);$("statsMetrics").innerHTML=cards([["Μάχες",b.length],["Παίκτες",p.length],["Formations",new Set(b.flatMap(x=>[x.attackerFormation,x.defenderFormation])).size],["Τύποι",new Set(b.map(x=>x.mode)).size]]);const options='<option value="">Επίλεξε παίκτη</option>'+p.map(x=>`<option value="${esc(key(x.name))}">${esc(x.name)}</option>`).join(""),similarOptions='<option value="">Οποιοσδήποτε</option>'+p.map(x=>`<option value="${esc(key(x.name))}">${esc(x.name)}</option>`).join(""),c=$("counterOpponent").value,po=$("plannerOpponent").value,so=$("safeOpponent").value,simo=$("similarOpponent").value,mo=$("modelOpponent").value,oo=$("optimizerOpponent").value,co=$("coachOpponent").value;$("counterOpponent").innerHTML=options;$("plannerOpponent").innerHTML=options;$("safeOpponent").innerHTML=options;$("similarOpponent").innerHTML=similarOptions;$("modelOpponent").innerHTML=options;$("optimizerOpponent").innerHTML=options;$("coachOpponent").innerHTML=options;$("counterOpponent").value=c;$("plannerOpponent").value=po;$("safeOpponent").value=so;$("similarOpponent").value=simo;$("modelOpponent").value=mo;$("optimizerOpponent").value=oo;$("coachOpponent").value=co;if(c)updateCounter()}
-forms.forEach(f=>{$("attackerFormation").add(new Option(f,f));$("defenderFormation").add(new Option(f,f));$("plannerEnemyFormation").add(new Option(f,f));$("plannerOurFormation").add(new Option(f,f))});$("plannerEnemyFormation").value="UNKNOWN";$("plannerOurFormation").value="Bruiser Square";document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{if(b.dataset.page==="battleFormPage")reset();page(b.dataset.page)});["attBruisers","attHitmen","attBikers","defBruisers","defHitmen","defBikers"].forEach(x=>$(x).oninput=preview);$("screenshotInput").onchange=async e=>{try{await addShots(e.target.files)}catch(err){$("screenshotStatus").textContent=err.message}e.target.value=""};$("runOcrBtn").onclick=runOcrImport;$("applyOcrBtn").onclick=applyOcrSuggestions;$("checkCompletenessBtn").onclick=renderCompleteness;$("closeReplayBtn").onclick=closeReplay;$("replayModal").onclick=e=>{if(e.target===$("replayModal"))closeReplay()};$("closeGalleryBtn").onclick=closeGallery;$("galleryModal").onclick=e=>{if(e.target===$("galleryModal"))closeGallery()};$("saveBattleBtn").onclick=save;$("resetFormBtn").onclick=reset;$("battleSearch").oninput=renderBattles;$("modeFilter").onchange=renderBattles;$("counterOpponent").onchange=updateCounter;$("plannerOpponent").onchange=()=>{};$("runPlannerBtn").onclick=runPlanner;$("runSafeDefenseBtn").onclick=runSafeDefense;$("runSimilarBtn").onclick=runSimilarFinder;$("runCounterModelBtn").onclick=runCounterModel;$("runOptimizerBtn").onclick=runOptimizer;$("runCoachBtn").onclick=runCoach;$("runMetaBtn").onclick=runMeta;$("runAdvisorBtn").onclick=runAdvisor;$("saveSetupBtn").onclick=saveCurrentSetup;$("applySetupBtn").onclick=applySetup;$("deleteSetupBtn").onclick=deleteSetup;$("exportBtn").onclick=async()=>{const payload={app:"TGM Battle Intelligence",version:"4.6",battles:await getAllBattles()},blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`tgm-backup-${new Date().toISOString().slice(0,10)}.json`;a.click()};$("importInput").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text()),items=Array.isArray(j)?j:j.battles;if(!Array.isArray(items))throw Error("Μη έγκυρο backup");await importBattles(items);$("backupMessage").textContent="Η εισαγωγή ολοκληρώθηκε.";renderStats()}catch(err){$("backupMessage").textContent=err.message}};$("clearAllBtn").onclick=async()=>{if(confirm("Διαγραφή όλων;")){await clearBattles();renderStats()}};renderSetupOptions();reset();page("dashboardPage");
+forms.forEach(f=>{$("attackerFormation").add(new Option(f,f));$("defenderFormation").add(new Option(f,f));$("plannerEnemyFormation").add(new Option(f,f));$("plannerOurFormation").add(new Option(f,f))});$("plannerEnemyFormation").value="UNKNOWN";$("plannerOurFormation").value="Bruiser Square";document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{if(b.dataset.page==="battleFormPage")reset();page(b.dataset.page)});["attBruisers","attHitmen","attBikers","defBruisers","defHitmen","defBikers"].forEach(x=>$(x).oninput=preview);$("screenshotInput").onchange=async e=>{try{await addShots(e.target.files)}catch(err){$("screenshotStatus").textContent=err.message}e.target.value=""};$("runOcrBtn").onclick=runOcrImport;$("applyOcrBtn").onclick=applyOcrSuggestions;$("checkCompletenessBtn").onclick=renderCompleteness;$("closeReplayBtn").onclick=closeReplay;$("replayModal").onclick=e=>{if(e.target===$("replayModal"))closeReplay()};$("closeGalleryBtn").onclick=closeGallery;$("galleryModal").onclick=e=>{if(e.target===$("galleryModal"))closeGallery()};$("saveBattleBtn").onclick=save;$("resetFormBtn").onclick=reset;$("battleSearch").oninput=renderBattles;$("modeFilter").onchange=renderBattles;$("counterOpponent").onchange=updateCounter;$("plannerOpponent").onchange=()=>{};$("runPlannerBtn").onclick=runPlanner;$("runSafeDefenseBtn").onclick=runSafeDefense;$("runSimilarBtn").onclick=runSimilarFinder;$("runCounterModelBtn").onclick=runCounterModel;$("runOptimizerBtn").onclick=runOptimizer;$("runCoachBtn").onclick=runCoach;$("runMetaBtn").onclick=runMeta;$("runAdvisorBtn").onclick=runAdvisor;$("saveSetupBtn").onclick=saveCurrentSetup;$("applySetupBtn").onclick=applySetup;$("deleteSetupBtn").onclick=deleteSetup;$("exportBtn").onclick=async()=>{const payload={app:"TGM Battle Intelligence",version:"4.7",battles:await getAllBattles()},blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`tgm-backup-${new Date().toISOString().slice(0,10)}.json`;a.click()};$("importInput").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text()),items=Array.isArray(j)?j:j.battles;if(!Array.isArray(items))throw Error("Μη έγκυρο backup");await importBattles(items);$("backupMessage").textContent="Η εισαγωγή ολοκληρώθηκε.";renderStats()}catch(err){$("backupMessage").textContent=err.message}};$("clearAllBtn").onclick=async()=>{if(confirm("Διαγραφή όλων;")){await clearBattles();renderStats()}};renderSetupOptions();reset();page("dashboardPage");
 </script>
 </body>
 </html>
