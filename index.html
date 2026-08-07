@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v5.4</title>
+  <title>TGM Battle Intelligence v5.5</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.4 · Merc Merge + Full Combat Stats</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v5.5 · Direct Troops + Combat Modifier Fix</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -271,7 +271,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v5.4</h4>
+          <h4>🧬 Super Weapon Intelligence v5.5</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -971,7 +971,10 @@ function renderTroopReview(){
   box.innerHTML=one("att","Επιτιθέμενος")+one("def","Αμυνόμενος");
   box.querySelectorAll("[data-merc-side]").forEach(sel=>{
     const side=sel.dataset.mercSide,idx=+sel.dataset.mercIndex;sel.value=currentTroopReview[side]?.merc?.[idx]?.type||"Unknown";
-    sel.onchange=()=>{if(currentTroopReview[side]?.merc?.[idx])currentTroopReview[side].merc[idx].type=sel.value};
+    sel.onchange=()=>{
+      if(currentTroopReview[side]?.merc?.[idx])currentTroopReview[side].merc[idx].type=sel.value;
+      applyTroopReview();
+    };
   });
 }
 function applyTroopReview(){
@@ -984,15 +987,23 @@ function applyTroopReview(){
 async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
   const out=[],att=splitRegularAndMercRows(sideRowsFromBattleDetails(result,"att")),def=splitRegularAndMercRows(sideRowsFromBattleDetails(result,"def"));
   currentTroopReview={att,def};renderTroopReview();
+
+  // Source of truth: write the trusted bottom Regular T4 rows DIRECTLY into the real form fields.
+  // This avoids later OCR dedupe/reconciliation accidentally blanking Hitmen.
   for(const [side,p,r] of [["att","att",att],["def","def",def]]){
     if(!r.regular)continue;
     for(const k of ["Bruiser","Hitman","Biker"]){
       const x=r.regular[k];
-      out.push({target:`${p}${k}s`,value:x.total,label:`${side} ${k} regular T4`,sourceIndex,sourceLine:"Battle Details · fixed Regular T4 rows",confidence:.995});
-      out.push({target:`${p}${k}Kills`,value:x.kills,label:`${side} ${k} kills`,sourceIndex,sourceLine:"Battle Details · fixed Regular T4 rows",confidence:.995});
-      out.push({target:`${p}${k}BattleLosses`,value:x.losses,label:`${side} ${k} losses`,sourceIndex,sourceLine:"Battle Details · fixed Regular T4 rows",confidence:.995});
+      const totalEl=$(`${p}${k}s`), killEl=$(`${p}${k}Kills`), lossEl=$(`${p}${k}BattleLosses`);
+      if(totalEl) totalEl.value=x.total||"";
+      if(killEl) killEl.value=x.kills||"";
+      if(lossEl) lossEl.value=x.losses||"";
+      out.push({target:`${p}${k}s`,value:x.total,label:`${side} ${k} regular T4`,sourceIndex,sourceLine:"Battle Details · trusted Regular T4 row",confidence:1});
+      out.push({target:`${p}${k}Kills`,value:x.kills,label:`${side} ${k} kills`,sourceIndex,sourceLine:"Battle Details · trusted Regular T4 row",confidence:1});
+      out.push({target:`${p}${k}BattleLosses`,value:x.losses,label:`${side} ${k} losses`,sourceIndex,sourceLine:"Battle Details · trusted Regular T4 row",confidence:1});
     }
   }
+  preview();
   return out;
 }
 
@@ -1007,36 +1018,40 @@ function numericTokens(result){
 }
 function detectCombatBubbles(result){
   const toks=numericTokens(result), candidates=[];
-  // Every popup starts with a small activation count. The following values are vertically
-  // aligned in the same bubble: damage and (for Super Weapons) shield. Zero is valid.
+
+  // A real popup has: small activation count, then a LARGE damage value below it.
+  // For Super Weapons an optional shield value can follow. This eliminates false values
+  // such as 3, 38, 90 that came from stars/icons/other UI text.
   for(const a of toks.filter(t=>Number.isInteger(t.val)&&t.val>=1&&t.val<=20)){
-    const below=toks.filter(t=>t!==a &&
-      Math.abs(t.cx-a.cx)<125 &&
-      t.cy>a.cy+8 && t.cy<a.cy+145 &&
-      t.val>=0
+    const below=toks.filter(t=>
+      t!==a &&
+      Math.abs(t.cx-a.cx)<145 &&
+      t.cy>a.cy+10 && t.cy<a.cy+175
     ).sort((x,y)=>x.cy-y.cy || Math.abs(x.cx-a.cx)-Math.abs(y.cx-a.cx));
 
-    if(!below.length)continue;
+    const damageCandidates=below.filter(t=>t.val>=100);
+    if(!damageCandidates.length)continue;
+    const damageTok=damageCandidates[0];
 
-    // Keep at most the first two distinct rows below activation.
-    const vals=[];
-    for(const t of below){
-      if(vals.some(v=>Math.abs(v.cy-t.cy)<10))continue;
-      vals.push(t);
-      if(vals.length===2)break;
-    }
+    const shieldCandidates=below.filter(t=>
+      t.cy>damageTok.cy+8 &&
+      Math.abs(t.cx-a.cx)<145 &&
+      (t.val===0 || t.val>=100)
+    );
+    const shieldTok=shieldCandidates[0]||null;
+
     candidates.push({
-      x:a.cx,y:a.cy,activation:a.val,
-      damage:vals[0]?.val??0,
-      shield:vals[1]?.val??0,
+      x:a.cx,y:a.cy,
+      activation:a.val,
+      damage:damageTok.val,
+      shield:shieldTok?shieldTok.val:0,
       weapon:""
     });
   }
 
-  // Deduplicate multiple OCR readings of the same popup.
   const uniq=[];
   for(const x of candidates.sort((a,b)=>a.y-b.y||a.x-b.x)){
-    if(uniq.some(u=>Math.abs(u.x-x.x)<65&&Math.abs(u.y-x.y)<52))continue;
+    if(uniq.some(u=>Math.abs(u.x-x.x)<75&&Math.abs(u.y-x.y)<60))continue;
     uniq.push(x);
   }
   return uniq.slice(0,5).map((x,i)=>({...x,slot:i+1}));
@@ -1086,50 +1101,82 @@ const COMBAT_MODIFIER_PATTERNS=[
   {rx:/hitm[ae]n\s*counter(?:\s*dmg)?\s*reduction/i,base:"HitmanCounterDmgReduction"},
   {rx:/biker[s]?\s*counter(?:\s*dmg)?\s*reduction/i,base:"BikerCounterDmgReduction"}
 ];
-function percentWordValue(w){
-  const txt=String(w?.text||"");
-  if(!/%/.test(txt))return null;
-  const v=ocrNumber(txt);
-  return v!=null&&v>=0&&v<3000?v:null;
+function modifierNumericValue(w){
+  const raw=String(w?.text||"").trim();
+  // Accept %, +5.0, 30.0 etc. Reject large unrelated values.
+  const v=ocrNumber(raw.replace(/[^\d.,+-]/g,""));
+  return v!=null && v>=0 && v<=300 ? v : null;
 }
 function parseCombatModifierWords(result,sourceIndex){
   const words=result?.data?.words||[],out=[];
   if(!words.length)return out;
+
   const rows=rowsFromWords(words);
   const maxX=Math.max(...words.map(w=>w.bbox?.x1||0),1), mid=maxX/2;
 
-  for(const p of COMBAT_MODIFIER_PATTERNS){
-    let match=null;
-    // Labels often wrap over 2–3 OCR rows.
-    for(let span=1;span<=4&&!match;span++){
+  const patterns=[
+    {rx:/enemy\s*atk\s*reduction/i,base:"EnemyAtkReduction"},
+    {rx:/enemy\s*def\s*reduction/i,base:"EnemyDefReduction"},
+    {rx:/enemy\s*hp\s*reduction/i,base:"EnemyHpReduction"},
+    {rx:/enemy\s*kill\s*rate\s*increase/i,base:"KillRate"},
+    {rx:/crew\s*dmg/i,base:"CrewDmg"},
+    {rx:/bruiser[s]?\s*dmg(?!\s*vs)/i,base:"BruiserDmg"},
+    {rx:/hitm[ae]n\s*dmg(?!\s*vs)/i,base:"HitmanDmg"},
+    {rx:/biker[s]?\s*dmg(?!\s*vs)/i,base:"BikerDmg"},
+    {rx:/bruiser[s]?\s*receive\s*reduced\s*damage/i,base:"BruiserReducedDamage"},
+    {rx:/hitm[ae]n\s*receive\s*reduced\s*damage/i,base:"HitmanReducedDamage"},
+    {rx:/biker[s]?\s*receive\s*reduced\s*damage/i,base:"BikerReducedDamage"},
+    {rx:/bruiser\s*dmg\s*vs\.?\s*hitm[ae]n/i,base:"BruiserCounterDmgIncrease"},
+    {rx:/hitm[ae]n\s*dmg\s*vs\.?\s*biker/i,base:"HitmanCounterDmgIncrease"},
+    {rx:/biker\s*dmg\s*vs\.?\s*bruiser/i,base:"BikerCounterDmgIncrease"},
+    {rx:/bruiser[s]?\s*counter(?:\s*dmg)?\s*reduction/i,base:"BruiserCounterDmgReduction"},
+    {rx:/hitm[ae]n\s*counter(?:\s*dmg)?\s*reduction/i,base:"HitmanCounterDmgReduction"},
+    {rx:/biker[s]?\s*counter(?:\s*dmg)?\s*reduction/i,base:"BikerCounterDmgReduction"}
+  ];
+
+  const numeric=words.map(w=>{
+    const v=modifierNumericValue(w);if(v==null)return null;
+    return {v,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,text:String(w.text||"")};
+  }).filter(Boolean);
+
+  function findLabel(rx){
+    let best=null;
+    for(let span=1;span<=5;span++){
       for(let i=0;i<=rows.length-span;i++){
         const rs=rows.slice(i,i+span);
         const txt=rs.map(r=>r.words.map(w=>w.text).join(" ")).join(" ");
-        if(p.rx.test(txt)){
-          const y0=Math.min(...rs.flatMap(r=>r.words.map(w=>w.bbox.y0)));
-          const y1=Math.max(...rs.flatMap(r=>r.words.map(w=>w.bbox.y1)));
-          match={txt,y0,y1,cy:(y0+y1)/2};
-          break;
-        }
+        if(!rx.test(txt))continue;
+        const labelWords=rs.flatMap(r=>r.words);
+        const cx=labelWords.reduce((a,w)=>a+(w.bbox.x0+w.bbox.x1)/2,0)/labelWords.length;
+        // Central label should actually sit around the center column.
+        if(cx<mid*.55 || cx>mid*1.45)continue;
+        const y0=Math.min(...labelWords.map(w=>w.bbox.y0)),y1=Math.max(...labelWords.map(w=>w.bbox.y1));
+        const cand={txt,cy:(y0+y1)/2,spanHeight:y1-y0};
+        if(!best || span<best.span)best={...cand,span};
       }
+      if(best)break;
     }
-    if(!match)continue;
+    return best;
+  }
 
-    const candidates=words.map(w=>{
-      const v=percentWordValue(w); if(v==null)return null;
-      return {v,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,text:w.text};
-    }).filter(Boolean);
+  function sideValue(label,side){
+    // Values are far left / far right on the same visual row. Allow wide Y tolerance
+    // because long labels (Reduced Damage / Counter Reduction) wrap over 2–3 lines.
+    const pool=numeric.filter(x=>{
+      const sideOk=side==="att" ? x.cx<mid*.62 : x.cx>mid*1.38;
+      return sideOk && Math.abs(x.cy-label.cy)<Math.max(75,label.spanHeight*1.35);
+    });
+    if(!pool.length)return null;
+    // Prefer the number vertically closest to the center of the label.
+    pool.sort((a,b)=>Math.abs(a.cy-label.cy)-Math.abs(b.cy-label.cy));
+    return pool[0];
+  }
 
-    const nearest=(side)=>{
-      const pool=candidates.filter(x=>
-        (side==="att"?x.cx<mid*.78:x.cx>mid*1.22) &&
-        Math.abs(x.cy-match.cy)<55
-      ).sort((a,b)=>Math.abs(a.cy-match.cy)-Math.abs(b.cy-match.cy));
-      return pool[0]||null;
-    };
-    const a=nearest("att"), d=nearest("def");
-    if(a)out.push({target:`att${p.base}`,value:a.v,label:`att${p.base}`,sourceIndex,sourceLine:match.txt,confidence:.985});
-    if(d)out.push({target:`def${p.base}`,value:d.v,label:`def${p.base}`,sourceIndex,sourceLine:match.txt,confidence:.985});
+  for(const p of patterns){
+    const label=findLabel(p.rx);if(!label)continue;
+    const a=sideValue(label,"att"),d=sideValue(label,"def");
+    if(a)out.push({target:`att${p.base}`,value:a.v,label:`att${p.base}`,sourceIndex,sourceLine:label.txt,confidence:.995});
+    if(d)out.push({target:`def${p.base}`,value:d.v,label:`def${p.base}`,sourceIndex,sourceLine:label.txt,confidence:.995});
   }
   return out;
 }
@@ -1201,7 +1248,7 @@ async function runOcrImport(){
   $("ocrRawText").value=allRaw.join("\n\n");$("ocrProgressFill").style.width="100%";renderShotReview();renderSmartImportSummary();
   renderOcrSuggestions();
   applyOcrSuggestions(true);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v5.4 εφαρμόζει τα Regular T4 και προσθέτει αυτόματα τα Mercenaries μόλις επιλέξεις τύπο. Τα combat modifiers διαβάζονται και χωρικά από τα δύο Buff Comparison screenshots.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v5.5 γράφει απευθείας τα Regular T4, συγχωνεύει άμεσα τα Mercenaries και χρησιμοποιεί αυστηρότερο positional parser για Kill Rate, Counter DMG και Reduced Damage.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -1214,6 +1261,9 @@ function applyOcrSuggestions(auto=false){
       if(!opt)continue;el.value=opt.value;
     }else el.value=sug.value;
     applied++;
+  }
+  if(currentTroopReview?.att?.regular||currentTroopReview?.def?.regular){
+    applyTroopReview();
   }
   preview();renderCompleteness();if(!auto)$("ocrStatus").textContent=`Εφαρμόστηκαν ${applied} προτάσεις. Έλεγξέ τες πριν την αποθήκευση.`
 }
