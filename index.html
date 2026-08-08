@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v8.0 · Verified Fixed-Report Parser</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v8.0 · Deterministic TGM Report Parser</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -132,7 +132,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button class="quick-card" data-page="statsPage"><span>📊</span><strong>Στατιστικά</strong><small>Σύνοψη δεδομένων</small></button>
     </div>
     <div id="dashboardStats" class="metrics"></div>
-    <article class="panel"><h3>Νέα στη v6.2</h3><ul><li>Unified Regular + Mercenary troop totals</li><li>Multi-page Buff Comparison merge</li><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
+    <article class="panel"><h3>Νέα στη v8.0</h3><ul><li>Unified Regular + Mercenary troop totals</li><li>Multi-page Buff Comparison merge</li><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
   </section>
 
   <section id="battleFormPage" class="page hidden">
@@ -316,7 +316,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
     <summary>📝 Raw OCR text</summary>
     <div class="details-body"><textarea id="ocrRawText" class="ocr-raw" placeholder="Το αναγνωρισμένο κείμενο θα εμφανιστεί εδώ."></textarea></div>
   </details>
-  <div class="ocr-warning">v6.2: Δεν απαιτούνται ακριβώς 9 screenshots. Όλες οι σελίδες Buff Comparison ενώνονται με βάση τα labels τους. Απουσία stat δεν σημαίνει 0.</div>
+  <div class="ocr-warning">v8.0: Δεν απαιτείται σταθερός αριθμός screenshots. Τα Buff pages ενώνονται ανά label, τα Mercenaries προστίθενται στον σωστό troop type και τα combat popups διαβάζονται ανά πραγματικό slot.</div>
 </article>
 
 <article class="panel">
@@ -782,7 +782,7 @@ function renderSmartImportSummary(){
   const packageClass=currentScreenshots.length?"smart-ok":"smart-warn";
   const packageText=currentScreenshots.length?`${currentScreenshots.length} screenshots φορτώθηκαν`:"Δεν έχουν φορτωθεί screenshots";
   box.innerHTML=`<div class="smart-import-card"><strong>Πακέτο μάχης</strong><span class="${packageClass}">${packageText}</span></div><div class="smart-import-card"><strong>Αναγνώριση screenshots</strong><span class="${recognized===currentScreenshots.length?"smart-ok":"smart-warn"}">${recognized}/${currentScreenshots.length} ταξινομήθηκαν</span></div>`+
-  Object.entries(groups).map(([k,v])=>`<div class="smart-import-card"><strong>${esc(k)}</strong>${v} screenshot${v>1?"s":""}</div>`).join("")+`<div class="package-hint"><strong>v7.0:</strong> Δεν απαιτείται σταθερή σειρά. Κάθε screenshot αναγνωρίζεται από το περιεχόμενο και τη δομή του.</div>`
+  Object.entries(groups).map(([k,v])=>`<div class="smart-import-card"><strong>${esc(k)}</strong>${v} screenshot${v>1?"s":""}</div>`).join("")+`<div class="package-hint"><strong>v8.0:</strong> Δεν απαιτείται σταθερή σειρά. Κάθε screenshot αναγνωρίζεται από το περιεχόμενο και τη δομή του.</div>`
 }
 
 
@@ -951,11 +951,21 @@ function parseBuffPreviewText(text,sourceIndex){
   return out
 }
 function battleDetailSideNumbers(rowWords,mid,side){
-  const ws=rowWords.filter(w=>{
-    const cx=((w.bbox?.x0||0)+(w.bbox?.x1||0))/2;
-    return side==="att"?cx<mid:cx>=mid;
-  });
-  return ws.map(numericWordValue).filter(v=>v!=null&&v>100);
+  const maxX=mid*2;
+  const centers=side==="att"?[.215,.345,.475]:[.645,.775,.905];
+  const out=[];
+  for(const c of centers){
+    const target=maxX*c;
+    const candidates=rowWords.map(w=>{
+      const cx=((w.bbox?.x0||0)+(w.bbox?.x1||0))/2;
+      const v=numericWordValue(w);
+      return{cx,v,d:Math.abs(cx-target)};
+    }).filter(x=>x.v!=null&&x.v>=0&&x.d<maxX*.075)
+      .sort((a,b)=>a.d-b.d);
+    out.push(candidates[0]?.v??null);
+  }
+  // Return Total, Kills, Losses in semantic column order, never OCR word order.
+  return out;
 }
 function battleDetailRowSignal(rowWords){
   const text=rowWords.map(w=>String(w.text||"")).join(" ").toLowerCase();
@@ -1007,46 +1017,53 @@ function inferBattleDetailTypes(rows){
 function loadDataUrlImage(dataUrl){
   return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=dataUrl});
 }
-function iconFeature(ctx,x,y,w,h){
-  const C=document.createElement("canvas"),cw=48,ch=48;C.width=cw;C.height=ch;
+function iconEdgeFeature(ctx,x,y,w,h){
+  const C=document.createElement("canvas"),cw=64,ch=48;C.width=cw;C.height=ch;
   const c=C.getContext("2d",{willReadFrequently:true});
   c.drawImage(ctx.canvas,x,y,w,h,0,0,cw,ch);
-  const d=c.getImageData(0,0,cw,ch).data, g=[];
-  for(let i=0;i<d.length;i+=4){
-    const v=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-    g.push(v);
+  const d=c.getImageData(0,0,cw,ch).data,mask=new Uint8Array(cw*ch);
+  for(let yy=0;yy<ch;yy++)for(let xx=0;xx<cw;xx++){
+    const i=(yy*cw+xx)*4,gray=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    mask[yy*cw+xx]=gray>95?1:0;
   }
-  const mean=g.reduce((a,b)=>a+b,0)/g.length;
-  const v=g.map(x=>Math.max(0,x-mean-12));
-  const norm=Math.sqrt(v.reduce((a,b)=>a+b*b,0))||1;
-  return v.map(x=>x/norm);
+  const edge=new Uint8Array(cw*ch);
+  for(let yy=1;yy<ch-1;yy++)for(let xx=1;xx<cw-1;xx++){
+    const k=yy*cw+xx,v=mask[k];
+    if(v!==mask[k-1]||v!==mask[k+1]||v!==mask[k-cw]||v!==mask[k+cw])edge[k]=1;
+  }
+  return{edge,w:cw,h:ch};
 }
-function featureSimilarity(a,b){
-  let s=0;for(let i=0;i<Math.min(a.length,b.length);i++)s+=a[i]*b[i];return s
+function shiftedEdgeSimilarity(A,B){
+  let best=0;
+  for(let dy=-6;dy<=6;dy++)for(let dx=-6;dx<=6;dx++){
+    let dot=0,aa=0,bb=0;
+    for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){
+      const bx=x-dx,by=y-dy;if(bx<0||bx>=B.w||by<0||by>=B.h)continue;
+      const av=A.edge[y*A.w+x],bv=B.edge[by*B.w+bx];
+      dot+=av*bv;aa+=av*av;bb+=bv*bv;
+    }
+    const sc=aa&&bb?dot/Math.sqrt(aa*bb):0;if(sc>best)best=sc;
+  }
+  return best;
 }
 async function classifyBattleRowsByIcons(dataUrl,candidates,result){
-  if(!dataUrl||candidates.length<4)return null;
+  if(!dataUrl||candidates.length<3)return null;
   const im=await loadDataUrlImage(dataUrl);
   const C=document.createElement("canvas");C.width=im.naturalWidth||im.width;C.height=im.naturalHeight||im.height;
   const ctx=C.getContext("2d",{willReadFrequently:true});ctx.drawImage(im,0,0,C.width,C.height);
   const W=C.width,H=C.height;
-  const medianGap=(()=>{
-    const gaps=[];for(let i=1;i<candidates.length;i++)gaps.push(candidates[i].cy-candidates[i-1].cy);
-    gaps.sort((a,b)=>a-b);return gaps.length?gaps[Math.floor(gaps.length/2)]:H*.065
-  })();
-  // TGM Battle Details has its type icon in the far-left column.
-  const x=Math.round(W*.012), w=Math.round(W*.145), h=Math.max(42,Math.round(medianGap*.82));
-  const featFor=r=>iconFeature(ctx,x,Math.max(0,Math.round(r.cy-h/2)),w,Math.min(h,H-Math.max(0,Math.round(r.cy-h/2))));
-  // The final four troop rows are the regular T4 references: Bruiser, Hitman, Biker, Vehicle.
-  const refs=candidates.slice(-4), types=["Bruiser","Hitman","Biker","Vehicle"];
-  if(refs.length<4)return null;
-  const refFeat=refs.map(featFor);
+  const gaps=[];for(let i=1;i<candidates.length;i++)gaps.push(candidates[i].cy-candidates[i-1].cy);
+  gaps.sort((a,b)=>a-b);const medianGap=gaps.length?gaps[Math.floor(gaps.length/2)]:H*.065;
+  // Exclude the right-side barrel/T4 digit and compare only the actual troop silhouette.
+  const x=Math.round(W*.015),w=Math.round(W*.09),h=Math.max(58,Math.round(medianGap*1.38));
+  const featFor=r=>iconEdgeFeature(ctx,x,Math.max(0,Math.round(r.cy-h/2)),w,Math.min(h,H-Math.max(0,Math.round(r.cy-h/2))));
+  const refs=candidates.slice(-3),types=["Bruiser","Hitman","Biker"],refFeat=refs.map(featFor);
   return candidates.map((r,i)=>{
-    if(i>=candidates.length-4)return types[i-(candidates.length-4)];
-    const f=featFor(r);
-    let best=0,bestScore=-Infinity;
-    refFeat.forEach((rf,j)=>{const sc=featureSimilarity(f,rf);if(sc>bestScore){bestScore=sc;best=j}});
-    return types[best];
+    if(i>=candidates.length-3)return{type:types[i-(candidates.length-3)],confidence:1,score:1};
+    const f=featFor(r),scores=refFeat.map((rf,j)=>({j,score:shiftedEdgeSimilarity(f,rf)})).sort((a,b)=>b.score-a.score);
+    const best=scores[0]||{j:0,score:0},second=scores[1]?.score||0,margin=best.score-second;
+    const confident=best.score>=.52&&margin>=.07;
+    return{type:types[best.j],confidence:confident ? .99 : .45,score:best.score,margin};
   });
 }
 
@@ -1055,7 +1072,10 @@ function sideRowsFromBattleDetails(result,side){
   const rows=rowsFromWords(words),maxX=Math.max(...words.map(w=>w.bbox?.x1||0),1),mid=maxX/2,out=[];
   for(const r of rows){
     const nums=battleDetailSideNumbers(r.words,mid,side);
-    if(nums.length>=2 && nums[0]>0)out.push({cy:r.cy,nums,text:r.words.map(w=>w.text).join(" ")});
+    const [total,kills,losses]=nums;
+    if(total!=null&&total>0&&kills!=null&&losses!=null){
+      out.push({cy:r.cy,nums:[total,kills,losses],words:r.words,text:r.words.map(w=>w.text).join(" ")});
+    }
   }
   return out.sort((a,b)=>a.cy-b.cy);
 }
@@ -1102,7 +1122,7 @@ function renderTroopReview(){
     const r=currentTroopReview[side];
     if(!r?.regular)return`<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν αξιόπιστα Regular T4 rows.</div>`;
     const a=r.regular;
-    const rows=(r.merc||[]).map((m,i)=>`<div class="review-card"><strong>Mercenary ${i+1}</strong><div class="card-meta">Total ${Number(m.total).toLocaleString("en-US")} · Kills ${Number(m.kills).toLocaleString("en-US")} · Losses ${Number(m.losses).toLocaleString("en-US")}</div><select data-merc-side="${side}" data-merc-index="${i}"><option value="Unknown">Διάλεξε τύπο</option><option>Bruiser</option><option>Hitman</option><option>Biker</option><option>Vehicle</option></select></div>`).join("");
+    const rows=(r.merc||[]).map((m,i)=>`<div class="review-card"><strong>Mercenary ${i+1}${m.type!=="Unknown"?` → ${m.type} ✓`:""}</strong><div class="card-meta">Total ${Number(m.total).toLocaleString("en-US")} · Kills ${Number(m.kills).toLocaleString("en-US")} · Losses ${Number(m.losses).toLocaleString("en-US")}</div><select data-merc-side="${side}" data-merc-index="${i}"><option value="Unknown">Διάλεξε τύπο</option><option>Bruiser</option><option>Hitman</option><option>Biker</option><option>Vehicle</option></select></div>`).join("");
     return`<div class="rule-box"><strong>${label} — Regular T4</strong><br>Bruiser ${Number(a.Bruiser.total).toLocaleString("en-US")} · Hitman ${Number(a.Hitman.total).toLocaleString("en-US")} · Biker ${Number(a.Biker.total).toLocaleString("en-US")}${a.Vehicle.total?` · Vehicle ${Number(a.Vehicle.total).toLocaleString("en-US")}`:""}</div>${rows||'<div class="card-meta">Δεν βρέθηκαν Mercenary rows.</div>'}`;
   };
   box.innerHTML=one("att","Επιτιθέμενος")+one("def","Αμυνόμενος");
@@ -1137,9 +1157,20 @@ function applyTroopReview(){
     : "Regular + Mercenaries ενώθηκαν στα τελικά troop totals.";
 }
 async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
-  const out=[],
-    att=splitRegularAndMercRows(sideRowsFromBattleDetails(result,"att")),
-    def=splitRegularAndMercRows(sideRowsFromBattleDetails(result,"def"));
+  const out=[],attRows=sideRowsFromBattleDetails(result,"att"),defRows=sideRowsFromBattleDetails(result,"def"),
+    att=splitRegularAndMercRows(attRows),def=splitRegularAndMercRows(defRows);
+
+  const attTypes=await classifyBattleRowsByIcons(dataUrl,attRows,result);
+  const defTypes=await classifyBattleRowsByIcons(dataUrl,defRows,result);
+  const applyTypes=(review,rows,types)=>{
+    if(!review?.merc?.length||!types)return;
+    const start=Math.max(0,rows.length-3-review.merc.length);
+    review.merc.forEach((m,i)=>{
+      const q=types[start+i];
+      if(q&&q.confidence>=.58){m.type=q.type;m.autoConfidence=q.confidence}
+    });
+  };
+  applyTypes(att,attRows,attTypes);applyTypes(def,defRows,defTypes);
 
   currentTroopReview={att,def};
   renderTroopReview();
@@ -1314,195 +1345,85 @@ function chooseValues(primary,fallback,mode,box){
   if(p.length===1)return [p[0].n,0];
   return [0,0];
 }
-function geometryOrder(boxes){
-  // Stable geometric order; exact slot pairing is later reconciled by nearest position.
-  return boxes.map((b,i)=>({...b,_i:i,cx:b.x+b.w/2,cy:b.y+b.h/2}))
-    .sort((a,b)=>a.cy-b.cy||a.cx-b.cx);
-}
-
 
 async function cropUpscaledNatural(dataUrl,b,scale=3){
   const im=await loadDataUrlImage(dataUrl);
-  const padX=Math.max(0,Math.round(b.w*.02)),padY=Math.max(0,Math.round(b.h*.02));
+  const padX=Math.max(2,Math.round(b.w*.025)),padY=Math.max(2,Math.round(b.h*.025));
   const sx=Math.max(0,Math.round(b.x-padX)),sy=Math.max(0,Math.round(b.y-padY));
-  const sw=Math.min(im.naturalWidth-sx,Math.round(b.w+padX*2));
-  const sh=Math.min(im.naturalHeight-sy,Math.round(b.h+padY*2));
-  const c=document.createElement("canvas");
-  c.width=Math.round(sw*scale);c.height=Math.round(sh*scale);
+  const sw=Math.max(1,Math.min(im.naturalWidth-sx,Math.round(b.w+padX*2)));
+  const sh=Math.max(1,Math.min(im.naturalHeight-sy,Math.round(b.h+padY*2)));
+  const c=document.createElement("canvas");c.width=Math.round(sw*scale);c.height=Math.round(sh*scale);
   c.getContext("2d").drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);
-  return c.toDataURL("image/png");
+  return{dataUrl:c.toDataURL("image/png"),width:c.width,height:c.height,scale};
 }
-function parseNaturalPopupText(text,mode){
-  const lines=String(text||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
-  const vals=[];
-  for(const line of lines){
-    const cleaned=line
-      .replace(/[Oo](?=\D*$)/g,"0")
-      .replace(/\.(?=\d{3}\b)/g,",");
-    const nums=[...cleaned.matchAll(/(?<!\d)(\d{1,3}(?:,\d{3})+|\d{1,6})(?!\d)/g)]
-      .map(m=>parseInt(m[1].replace(/,/g,""),10))
-      .filter(Number.isFinite);
-    for(const n of nums)vals.push({n,line});
+function parsePopupWordNumber(text){
+  let raw=String(text||"").trim()
+    .replace(/[Oo]/g,"0")
+    .replace(/\.(?=\d{3}\b)/g,",")
+    .replace(/[^\d,]/g,"");
+  if(!raw)return null;
+  const n=parseInt(raw.replace(/,/g,""),10);
+  return Number.isFinite(n)?n:null;
+}
+function parseNaturalPopupResult(result,mode,imageHeight){
+  const words=result?.data?.words||[],H=Math.max(1,imageHeight||1),nums=[];
+  for(const w of words){
+    const n=parsePopupWordNumber(w.text);if(n==null)continue;
+    const cy=((w.bbox?.y0||0)+(w.bbox?.y1||0))/2;
+    nums.push({n,ry:cy/H,conf:Number(w.confidence??w.conf??0)});
   }
-
-  let activation=vals.find(x=>x.n>=1&&x.n<=20)?.n||1;
-  const big=vals.filter(x=>x.n===0||x.n>20).map(x=>x.n);
-
-  if(mode!=="weapon")return{activation,damage:big[0]||0};
-
-  // Natural OCR on these TGM popups returns rows top->bottom:
-  // activation, damage, shield. Missing rows are treated as 0.
-  let damage=big[0]??0,shield=big[1]??0;
-
-  // If text explicitly contains a final zero row, preserve it as shield=0.
-  if(big.length===1 && /(?:^|\s|:)\s*0\s*$/m.test(String(text||"")))shield=0;
-  return{activation,damage,shield};
+  const pick=(lo,hi,pred)=>nums.filter(x=>x.ry>=lo&&x.ry<hi&&pred(x.n))
+    .sort((a,b)=>b.conf-a.conf)[0]?.n;
+  let activation=pick(0,.42,n=>n>=1&&n<=20);
+  if(activation==null)activation=nums.find(x=>x.n>=1&&x.n<=20)?.n??1;
+  if(mode!=="weapon"){
+    let damage=pick(.28,1,n=>n===0||n>20);
+    if(damage==null)damage=nums.find(x=>x.n===0||x.n>20)?.n??0;
+    return{activation,damage};
+  }
+  let damage=pick(.30,.68,n=>n===0||n>20);
+  let shield=pick(.64,1,n=>n===0||n>20);
+  return{activation,damage:damage??0,shield:shield??0};
 }
 async function ocrPopupNatural(fullResult,dataUrl,b,mode){
   const attempts=[];
   for(const scale of [3,2]){
     const crop=await cropUpscaledNatural(dataUrl,b,scale);
-    const r=await Tesseract.recognize(crop,"eng",{tessedit_pageseg_mode:"6"});
-    attempts.push({raw:r?.data?.text||"",parsed:parseNaturalPopupText(r?.data?.text||"",mode)});
+    const r=await Tesseract.recognize(crop.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
+    const parsed=parseNaturalPopupResult(r,mode,crop.height);
+    let score=(parsed.activation>=1&&parsed.activation<=20)?3:0;
+    if(mode==="weapon"){
+      if(parsed.damage===0||parsed.damage>20)score+=2;
+      if(parsed.shield===0||parsed.shield>20)score+=2;
+    }else if(parsed.damage>20)score+=3;
+    attempts.push({parsed,score});
   }
-
-  const scored=attempts.map(a=>{
-    const p=a.parsed;
-    let score=0;
-    if(p.activation>=1&&p.activation<=20)score+=2;
-    if(p.damage>=0)score+=p.damage>20?3:1;
-    if(mode==="weapon")score+=p.shield>=0?(p.shield>20?3:1):0;
-    return{...a,score};
-  }).sort((a,b)=>b.score-a.score);
-
-  const best=scored[0]?.parsed||{activation:1,damage:0,shield:0};
-
-  // Full-page OCR is only used to repair a clearly missing row.
+  attempts.sort((a,b)=>b.score-a.score);
+  const best={...(attempts[0]?.parsed||{activation:1,damage:0,shield:0})};
   const full=fullBoxNumericTokens(fullResult,b);
-  const rows=full.filter(x=>x.n===0||x.n>20).sort((a,b)=>a.relY-b.relY);
-  if(best.damage===0){
-    const mid=rows.find(x=>x.relY>=.28&&x.relY<.67);
-    if(mid)best.damage=mid.n;
+  if(mode!=="weapon"){
+    if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28);if(x)best.damage=x.n}
+    return best;
   }
-  if(mode==="weapon"&&best.shield===0){
-    const bot=rows.find(x=>x.relY>=.60);
-    if(bot)best.shield=bot.n;
-  }
+  if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.30&&v.relY<.68);if(x)best.damage=x.n}
+  if(!best.shield){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.64);if(x)best.shield=x.n}
   return best;
 }
 
-async function preprocessPopupNumericBox(dataUrl,b,threshold=190){
-  const im=await loadDataUrlImage(dataUrl);
-  const sx=Math.max(0,Math.round(b.x+b.w*.22));
-  const sy=Math.max(0,Math.round(b.y));
-  const sw=Math.max(1,Math.min(im.naturalWidth-sx,Math.round(b.w*.78)));
-  const sh=Math.max(1,Math.min(im.naturalHeight-sy,Math.round(b.h)));
-  const scale=2;
-  const c=document.createElement("canvas");
-  c.width=Math.round(sw*scale);c.height=Math.round(sh*scale);
-  const ctx=c.getContext("2d");
-  ctx.drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);
-  const id=ctx.getImageData(0,0,c.width,c.height),d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const gray=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-    const v=gray>=threshold?255:0;
-    d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
+function geometryOrder(boxes){
+  const a=boxes.map((b,i)=>({...b,_i:i,cx:b.x+b.w/2,cy:b.y+b.h/2}));
+  if(a.length<=1)return a;
+  a.sort((x,y)=>x.cy-y.cy);
+  const medH=[...a].map(x=>x.h).sort((x,y)=>x-y)[Math.floor(a.length/2)]||100;
+  const rows=[];
+  for(const x of a){
+    let row=rows.find(r=>Math.abs(r.cy-x.cy)<=medH*.42);
+    if(!row){row={cy:x.cy,items:[]};rows.push(row)}
+    row.items.push(x);row.cy=row.items.reduce((n,z)=>n+z.cy,0)/row.items.length;
   }
-  ctx.putImageData(id,0,0);
-  return {dataUrl:c.toDataURL("image/png"),scale};
+  rows.sort((x,y)=>x.cy-y.cy);
+  return rows.flatMap(r=>r.items.sort((x,y)=>x.cx-y.cx));
 }
-function popupNumericTokens(result,scale=1){
-  return (result?.data?.words||[]).map(w=>{
-    const raw=String(w.text||"").replace(/[^\d,]/g,"").replace(/,/g,"");
-    if(!/^\d+$/.test(raw))return null;
-    return {
-      n:parseInt(raw,10),
-      cy:((w.bbox.y0+w.bbox.y1)/2)/(result?scale:1),
-      conf:Number(w.confidence??w.conf??0)
-    };
-  }).filter(Boolean);
-}
-function fullBoxNumericTokens(fullResult,b){
-  return (fullResult?.data?.words||[]).map(w=>{
-    const cx=(w.bbox.x0+w.bbox.x1)/2,cy=(w.bbox.y0+w.bbox.y1)/2;
-    if(cx<b.x||cx>b.x+b.w||cy<b.y||cy>b.y+b.h)return null;
-    const raw=String(w.text||"").replace(/[^\d,]/g,"").replace(/,/g,"");
-    if(!/^\d+$/.test(raw))return null;
-    return {n:parseInt(raw,10),relY:(cy-b.y)/Math.max(1,b.h),conf:Number(w.confidence??w.conf??0)};
-  }).filter(Boolean);
-}
-function choosePopupActivation(local,full){
-  const f=full.filter(x=>x.n>=1&&x.n<=20&&x.relY<.42)
-    .sort((a,b)=>b.conf-a.conf);
-  if(f.length)return f[0].n;
-
-  const l=local.filter(x=>x.n>=1&&x.n<=20&&(x.cy<90))
-    .sort((a,b)=>b.conf-a.conf);
-  if(l.length && l[0].conf>=8)return l[0].n;
-
-  // In these reports a missed activation glyph is overwhelmingly "1".
-  // Do not promote a low-confidence icon artifact (often OCR'd as 4/7/9).
-  if(l.length && l[0].n===1)return 1;
-  return 1;
-}
-function choosePopupFields(local,full,b,mode){
-  const localH=Math.max(1,b.h*2);
-  const normLocal=local.map(x=>({...x,relY:x.cy/localH}));
-  const all=[
-    ...full.map(x=>({...x,source:"full"})),
-    ...normLocal.map(x=>({...x,source:"local"}))
-  ];
-
-  const valid=x=>x.n===0||x.n>=100;
-  const middle=all.filter(x=>valid(x)&&x.relY>=.30&&x.relY<.67);
-  const bottom=all.filter(x=>valid(x)&&x.relY>=.62);
-
-  const scorePick=(arr)=>{
-    if(!arr.length)return null;
-    const scores=new Map();
-    for(const x of arr){
-      const weight=(x.source==="full"?4:3)+(x.conf>20?1:0);
-      scores.set(x.n,(scores.get(x.n)||0)+weight);
-    }
-    // Give support to a shorter value when another OCR pass added one stray leading digit.
-    const keys=[...scores.keys()];
-    for(const a of keys)for(const bval of keys){
-      if(a===bval)continue;
-      if(String(bval).endsWith(String(a)) && String(a).length>=2)
-        scores.set(a,(scores.get(a)||0)+1.5);
-    }
-    return [...scores.entries()].sort((a,b)=>b[1]-a[1])[0][0];
-  };
-
-  if(mode!=="weapon"){
-    return {damage:scorePick(middle)??0};
-  }
-
-  let damage=scorePick(middle),shield=scorePick(bottom);
-
-  // If only one non-zero value survived, vertical position tells us which row it belongs to.
-  const nonzero=all.filter(x=>x.n>=100);
-  if((damage==null||damage===0) && (shield==null||shield===0) && nonzero.length){
-    const best=nonzero.sort((a,b)=>(b.source==="full")-(a.source==="full")||b.conf-a.conf)[0];
-    if(best.relY>.62)shield=best.n; else damage=best.n;
-  }
-
-  damage=damage??0;shield=shield??0;
-  return {damage,shield};
-}
-async function ocrPopupIndependently(fullResult,dataUrl,b,mode){
-  const prep=await preprocessPopupNumericBox(dataUrl,b,190);
-  const res=await Tesseract.recognize(prep.dataUrl,"eng",{
-    tessedit_pageseg_mode:"11",
-    tessedit_char_whitelist:"0123456789,"
-  });
-  const local=popupNumericTokens(res,prep.scale);
-  const full=fullBoxNumericTokens(fullResult,b);
-  const activation=choosePopupActivation(local,full);
-  const fields=choosePopupFields(local,full,b,mode);
-  return {activation,...fields};
-}
-
 async function extractCombatPopups(fullResult,dataUrl,mode){
   const boxes=geometryOrder(await detectBeigeBubbles(dataUrl)).slice(0,5);
   if(!boxes.length)return[];
@@ -1523,8 +1444,7 @@ async function extractCombatPopups(fullResult,dataUrl,mode){
 }
 function reconcileCombatSlots(side){
   const e=currentEnforcerReview[side]||[],w=currentWeaponReview[side]||[];
-  e.forEach((x,i)=>x.slot=i+1);
-  w.forEach((x,i)=>x.slot=i+1);
+  e.forEach((x,i)=>x.slot=i+1);w.forEach((x,i)=>x.slot=i+1);
 }
 function detectEnforcerBubbles(){return[]}
 function detectWeaponBubbles(){return[]}
@@ -1651,8 +1571,9 @@ function mergeCombatPage(existing,incoming){
 }
 async function parseEnforcerCombat(result,sourceIndex,side,dataUrl){
   const edge=await readCombatEdgeText(dataUrl);
+  const edgeSide=sideFromEdgeText(edge,"Unknown");
   const pixelSide=await combatSideFromPixels(dataUrl);
-  const detectedSide=pixelSide!=="Unknown"?pixelSide:sideFromEdgeText(edge,side);
+  const detectedSide=edgeSide!=="Unknown"?edgeSide:(pixelSide!=="Unknown"?pixelSide:side);
   const out=identitySuggestionsFromEdgeText(edge,sourceIndex);
   if(detectedSide!=="Attacker"&&detectedSide!=="Defender")return out;
 
@@ -1672,8 +1593,9 @@ async function parseEnforcerCombat(result,sourceIndex,side,dataUrl){
 }
 async function parseWeaponCombat(result,sourceIndex,side,dataUrl){
   const edge=await readCombatEdgeText(dataUrl);
+  const edgeSide=sideFromEdgeText(edge,"Unknown");
   const pixelSide=await combatSideFromPixels(dataUrl);
-  const detectedSide=pixelSide!=="Unknown"?pixelSide:sideFromEdgeText(edge,side);
+  const detectedSide=edgeSide!=="Unknown"?edgeSide:(pixelSide!=="Unknown"?pixelSide:side);
   const out=identitySuggestionsFromEdgeText(edge,sourceIndex);
   if(detectedSide!=="Attacker"&&detectedSide!=="Defender")return out;
 
@@ -2096,254 +2018,6 @@ function mergeOcrSuggestions(items){
   return [...best.values(),...other];
 }
 function renderOcrSuggestions(){const box=$("ocrSuggestions");if(!currentOcrSuggestions.length){box.innerHTML='<div class="card-meta">Δεν βρέθηκαν ακόμη προτάσεις.</div>';return}box.innerHTML=currentOcrSuggestions.map((s,i)=>`<div class="ocr-suggestion"><strong>${esc(s.target)}</strong> → ${esc(String(s.value))}<div class="card-meta">Screenshot ${s.sourceIndex+1} · confidence ${Math.round(s.confidence*100)}%<br>${esc(s.sourceLine)}</div><label><input type="checkbox" data-ocr-apply="${i}" checked> εφαρμογή</label></div>`).join("")}
-
-const V80_WEAPON_CARD_TEMPLATES=[{"name":"M7290 Stun Grenade","v":[-1.1451,0.9261,1.4566,0.3734,-0.3818,-0.9549,-0.9891,-0.758,-0.7526,-0.6321,-0.4229,-0.6432,-0.6277,-0.5454,-0.5109,-1.1451,0.5428,3.6456,0.9061,0.2581,0.4067,0.0658,-0.1072,-0.3494,-0.1902,-0.3812,-0.3064,-0.281,-0.3795,-0.3505,-0.2828,-0.8175,0.7688,1.4973,0.3108,1.2221,1.1348,0.0595,-0.4039,-0.6374,-0.5084,-0.2278,-0.3398,-0.4059,-0.3807,-0.4113,-0.3597,-0.5716,-0.8311,-0.1117,-0.0608,1.4605,0.8218,-0.148,-0.5145,-0.8311,-0.7634,-0.6119,-0.4147,-0.346,-0.3294,-0.3497,-0.3785,-0.5414,-0.4346,-0.0452,0.5603,0.6025,0.0671,-0.1612,-0.4861,-0.5836,-0.6519,-0.4748,-0.3035,-0.171,-0.2212,-0.2602,-0.3117,-0.3177,-0.372,-0.1849,-0.1152,0.1554,0.0632,-0.2666,-0.4104,-0.5148,-0.5434,-0.4258,-0.3327,-0.2583,-0.2037,-0.2473,-0.2458,-0.2161,-0.2924,-0.3267,-0.3025,-0.0815,-0.0155,-0.1309,-0.2967,-0.4095,-0.4584,-0.4295,-0.3766,-0.3061,-0.2374,-0.2261,-0.2168,-0.2178,-0.2078,-0.2457,-0.3127,-0.3456,-0.3172,-0.0623,-0.0822,-0.1641,-0.2916,-0.3768,-0.4142,-0.4188,-0.3956,-0.3492,-0.2959,-0.2545,-0.2187,-0.2248,-0.2263,-0.2364,-0.2749,-0.3261,-0.3523,-0.034,-0.0537,-0.1376,-0.2543,-0.3451,-0.3931,-0.4194,-0.4213,-0.4067,-0.3693,-0.3239,-0.2704,-0.2456,-0.2493,-0.2427,-0.263,-0.2933,-0.3223,0.0393,-0.0279,-0.1014,-0.225,-0.3153,-0.3687,-0.4017,-0.4211,-0.4294,-0.4224,-0.3966,-0.3562,-0.3196,-0.2907,-0.2823,-0.2828,-0.2977,-0.3033,0.1332,0.0161,-0.074,-0.1891,-0.2828,-0.3456,-0.3867,-0.4082,-0.4228,-0.4252,-0.416,-0.3983,-0.3764,-0.3517,-0.3347,-0.3164,-0.307,-0.2859,0.2294,0.0781,-0.039,-0.1564,-0.2592,-0.3296,-0.3773,-0.4021,-0.4188,-0.4274,-0.4263,-0.4226,-0.4188,-0.4127,-0.3947,-0.3595,-0.3238,-0.2654,0.3171,0.1283,-0.0146,-0.1414,-0.245,-0.3157,-0.3639,-0.3901,-0.4074,-0.4188,-0.4238,-0.4233,-0.4229,-0.4198,-0.4112,-0.3917,-0.3603,-0.3019,0.3687,0.1411,-0.0151,-0.1441,-0.2446,-0.3154,-0.358,-0.3814,-0.3948,-0.4027,-0.4054,-0.4064,-0.4104,-0.4152,-0.4158,-0.4054,-0.381,-0.3275]},{"name":"M7290 Stun Grenade","v":[-1.2481,0.9019,1.3541,0.4106,-0.2323,-0.813,-0.8824,-0.7269,-0.7424,-0.5885,-0.3919,-0.5657,-0.5748,-0.4887,-0.4453,-1.2481,0.4874,3.5578,0.9285,0.2447,0.5304,0.2004,0.0519,-0.1794,-0.0711,-0.2938,-0.1793,-0.2129,-0.3422,-0.3117,-0.2246,-0.7557,0.7497,1.4371,0.2793,1.3376,1.2052,0.1705,-0.3117,-0.592,-0.4736,-0.1972,-0.2828,-0.3552,-0.3493,-0.3773,-0.3175,-0.5285,-0.7895,-0.0646,-0.0086,1.5464,0.9538,-0.0355,-0.439,-0.7864,-0.7197,-0.5679,-0.3718,-0.3085,-0.2869,-0.3067,-0.3467,-0.497,-0.3958,0.006,0.6295,0.6804,0.1161,-0.1011,-0.414,-0.5338,-0.6035,-0.432,-0.2533,-0.1109,-0.1684,-0.2054,-0.2611,-0.2657,-0.3145,-0.1347,-0.0582,0.2081,0.1172,-0.2063,-0.3536,-0.4609,-0.4896,-0.3705,-0.2769,-0.204,-0.1528,-0.1979,-0.1974,-0.1654,-0.2427,-0.2729,-0.2438,-0.0279,0.038,-0.0788,-0.2398,-0.353,-0.4068,-0.377,-0.3234,-0.2549,-0.1853,-0.1781,-0.171,-0.1702,-0.163,-0.195,-0.2586,-0.2912,-0.2571,-0.0086,-0.029,-0.113,-0.2417,-0.3279,-0.3661,-0.3674,-0.342,-0.2956,-0.2457,-0.2064,-0.1707,-0.1751,-0.1752,-0.1856,-0.2267,-0.276,-0.2975,0.0186,-0.0014,-0.0846,-0.2004,-0.2919,-0.3405,-0.3684,-0.3717,-0.3568,-0.3181,-0.2706,-0.2151,-0.1909,-0.197,-0.1903,-0.2117,-0.2427,-0.2694,0.0898,0.0223,-0.0517,-0.175,-0.2685,-0.3234,-0.3574,-0.379,-0.3894,-0.384,-0.3567,-0.3151,-0.276,-0.2465,-0.2379,-0.2383,-0.2533,-0.2589,0.185,0.0676,-0.0225,-0.1388,-0.2343,-0.2988,-0.3417,-0.365,-0.3802,-0.383,-0.3739,-0.355,-0.3324,-0.3074,-0.2907,-0.2709,-0.2594,-0.2364,0.2845,0.1325,0.0169,-0.1016,-0.2058,-0.2775,-0.3253,-0.351,-0.3678,-0.3767,-0.3764,-0.372,-0.3674,-0.3617,-0.3421,-0.3044,-0.2662,-0.2054,0.3756,0.1853,0.0458,-0.082,-0.1871,-0.2592,-0.308,-0.334,-0.3511,-0.3618,-0.3659,-0.3656,-0.3653,-0.3621,-0.3528,-0.3318,-0.2993,-0.2389,0.4303,0.2009,0.0446,-0.0835,-0.1846,-0.2552,-0.2984,-0.3218,-0.3355,-0.3432,-0.3452,-0.346,-0.3507,-0.3559,-0.3578,-0.3473,-0.3223,-0.2668]},{"name":"M590 Shotgun","v":[-1.1925,-0.3816,-0.4894,-0.3447,-0.3597,-0.39,-0.3609,-0.2468,-0.0861,-0.087,-0.146,-0.1354,-0.0834,-0.1089,-0.4239,-1.1925,-0.4188,0.6603,-0.0087,-0.1664,-0.0587,-0.1692,-0.1459,-0.0743,-0.0693,-0.0596,-0.0103,0.0451,0.0124,-0.051,-0.2461,-0.6687,0.0144,0.8406,0.4984,0.1015,-0.0166,-0.0829,-0.0635,-0.0786,-0.0306,-0.0105,-0.0007,0.0335,0.0684,0.0339,-0.162,-0.5419,0.2937,0.6157,0.675,0.2641,0.066,-0.0061,-0.0354,-0.0461,-0.0131,-0.0055,-0.0016,-0.0039,0.0313,-0.0281,-0.2331,-0.4936,0.3419,0.3084,0.3862,0.2552,0.0735,-0.0156,-0.0307,-0.0267,-0.0155,-0.0037,0.0156,0.0171,0.0079,-0.0273,-0.1867,-0.4902,0.1658,0.1611,0.2878,0.2576,0.0673,-0.0029,-0.023,-0.0171,-0.0001,0.0122,0.017,0.0115,0.0124,-0.0202,-0.1511,-0.4637,0.1194,0.1151,0.2306,0.2399,0.0837,0.0046,-0.0075,-0.0038,0.0122,0.015,0.0165,0.0123,0.0137,-0.0077,-0.1185,-0.4344,0.1092,0.1065,0.2138,0.2247,0.0954,0.0153,0.0089,0.0136,0.0235,0.025,0.0214,0.015,0.0136,-0.0025,-0.0943,-0.4054,0.1195,0.1227,0.2201,0.2243,0.1075,0.0285,0.0244,0.0264,0.0335,0.0368,0.0357,0.0291,0.0209,-0.001,-0.0807,-0.3825,0.1569,0.1609,0.2389,0.2268,0.1102,0.0377,0.0318,0.0359,0.0435,0.047,0.0466,0.0401,0.0302,0.0056,-0.0722,-0.3634,0.2119,0.2179,0.2714,0.2286,0.1127,0.0408,0.0349,0.0403,0.0485,0.0539,0.0535,0.0486,0.0404,0.014,-0.066,-0.3426,0.2765,0.2853,0.3073,0.2295,0.1144,0.0433,0.0382,0.0442,0.0518,0.0578,0.0583,0.0535,0.0449,0.0189,-0.0608,-0.3222,0.3402,0.3517,0.3394,0.2335,0.1181,0.0488,0.0437,0.0493,0.0574,0.0639,0.0649,0.0606,0.0521,0.0256,-0.0562,-0.3033,0.3919,0.4054,0.3638,0.2414,0.124,0.0555,0.0509,0.0564,0.0646,0.0711,0.0714,0.0666,0.0577,0.0313,-0.0504,-0.2852,0.4223,0.4365,0.3798,0.2517,0.1325,0.0643,0.0593,0.0644,0.0726,0.079,0.0796,0.0754,0.0669,0.0409,-0.0444,-0.2672]},{"name":"M590 Shotgun","v":[-1.2073,-0.4094,-0.463,-0.31,-0.3136,-0.3498,-0.3184,-0.2055,-0.0616,-0.0769,-0.1332,-0.1353,-0.0871,-0.1113,-0.4468,-1.2073,-0.4407,0.6248,0.0355,-0.1228,-0.0245,-0.1418,-0.1205,-0.0416,-0.0443,-0.0542,-0.0041,0.0504,0.0116,-0.0504,-0.2555,-0.6837,0.0084,0.818,0.5122,0.1088,-0.0054,-0.0699,-0.0506,-0.0639,-0.0205,-0.0024,0.0042,0.0387,0.0732,0.0355,-0.1686,-0.5532,0.2855,0.5963,0.6846,0.2701,0.0725,-0.0008,-0.0291,-0.038,-0.0059,0.0016,0.0054,0.0035,0.0369,-0.0246,-0.2384,-0.504,0.3309,0.2895,0.3922,0.2599,0.0805,-0.0099,-0.0247,-0.0206,-0.0087,0.0043,0.0232,0.0223,0.0114,-0.0228,-0.1912,-0.4984,0.1566,0.1463,0.2923,0.2619,0.0737,0.0034,-0.0172,-0.0114,0.0055,0.0177,0.0227,0.0175,0.0178,-0.0156,-0.1551,-0.4728,0.1117,0.1024,0.2355,0.2442,0.0893,0.0106,-0.0011,0.0025,0.0181,0.0208,0.022,0.0174,0.0184,-0.0034,-0.122,-0.4444,0.1008,0.0941,0.2192,0.2283,0.1006,0.0213,0.0152,0.0193,0.029,0.0302,0.0271,0.0202,0.0193,0.001,-0.0978,-0.4154,0.1106,0.1102,0.2253,0.228,0.1128,0.035,0.0308,0.0325,0.0394,0.0423,0.0414,0.034,0.0261,0.0024,-0.0842,-0.3926,0.1488,0.1484,0.244,0.2302,0.1151,0.0445,0.0381,0.0422,0.0494,0.0528,0.0524,0.046,0.037,-0.0003,-0.0759,-0.3735,0.2042,0.2053,0.2766,0.2319,0.1177,0.0475,0.041,0.0464,0.0541,0.0592,0.0589,0.0542,0.046,-0.0028,-0.0698,-0.3528,0.2688,0.2718,0.3117,0.2328,0.1195,0.0501,0.0443,0.0504,0.0575,0.0635,0.064,0.0593,0.0506,0.0026,-0.0646,-0.3324,0.3324,0.3384,0.3433,0.2369,0.1231,0.0556,0.0499,0.0554,0.0631,0.0697,0.0706,0.0664,0.058,0.0101,-0.06,-0.3135,0.384,0.3923,0.3676,0.2447,0.1292,0.0622,0.057,0.0625,0.0703,0.0768,0.0773,0.0728,0.0641,0.0165,-0.0542,-0.2955,0.4145,0.4245,0.3835,0.255,0.1378,0.071,0.0654,0.0705,0.0784,0.0847,0.0855,0.0813,0.0727,0.0262,-0.0483,-0.2775]},{"name":"AN-94 Assault Rifle","v":[-0.9051,0.6695,0.9084,0.1219,-0.5335,-0.7843,-0.5612,-0.1847,-0.1329,-0.0041,0.0414,0.0126,-0.0566,-0.1394,-0.3275,-0.9051,-0.3055,1.8825,0.6484,-0.0728,0.0628,-0.2961,-0.2401,-0.0772,0.0174,0.0358,0.0245,0.0633,0.0591,-0.049,-0.2257,-0.629,0.1828,1.0407,1.202,0.4043,0.1217,-0.0969,-0.1416,-0.0212,0.0637,0.0791,0.0527,0.0482,0.0669,0.025,-0.1082,-0.5229,0.4082,0.4815,0.7971,0.4413,0.1361,-0.0531,-0.0774,-0.0089,0.0544,0.0756,0.0692,0.0575,0.0559,0.031,-0.0766,-0.4679,0.3609,0.3021,0.5191,0.3984,0.1366,-0.0228,-0.0528,-0.0105,0.0474,0.0696,0.0674,0.0614,0.0553,0.0312,-0.0602,-0.4289,0.2738,0.2397,0.4286,0.3716,0.1435,0.0008,-0.0301,-0.002,0.0452,0.0611,0.0597,0.0552,0.0503,0.0285,-0.0503,-0.3971,0.2266,0.2103,0.3867,0.3523,0.1505,0.0202,-0.0138,0.0057,0.047,0.0585,0.0567,0.0527,0.048,0.0293,-0.0448,-0.3672,0.2079,0.2034,0.3672,0.3379,0.1554,0.0344,-0.001,0.0149,0.0525,0.0612,0.0587,0.0545,0.0495,0.0302,-0.0406,-0.3394,0.2108,0.2125,0.364,0.3286,0.1576,0.0429,0.0058,0.0224,0.0587,0.0666,0.064,0.0598,0.0544,0.0337,-0.0374,-0.3172,0.2304,0.2315,0.372,0.3222,0.1591,0.0484,0.0112,0.0278,0.0638,0.0717,0.0694,0.0647,0.0592,0.0391,-0.0349,-0.2984,0.2611,0.2602,0.3845,0.322,0.1619,0.0529,0.0163,0.0325,0.0676,0.0757,0.0736,0.0692,0.0642,0.0444,-0.0326,-0.2805,0.2956,0.2927,0.3976,0.3257,0.1664,0.0582,0.0223,0.0377,0.0726,0.0808,0.079,0.0747,0.0698,0.0505,-0.0299,-0.2638,0.3241,0.3187,0.4084,0.3329,0.1726,0.0651,0.0294,0.0447,0.0797,0.0876,0.0857,0.0814,0.0767,0.0572,-0.0269,-0.2475,0.3418,0.3355,0.414,0.3417,0.1794,0.0723,0.0365,0.0519,0.0871,0.0944,0.0928,0.0887,0.0843,0.0644,-0.0235,-0.2312,0.3466,0.3399,0.4126,0.3518,0.1875,0.0804,0.0447,0.0601,0.0954,0.1022,0.1007,0.0967,0.0928,0.073,-0.0196,-0.2147]},{"name":"AN-94 Assault Rifle","v":[-0.9234,0.6558,0.9144,0.1431,-0.5122,-0.7688,-0.5498,-0.1813,-0.1287,-0.0028,0.0424,0.014,-0.0533,-0.1334,-0.3248,-0.9234,-0.3167,1.8653,0.6642,-0.0576,0.0807,-0.2794,-0.2237,-0.0623,0.0315,0.0497,0.0385,0.0774,0.0733,-0.0359,-0.2159,-0.6262,0.1732,1.0282,1.2132,0.4161,0.1359,-0.0828,-0.1267,-0.0066,0.0777,0.0931,0.0669,0.0624,0.0813,0.0393,-0.0954,-0.518,0.3978,0.4703,0.8067,0.4507,0.1491,-0.0404,-0.0646,0.004,0.0676,0.0891,0.0828,0.071,0.0695,0.0446,-0.0635,-0.4629,0.3514,0.292,0.5271,0.4063,0.1489,-0.0108,-0.0407,0.002,0.0605,0.0829,0.0809,0.075,0.0689,0.0446,-0.047,-0.4237,0.2651,0.2305,0.4359,0.379,0.1555,0.0134,-0.0175,0.0107,0.0583,0.0747,0.0734,0.0691,0.0642,0.0418,-0.0372,-0.3918,0.2181,0.2013,0.3943,0.3596,0.1628,0.0324,-0.0012,0.0185,0.0602,0.0722,0.0705,0.0666,0.0619,0.0427,-0.0316,-0.3618,0.1994,0.1944,0.3748,0.3452,0.1678,0.0462,0.0117,0.0277,0.0658,0.0749,0.0722,0.0684,0.0637,0.0436,-0.0274,-0.3339,0.2021,0.2038,0.3712,0.3358,0.1701,0.0546,0.0185,0.0352,0.072,0.0804,0.0776,0.0736,0.0686,0.0471,-0.0243,-0.3117,0.2213,0.2226,0.3793,0.3295,0.1715,0.0601,0.0239,0.0407,0.0771,0.0854,0.0829,0.0785,0.0735,0.0525,-0.0217,-0.2928,0.2517,0.2508,0.3918,0.3292,0.1743,0.0645,0.029,0.0453,0.0809,0.0895,0.087,0.0829,0.0785,0.0577,-0.0194,-0.2748,0.286,0.283,0.4049,0.3328,0.1787,0.0698,0.035,0.0505,0.0859,0.0946,0.0924,0.0884,0.084,0.0637,-0.0168,-0.258,0.3142,0.3087,0.4157,0.3399,0.1848,0.0767,0.0421,0.0575,0.093,0.1015,0.0992,0.0952,0.0911,0.0703,-0.0137,-0.2415,0.3317,0.3256,0.4213,0.3487,0.1916,0.0839,0.0492,0.0647,0.1003,0.1084,0.1065,0.1025,0.0986,0.0774,-0.0104,-0.2252,0.3364,0.3304,0.42,0.3588,0.1996,0.092,0.0574,0.0729,0.1086,0.1162,0.1143,0.1104,0.1065,0.0858,-0.0067,-0.2088]},{"name":"RK 95 TP Assault Rifle","v":[-0.787,0.3572,0.5298,0.0588,-0.2454,-0.4398,-0.3342,-0.1408,-0.0278,0.0234,0.0374,0.004,-0.0436,-0.0841,-0.207,-0.787,-0.2653,1.2789,0.5964,0.0848,0.1449,-0.0659,-0.0703,-0.0102,0.0406,0.0567,0.0507,0.0678,0.0614,0.0039,-0.1377,-0.4636,0.0877,0.7942,0.9012,0.3701,0.1537,0.0104,-0.0316,0.0197,0.0605,0.0707,0.0608,0.056,0.0658,0.0365,-0.071,-0.3921,0.2246,0.414,0.6516,0.3825,0.1641,0.0329,0.0047,0.0223,0.0529,0.0661,0.0612,0.0541,0.0509,0.0278,-0.0523,-0.3489,0.2249,0.257,0.4664,0.3537,0.1645,0.0524,0.0207,0.025,0.049,0.0615,0.0595,0.0543,0.0496,0.0293,-0.042,-0.3174,0.1874,0.1962,0.3867,0.3265,0.1693,0.0674,0.0338,0.0318,0.049,0.0595,0.0568,0.052,0.0474,0.0294,-0.0346,-0.2912,0.1643,0.1675,0.3471,0.307,0.1748,0.0797,0.0451,0.0401,0.053,0.0608,0.058,0.0535,0.0492,0.0313,-0.0292,-0.267,0.1573,0.1594,0.3293,0.2946,0.1783,0.0883,0.0526,0.0464,0.0584,0.065,0.0624,0.058,0.0536,0.0341,-0.0256,-0.2443,0.1624,0.1635,0.3266,0.2883,0.1801,0.0934,0.0578,0.0509,0.0628,0.0693,0.0669,0.0624,0.058,0.0385,-0.0228,-0.226,0.1749,0.175,0.3319,0.2862,0.1821,0.097,0.0618,0.0546,0.0662,0.0727,0.0705,0.066,0.0616,0.0425,-0.0208,-0.2104,0.1918,0.1912,0.3404,0.2874,0.1847,0.1006,0.0656,0.0584,0.0697,0.0763,0.0741,0.0696,0.0653,0.0463,-0.0189,-0.1958,0.2106,0.2094,0.3488,0.2908,0.1884,0.1048,0.0701,0.0628,0.0741,0.0808,0.0787,0.0741,0.0699,0.0505,-0.017,-0.1818,0.2278,0.2257,0.3563,0.2953,0.193,0.1102,0.0755,0.0681,0.0793,0.0859,0.0838,0.0793,0.075,0.0558,-0.0148,-0.1682,0.2403,0.2374,0.3617,0.3012,0.1987,0.1166,0.0819,0.0745,0.0857,0.0923,0.0902,0.0856,0.0814,0.0622,-0.0123,-0.1545,0.2451,0.2419,0.3631,0.3077,0.2052,0.1237,0.0891,0.0817,0.0928,0.0993,0.0973,0.0928,0.0886,0.0694,-0.0096,-0.1408]},{"name":"RK 95 TP Assault Rifle","v":[-0.8712,0.3878,0.5766,0.0501,-0.2936,-0.5168,-0.4027,-0.1777,-0.0325,0.0304,0.0456,0.0121,-0.0446,-0.0947,-0.2285,-0.8712,-0.2786,1.3568,0.6427,0.0854,0.1548,-0.0801,-0.0866,-0.0183,0.0452,0.0641,0.0578,0.0767,0.0703,0.006,-0.1497,-0.5044,0.0831,0.8296,0.9477,0.3898,0.1636,0.0105,-0.036,0.023,0.0687,0.0797,0.069,0.0641,0.0748,0.0421,-0.0784,-0.4266,0.2329,0.4301,0.6848,0.4034,0.1764,0.0356,0.0051,0.0261,0.0604,0.0749,0.0697,0.0621,0.0586,0.0323,-0.0579,-0.3816,0.2335,0.267,0.4903,0.3728,0.1771,0.056,0.0226,0.0282,0.0561,0.0701,0.0681,0.0626,0.0576,0.0341,-0.0468,-0.3492,0.1951,0.2043,0.4078,0.3446,0.1825,0.0722,0.0367,0.0359,0.0563,0.0679,0.0652,0.0601,0.0554,0.0345,-0.0384,-0.3226,0.1715,0.1746,0.3655,0.3239,0.1882,0.0848,0.0482,0.0446,0.0608,0.0691,0.0663,0.0614,0.0569,0.0368,-0.033,-0.2981,0.1648,0.1665,0.3462,0.311,0.1917,0.0936,0.0559,0.051,0.0661,0.0734,0.0707,0.0657,0.0611,0.0394,-0.0293,-0.2751,0.1701,0.1704,0.3431,0.3044,0.1936,0.0988,0.0612,0.0557,0.0704,0.0777,0.0753,0.0703,0.0657,0.0438,-0.0264,-0.2566,0.1831,0.1827,0.3485,0.3021,0.1956,0.1025,0.0652,0.0595,0.0738,0.0811,0.0787,0.0737,0.0692,0.0477,-0.0243,-0.2408,0.2005,0.1996,0.3571,0.3033,0.1982,0.1062,0.069,0.0633,0.0773,0.0846,0.0823,0.0773,0.0728,0.0515,-0.0224,-0.226,0.2196,0.2178,0.3656,0.3067,0.2019,0.1105,0.0735,0.0678,0.0817,0.0891,0.0868,0.0818,0.0773,0.0558,-0.0205,-0.2118,0.2371,0.2344,0.3731,0.3113,0.2065,0.1161,0.0791,0.0733,0.0869,0.0943,0.0921,0.087,0.0826,0.0612,-0.0183,-0.198,0.2498,0.2465,0.3785,0.3172,0.2122,0.1226,0.0856,0.0798,0.0933,0.1007,0.0985,0.0934,0.089,0.0676,-0.0157,-0.1842,0.2548,0.2513,0.38,0.3237,0.2187,0.1298,0.0929,0.0871,0.1004,0.1077,0.1055,0.1004,0.096,0.0749,-0.013,-0.1703]},{"name":"SA80 Assault Rifle","v":[-0.8951,0.5805,0.7382,0.1196,-0.4533,-0.6947,-0.5295,-0.2277,-0.0777,0.0034,0.0293,-0.0007,-0.0559,-0.1165,-0.2936,-0.8951,-0.3131,1.7284,0.6367,0.0314,0.1094,-0.1744,-0.1703,-0.0633,0.029,0.0524,0.0442,0.0754,0.0694,-0.0139,-0.194,-0.5784,0.1323,0.9714,1.1023,0.3945,0.1498,-0.0432,-0.0833,0.002,0.0615,0.0745,0.063,0.0588,0.0709,0.0357,-0.0936,-0.4792,0.3269,0.4466,0.7394,0.4127,0.1558,-0.0183,-0.0464,0.0068,0.0574,0.073,0.0673,0.0587,0.0566,0.0297,-0.0668,-0.424,0.3092,0.2843,0.4922,0.3814,0.1571,0.014,-0.0188,0.0046,0.0526,0.0679,0.0648,0.0577,0.0528,0.0295,-0.0519,-0.3856,0.2477,0.2238,0.4125,0.3512,0.1636,0.0394,0.0011,0.0146,0.0517,0.0639,0.0607,0.0551,0.0499,0.0284,-0.0416,-0.3546,0.2132,0.1999,0.3743,0.3311,0.1702,0.0581,0.0168,0.0256,0.0541,0.0645,0.0613,0.0562,0.0513,0.0299,-0.0345,-0.3258,0.1996,0.1955,0.3578,0.3183,0.1747,0.0715,0.0274,0.0342,0.059,0.0687,0.0657,0.0607,0.0558,0.0321,-0.0293,-0.2989,0.2016,0.2029,0.355,0.3118,0.1769,0.0794,0.0335,0.0393,0.0644,0.0736,0.0707,0.0655,0.0606,0.0361,-0.0258,-0.2774,0.2176,0.2186,0.3606,0.3095,0.1791,0.0847,0.0377,0.0431,0.0687,0.0778,0.075,0.0698,0.0649,0.0398,-0.0233,-0.2591,0.2426,0.2417,0.3697,0.3099,0.182,0.0889,0.0418,0.0469,0.0722,0.0815,0.0788,0.0738,0.0693,0.0439,-0.021,-0.2418,0.2711,0.2682,0.3793,0.3134,0.1864,0.0939,0.0469,0.0518,0.0771,0.0864,0.0836,0.0786,0.0741,0.0485,-0.0185,-0.2256,0.2945,0.2897,0.3872,0.3194,0.1919,0.0999,0.0531,0.0579,0.0833,0.0926,0.0898,0.0849,0.0805,0.0543,-0.0157,-0.2098,0.3092,0.3036,0.3914,0.3264,0.1985,0.1066,0.0599,0.0647,0.0901,0.0993,0.0966,0.0917,0.0874,0.061,-0.0125,-0.194]},{"name":"SA80 Assault Rifle","v":[-0.9079,0.5752,0.7525,0.138,-0.4346,-0.6774,-0.5174,-0.2237,-0.0733,0.0064,0.0316,0.002,-0.052,-0.1094,-0.2903,-0.9079,-0.3226,1.7164,0.6512,0.0456,0.1255,-0.1592,-0.1554,-0.0496,0.0418,0.0653,0.0571,0.0884,0.0825,-0.0017,-0.1849,-0.5761,0.124,0.9631,1.1127,0.405,0.1625,-0.0308,-0.0703,0.0148,0.0744,0.0875,0.0762,0.0721,0.0844,0.0491,-0.0816,-0.4749,0.3177,0.4367,0.7481,0.4213,0.1677,-0.0066,-0.0346,0.0186,0.0694,0.0852,0.0796,0.071,0.0689,0.0419,-0.0545,-0.4196,0.3007,0.2752,0.4995,0.3888,0.1687,0.0256,-0.0071,0.0164,0.0644,0.0798,0.0768,0.0698,0.0649,0.0417,-0.0394,-0.3815,0.2395,0.2151,0.4196,0.3581,0.1752,0.0509,0.0128,0.0264,0.0635,0.0759,0.0728,0.0673,0.0621,0.0406,-0.0292,-0.3506,0.2052,0.1913,0.3814,0.3381,0.1818,0.0695,0.0284,0.0374,0.0659,0.0766,0.0735,0.0684,0.0635,0.042,-0.0221,-0.3218,0.1915,0.1871,0.3647,0.3253,0.1863,0.0829,0.039,0.046,0.0708,0.0808,0.0778,0.0728,0.0679,0.0442,-0.0169,-0.2949,0.1934,0.1943,0.3618,0.3187,0.1885,0.0908,0.0451,0.0511,0.0761,0.0858,0.0829,0.0776,0.0728,0.0482,-0.0134,-0.2734,0.2094,0.2101,0.3674,0.3164,0.1907,0.0961,0.0493,0.0549,0.0804,0.09,0.0872,0.082,0.0771,0.0519,-0.0109,-0.2551,0.2343,0.2334,0.3765,0.3167,0.1936,0.1003,0.0534,0.0587,0.0839,0.0937,0.0909,0.0859,0.0815,0.056,-0.0086,-0.2378,0.2626,0.2596,0.3861,0.3203,0.198,0.1053,0.0585,0.0636,0.0888,0.0986,0.0958,0.0908,0.0863,0.0606,-0.006,-0.2215,0.2858,0.2809,0.394,0.3263,0.2035,0.1113,0.0647,0.0697,0.095,0.1048,0.102,0.097,0.0926,0.0664,-0.0033,-0.2057,0.3004,0.2947,0.3981,0.3333,0.2101,0.118,0.0715,0.0765,0.1018,0.1115,0.1087,0.1037,0.0994,0.0731,-0.0002,-0.19]}];
-
-function v80Cosine(a,b){
-  let dot=0,aa=0,bb=0;
-  for(let i=0;i<Math.min(a.length,b.length);i++){dot+=a[i]*b[i];aa+=a[i]*a[i];bb+=b[i]*b[i]}
-  return dot/(Math.sqrt(aa*bb)+1e-9);
-}
-function v80GeometryRows(items,tol=80){
-  const rows=[];
-  for(const b of [...items].sort((a,b)=>a.cy-b.cy)){
-    let best=null;
-    for(const r of rows){
-      const y=r.reduce((n,x)=>n+x.cy,0)/r.length;
-      if(Math.abs(y-b.cy)<tol){best=r;break}
-    }
-    if(best)best.push(b); else rows.push([b]);
-  }
-  const out=[];
-  rows.sort((a,b)=>(a.reduce((n,x)=>n+x.cy,0)/a.length)-(b.reduce((n,x)=>n+x.cy,0)/b.length));
-  rows.forEach(r=>out.push(...r.sort((a,b)=>a.cx-b.cx)));
-  return out;
-}
-async function combatSideFromPixels(dataUrl){
-  const im=await loadDataUrlImage(dataUrl),W=im.naturalWidth,H=im.naturalHeight;
-  const c=document.createElement("canvas"),maxW=500,scale=Math.min(1,maxW/W);
-  c.width=Math.round(W*scale);c.height=Math.round(H*scale);
-  const ctx=c.getContext("2d");ctx.drawImage(im,0,0,c.width,c.height);
-  const d=ctx.getImageData(0,0,c.width,c.height).data;
-  let rsum=0,bsum=0,n=0;
-  const x0=Math.floor(c.width*.05),x1=Math.floor(c.width*.95);
-  const y0=Math.floor(c.height*.10),y1=Math.floor(c.height*.78);
-  for(let y=y0;y<y1;y+=2)for(let x=x0;x<x1;x+=2){
-    const i=(y*c.width+x)*4,r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
-    if(mx<25||mx>180||mx-mn<10)continue;
-    rsum+=r;bsum+=b;n++;
-  }
-  if(!n)return"Unknown";
-  const delta=(rsum-bsum)/n;
-  if(delta>10)return"Attacker";
-  if(delta<-4)return"Defender";
-  return"Unknown";
-}
-async function detectBeigeBubbles(dataUrl){
-  const im=await loadDataUrlImage(dataUrl);
-  const maxW=660,scale=Math.min(1,maxW/im.naturalWidth);
-  const W=Math.round(im.naturalWidth*scale),H=Math.round(im.naturalHeight*scale);
-  const c=document.createElement("canvas");c.width=W;c.height=H;
-  const ctx=c.getContext("2d");ctx.drawImage(im,0,0,W,H);
-  const img=ctx.getImageData(0,0,W,H),d=img.data,N=W*H;
-  const mask=new Uint8Array(N),seen=new Uint8Array(N),queue=new Int32Array(N);
-  for(let p=0;p<N;p++){
-    const i=p*4,[h,sat,val]=rgbToHsv255(d[i],d[i+1],d[i+2]);
-    if(h>=8&&h<=78&&sat>=8&&sat<=180&&val>=112)mask[p]=1;
-  }
-  const comps=[];
-  for(let p=0;p<N;p++){
-    if(!mask[p]||seen[p])continue;
-    let qh=0,qt=0;queue[qt++]=p;seen[p]=1;
-    let minX=W,maxX=0,minY=H,maxY=0,area=0;
-    while(qh<qt){
-      const z=queue[qh++],x=z%W,y=(z/W)|0;area++;
-      if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
-      if(x>0){const z2=z-1;if(mask[z2]&&!seen[z2]){seen[z2]=1;queue[qt++]=z2}}
-      if(x<W-1){const z2=z+1;if(mask[z2]&&!seen[z2]){seen[z2]=1;queue[qt++]=z2}}
-      if(y>0){const z2=z-W;if(mask[z2]&&!seen[z2]){seen[z2]=1;queue[qt++]=z2}}
-      if(y<H-1){const z2=z+W;if(mask[z2]&&!seen[z2]){seen[z2]=1;queue[qt++]=z2}}
-    }
-    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H;
-    if(area>3500 && wr>=.10&&wr<=.30&&hr>=.04&&hr<=.30){
-      comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale),
-        cx:(minX+bw/2)/scale,cy:(minY+bh/2)/scale});
-    }
-  }
-  return v80GeometryRows(comps,80).slice(0,5);
-}
-async function v80CropScaled(dataUrl,b,scale=4){
-  const im=await loadDataUrlImage(dataUrl),c=document.createElement("canvas");
-  c.width=Math.round(b.w*scale);c.height=Math.round(b.h*scale);
-  c.getContext("2d").drawImage(im,b.x,b.y,b.w,b.h,0,0,c.width,c.height);
-  return {dataUrl:c.toDataURL("image/png"),scale};
-}
-function v80ParseWords(result,boxH,scale){
-  const vals=[];
-  for(const w of result?.data?.words||[]){
-    let t=String(w.text||"").replace(/[Oo]/g,"0").replace(/(\d)\.(?=\d{3}\b)/g,"$1,");
-    for(const m of t.matchAll(/\d[\d,]*/g)){
-      const n=parseInt(m[0].replace(/,/g,""),10);
-      if(!Number.isFinite(n))continue;
-      vals.push({n,conf:Number(w.confidence??w.conf??0),relY:((w.bbox.y0+w.bbox.y1)/2)/(boxH*scale)});
-    }
-  }
-  return vals;
-}
-async function v80TightActivation(dataUrl,b){
-  const im=await loadDataUrlImage(dataUrl);
-  const x=b.x+b.w*.28,y=b.y+b.h*.18,w=b.w*.30,h=b.h*.42,scale=8;
-  const c=document.createElement("canvas");c.width=Math.round(w*scale);c.height=Math.round(h*scale);
-  c.getContext("2d").drawImage(im,x,y,w,h,0,0,c.width,c.height);
-  const attempts=[];
-  for(const psm of ["13","7","10"]){
-    try{
-      const r=await Tesseract.recognize(c.toDataURL("image/png"),"eng",{tessedit_pageseg_mode:psm,tessedit_char_whitelist:"0123456789"});
-      for(const m of String(r?.data?.text||"").matchAll(/\d+/g)){
-        const n=+m[0];if(n>=1&&n<=20)attempts.push(n);
-      }
-    }catch(e){}
-  }
-  if(!attempts.length)return null;
-  const count={};attempts.forEach(n=>count[n]=(count[n]||0)+1);
-  return +Object.entries(count).sort((a,b)=>b[1]-a[1])[0][0];
-}
-async function v80FocusedDamage(dataUrl,b){
-  const im=await loadDataUrlImage(dataUrl);
-  const x=b.x+b.w*.30,y=b.y+b.h*.45,w=b.w*.65,h=b.h*.50,scale=8;
-  const c=document.createElement("canvas");c.width=Math.round(w*scale);c.height=Math.round(h*scale);
-  c.getContext("2d").drawImage(im,x,y,w,h,0,0,c.width,c.height);
-  try{
-    const r=await Tesseract.recognize(c.toDataURL("image/png"),"eng",{tessedit_pageseg_mode:"13"});
-    const text=String(r?.data?.text||"").replace(/(\d)\.(?=\d{3}\b)/g,"$1,");
-    const nums=[...text.matchAll(/\d{1,3}(?:[,.]\d{3})+|\d{3,6}/g)]
-      .map(m=>parseInt(m[0].replace(/[,.]/g,""),10)).filter(n=>n>=100);
-    return nums[0]||0;
-  }catch(e){return 0}
-}
-async function ocrPopupNatural(fullResult,dataUrl,b,mode){
-  const prep=await v80CropScaled(dataUrl,b,4);
-  const r=await Tesseract.recognize(prep.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
-  const vals=v80ParseWords(r,b.h,4);
-  let act=vals.filter(x=>x.n>=1&&x.n<=20&&x.relY<.50).sort((a,b)=>b.conf-a.conf)[0]?.n||null;
-  if(!act)act=await v80TightActivation(dataUrl,b);
-  if(!act)act=1;
-
-  const big=vals.filter(x=>x.n===0||x.n>=100);
-  if(mode==="weapon"){
-    const mid=big.filter(x=>x.relY>=.28&&x.relY<.67).sort((a,b)=>b.conf-a.conf);
-    const bot=big.filter(x=>x.relY>=.62).sort((a,b)=>b.conf-a.conf);
-    return {activation:act,damage:mid[0]?.n||0,shield:bot[0]?.n||0};
-  }
-  let dmg=big.filter(x=>x.relY>=.45).sort((a,b)=>b.conf-a.conf)[0]?.n||0;
-  if(!dmg)dmg=await v80FocusedDamage(dataUrl,b);
-  return {activation:act,damage:dmg};
-}
-async function detectCombatCards(dataUrl){
-  const im=await loadDataUrlImage(dataUrl),maxW=660,scale=Math.min(1,maxW/im.naturalWidth);
-  const W=Math.round(im.naturalWidth*scale),H=Math.round(im.naturalHeight*scale);
-  const c=document.createElement("canvas");c.width=W;c.height=H;
-  const ctx=c.getContext("2d");ctx.drawImage(im,0,0,W,H);
-  const d=ctx.getImageData(0,0,W,H).data,N=W*H,mask=new Uint8Array(N),seen=new Uint8Array(N),q=new Int32Array(N);
-  for(let p=0;p<N;p++){
-    const i=p*4,[h,sat,val]=rgbToHsv255(d[i],d[i+1],d[i+2]);
-    if(sat>=60&&val>=45)mask[p]=1;
-  }
-  const comps=[];
-  for(let p=0;p<N;p++){
-    if(!mask[p]||seen[p])continue;
-    let qh=0,qt=0;q[qt++]=p;seen[p]=1;let minX=W,maxX=0,minY=H,maxY=0,area=0;
-    while(qh<qt){
-      const z=q[qh++],x=z%W,y=(z/W)|0;area++;
-      minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
-      if(x>0){let n=z-1;if(mask[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(x<W-1){let n=z+1;if(mask[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(y>0){let n=z-W;if(mask[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(y<H-1){let n=z+W;if(mask[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-    }
-    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H;
-    if(area>1100&&wr>=.07&&wr<=.18&&hr>=.055&&hr<=.19){
-      comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,cx:(minX+bw/2)/scale,cy:(minY+bh/2)/scale,area:area/(scale*scale)});
-    }
-  }
-  // Merge duplicate colored components belonging to one card.
-  const clusters=[];
-  for(const b of comps.sort((a,b)=>b.area-a.area)){
-    const hit=clusters.find(c=>Math.abs(c.cx-b.cx)<80&&Math.abs(c.cy-b.cy)<80);
-    if(!hit)clusters.push({...b});
-    else if(b.area>hit.area)Object.assign(hit,b);
-  }
-  return v80GeometryRows(clusters,85).slice(0,5);
-}
-async function v80CardFeature(dataUrl,card){
-  const im=await loadDataUrlImage(dataUrl),N=16;
-  const x=card.x+card.w*.05,y=card.y+card.h*.28,w=card.w*.90,h=card.h*.46;
-  const c=document.createElement("canvas");c.width=N;c.height=N;
-  c.getContext("2d").drawImage(im,x,y,w,h,0,0,N,N);
-  const d=c.getContext("2d").getImageData(0,0,N,N).data,g=new Float32Array(N*N);
-  for(let i=0;i<N*N;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
-  const v=[];
-  for(let yy=0;yy<N;yy++)for(let xx=0;xx<N;xx++){
-    const l=g[yy*N+Math.max(0,xx-1)],r=g[yy*N+Math.min(N-1,xx+1)];
-    const u=g[Math.max(0,yy-1)*N+xx],dn=g[Math.min(N-1,yy+1)*N+xx];
-    v.push(Math.hypot((r-l)/2,(dn-u)/2));
-  }
-  const mean=v.reduce((a,b)=>a+b,0)/v.length;
-  const sd=Math.sqrt(v.reduce((a,b)=>a+(b-mean)*(b-mean),0)/v.length)+1e-6;
-  return v.map(x=>(x-mean)/sd);
-}
-async function recognizeWeaponCard(dataUrl,card){
-  const f=await v80CardFeature(dataUrl,card);
-  let best={name:"",score:-1};
-  for(const t of V80_WEAPON_CARD_TEMPLATES){
-    const sc=v80Cosine(f,t.v);
-    if(sc>best.score)best={name:t.name,score:sc};
-  }
-  return best.score>=.90?best:{name:"",score:best.score};
-}
-function v80AssociatePopupsToCards(popups,cards){
-  const used=new Set(),pairs=[];
-  for(const p of popups){
-    let best=-1,bestScore=1e18;
-    for(let i=0;i<cards.length;i++){
-      if(used.has(i))continue;
-      const c=cards[i],dy=Math.abs(c.cy-p.cy),dx=Math.abs(c.cx-p.cx);
-      const score=Math.hypot(dx,dy)+(dy>105?450:0);
-      if(score<bestScore){bestScore=score;best=i}
-    }
-    if(best>=0){used.add(best);pairs.push({popup:p,card:cards[best]})}
-  }
-  return pairs;
-}
-async function extractCombatPopups(fullResult,dataUrl,mode){
-  const popups=(await detectBeigeBubbles(dataUrl)).slice(0,5);
-  if(!popups.length)return[];
-  if(mode!=="weapon"){
-    const ordered=v80GeometryRows(popups,80);
-    const items=[];
-    for(const b of ordered){
-      const parsed=await ocrPopupNatural(fullResult,dataUrl,b,"enforcer");
-      items.push({slot:items.length+1,activation:parsed.activation||0,damage:parsed.damage||0,weapon:"",gx:b.cx,gy:b.cy});
-    }
-    return items;
-  }
-
-  const cards=await detectCombatCards(dataUrl);
-  const pairs=v80AssociatePopupsToCards(popups,cards);
-  // Slot order follows the weapon-card grid, which is the same grid as the Enforcer portraits.
-  const orderedCards=v80GeometryRows(cards,85);
-  const items=[];
-  for(const card of orderedCards){
-    const pair=pairs.find(x=>x.card===card)||pairs.find(x=>Math.abs(x.card.cx-card.cx)<5&&Math.abs(x.card.cy-card.cy)<5);
-    if(!pair)continue;
-    const parsed=await ocrPopupNatural(fullResult,dataUrl,pair.popup,"weapon");
-    const rec=await recognizeWeaponCard(dataUrl,card);
-    items.push({slot:items.length+1,activation:parsed.activation||0,damage:parsed.damage||0,shield:parsed.shield||0,
-      weapon:rec.name||"",weaponConfidence:rec.score||0,gx:card.cx,gy:card.cy});
-  }
-  return items.slice(0,5);
-}
-
 async function runOcrImport(){
   if(!currentScreenshots.length){$("ocrStatus").textContent="Πρόσθεσε πρώτα screenshots.";return}
   if(typeof Tesseract==="undefined"){
@@ -2411,7 +2085,7 @@ async function runOcrImport(){
   currentOcrSuggestions=mergeOcrSuggestions(currentOcrSuggestions);
   renderOcrSuggestions();
   applyOcrSuggestions(true);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v7.5 κρατά τον red/blue combat parser και προσθέτει robust OCR loading με fallback CDN και retry.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. Βρέθηκαν και εφαρμόστηκαν ${currentOcrSuggestions.length} πεδία από όλο το report. Η v8.0 χρησιμοποιεί deterministic TGM report parsing, tested combat popup OCR και automatic mercenary aggregation.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
