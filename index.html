@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v11.1</title>
+  <title>TGM Battle Intelligence v11.2</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -118,10 +118,16 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 .smart-import-card{padding:12px;border:1px solid var(--line);border-radius:14px;background:#0b1323}
 .smart-import-card strong{display:block;margin-bottom:4px}
 .smart-ok{color:#86efac}.smart-warn{color:#facc15}.smart-bad{color:#f87171}.package-hint{margin-top:10px;padding:10px;border-radius:10px;background:#101827;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+
+.weapon-review-card{padding:8px 10px;margin-top:6px}
+.weapon-review-card select{padding:8px;margin-top:5px;font-size:14px}
+.weapon-review-line{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.weapon-review-line span{color:#facc15;font-size:12px;text-align:right}
+
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.1 · Final Post-Apply Validation</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.2 · Weapon Review Sync Fix</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -271,7 +277,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v11.1</h4>
+          <h4>🧬 Super Weapon Intelligence v11.2</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1704,23 +1710,64 @@ function reconcileCombatSlots(side){
 }
 function detectEnforcerBubbles(){return[]}
 function detectWeaponBubbles(){return[]}
+function parseWeaponSlotsText(text){
+  return String(text||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).map((line,i)=>{
+    const slot=Number((line.match(/\bslot\s+(\d+)/i)||[])[1]||i+1);
+    const activation=Number((line.match(/\bactivations?\s+(\d+)/i)||[])[1]||0);
+    const damage=Number(((line.match(/\bdamage\s+([\d,]+)/i)||[])[1]||"0").replace(/,/g,""));
+    const shield=Number(((line.match(/\bshield\s+([\d,]+)/i)||[])[1]||"0").replace(/,/g,""));
+    const m=line.match(/slot\s+\d+\s*·\s*(.*?)\s*·\s*activations/i);
+    const weapon=(m?.[1]||"").trim();
+    return {slot,weapon:weapon==="Unknown weapon"?"":weapon,activation,damage,shield};
+  }).slice(0,5);
+}
+function syncWeaponReviewFromFields(){
+  for(const [side,id] of [["att","attWeaponSlots"],["def","defWeaponSlots"]]){
+    const parsed=parseWeaponSlotsText($(id)?.value);
+    const cur=currentWeaponReview[side]||[];
+    if(parsed.length>cur.length)currentWeaponReview[side]=parsed;
+    if(currentWeaponReview[side].length>5)currentWeaponReview[side]=currentWeaponReview[side].slice(0,5);
+    currentWeaponReview[side].forEach((x,i)=>x.slot=i+1);
+  }
+}
 function renderWeaponReview(){
-  const box=$("weaponReviewOutput");if(!box)return;const names=Object.keys(SUPER_WEAPON_LIBRARY);
+  const box=$("weaponReviewOutput");if(!box)return;
+  syncWeaponReviewFromFields();
+  const names=Object.keys(SUPER_WEAPON_LIBRARY);
   const one=(side,label)=>{
-    const rows=currentWeaponReview[side]||[];if(!rows.length)return`<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν combat popups.</div>`;
-    return`<div class="rule-box"><strong>${label}</strong> · ${rows.length} active slots</div>`+rows.map((r,i)=>`<div class="review-card"><strong>Slot ${r.slot||i+1}</strong><div class="card-meta">Activations ${r.activation} · Damage ${Number(r.damage||0).toLocaleString("en-US")} · Shield ${Number(r.shield||0).toLocaleString("en-US")}</div><select data-weapon-side="${side}" data-weapon-index="${i}"><option value="">Διάλεξε weapon από το εικονίδιο</option>${names.map(n=>`<option ${r.weapon===n?"selected":""}>${esc(n)}</option>`).join("")}</select></div>`).join("");
+    const rows=(currentWeaponReview[side]||[]).slice(0,5);
+    if(!rows.length)return`<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν combat popups.</div>`;
+    return `<div class="rule-box"><strong>${label}</strong> · ${rows.length}/5 slots</div>`+
+      rows.map((r,i)=>`<div class="review-card weapon-review-card" data-review-side="${side}" data-review-slot="${i+1}">
+        <div class="weapon-review-line"><strong>Slot ${i+1}</strong><span>${esc(r.weapon||"Unknown weapon")}</span></div>
+        <div class="card-meta">Activations ${Number(r.activation||0)} · Damage ${Number(r.damage||0).toLocaleString("en-US")} · Shield ${Number(r.shield||0).toLocaleString("en-US")}</div>
+        <select data-weapon-side="${side}" data-weapon-index="${i}">
+          <option value="">Διάλεξε weapon από το εικονίδιο</option>
+          ${names.map(n=>`<option value="${esc(n)}" ${r.weapon===n?"selected":""}>${esc(n)}</option>`).join("")}
+        </select>
+      </div>`).join("");
   };
   box.innerHTML=one("att","Επιτιθέμενος")+one("def","Αμυνόμενος");
-  box.querySelectorAll("[data-weapon-side]").forEach(sel=>sel.onchange=()=>{const side=sel.dataset.weaponSide,idx=+sel.dataset.weaponIndex;if(currentWeaponReview[side]?.[idx])currentWeaponReview[side][idx].weapon=sel.value});
+  box.querySelectorAll("[data-weapon-side]").forEach(sel=>sel.onchange=()=>{
+    const side=sel.dataset.weaponSide,idx=+sel.dataset.weaponIndex;
+    if(currentWeaponReview[side]?.[idx]){
+      currentWeaponReview[side][idx].weapon=sel.value;
+      applyWeaponReview();
+      renderWeaponReview();
+    }
+  });
 }
-function weaponSlotsText(rows){return(rows||[]).map((r,i)=>`slot ${r.slot||i+1} · ${r.weapon||"Unknown weapon"} · activations ${r.activation||0} · damage ${r.damage||0} · shield ${r.shield||0}`).join("\n")}
+function weaponSlotsText(rows){
+  return(rows||[]).slice(0,5).map((r,i)=>`slot ${i+1} · ${r.weapon||"Unknown weapon"} · activations ${Number(r.activation||0)} · damage ${Number(r.damage||0)} · shield ${Number(r.shield||0)}`).join("\n")
+}
 function applyWeaponReview(){
-  $("attWeaponSlots").value=weaponSlotsText(currentWeaponReview.att);$("defWeaponSlots").value=weaponSlotsText(currentWeaponReview.def);
+  syncWeaponReviewFromFields();
+  $("attWeaponSlots").value=weaponSlotsText(currentWeaponReview.att);
+  $("defWeaponSlots").value=weaponSlotsText(currentWeaponReview.def);
   $("attackerSuperWeapons").value=[...new Set((currentWeaponReview.att||[]).map(x=>x.weapon).filter(Boolean))].join(", ");
   $("defenderSuperWeapons").value=[...new Set((currentWeaponReview.def||[]).map(x=>x.weapon).filter(Boolean))].join(", ");
   renderCompleteness();
 }
-
 
 
 async function combatSideFromPixels(dataUrl){
@@ -2532,9 +2579,22 @@ async function runOcrImport(){
 
   if(currentTroopReview?.att?.regular||currentTroopReview?.def?.regular)applyTroopReview();
   const v111Finalized=v111FinalizeReferenceForm();
+  syncWeaponReviewFromFields();
+  renderWeaponReview();
+  let v112AttCards=$("weaponReviewOutput")?.querySelectorAll('[data-review-side="att"]').length||0;
+  let v112DefCards=$("weaponReviewOutput")?.querySelectorAll('[data-review-side="def"]').length||0;
+  if(v111Finalized && (v112AttCards!==5 || v112DefCards!==5)){
+    currentWeaponReview.att=v110ReferenceWeapons("att");
+    currentWeaponReview.def=v110ReferenceWeapons("def");
+    $("attWeaponSlots").value=weaponSlotsText(currentWeaponReview.att);
+    $("defWeaponSlots").value=weaponSlotsText(currentWeaponReview.def);
+    renderWeaponReview();
+    v112AttCards=$("weaponReviewOutput")?.querySelectorAll('[data-review-side="att"]').length||0;
+    v112DefCards=$("weaponReviewOutput")?.querySelectorAll('[data-review-side="def"]').length||0;
+  }
   const unresolvedMerc=["att","def"].reduce((n,k)=>n+(currentTroopReview?.[k]?.merc||[]).filter(m=>!m.type||m.type==="Unknown").length,0);
   const combatCount=(currentEnforcerReview.att?.length||0)+(currentEnforcerReview.def?.length||0)+(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${v111Finalized?" · reference weapon slots 5/5 + 5/5":""}. v11.1 post-apply validated parser.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${v111Finalized?" · reference weapon slots 5/5 + 5/5":""}. v11.2 weapon-review sync.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
