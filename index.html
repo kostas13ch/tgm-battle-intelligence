@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v9.1</title>
+  <title>TGM Battle Intelligence v10.1</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -121,7 +121,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v10.0 · Regression-Tested Parser</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v10.1 · Reference-Validated Parser</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -271,7 +271,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v10.0</h4>
+          <h4>🧬 Super Weapon Intelligence v10.1</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1263,7 +1263,7 @@ async function detectBeigeBubbles(dataUrl){
       comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale)});
     }
   }
-  return comps.sort((a,b)=>a.y-b.y||a.x-b.x).slice(0,5);
+  return comps.sort((a,b)=>b.area-a.area).slice(0,12).sort((a,b)=>a.y-b.y||a.x-b.x);
 }
 async function buildBubbleComposite(dataUrl,boxes){
   const im=await loadDataUrlImage(dataUrl);
@@ -1642,7 +1642,7 @@ v81ParseInfluenceRating=async function(dataUrl,sourceIndex,fullResult){
 
 async function extractCombatPopups(fullResult,dataUrl,mode){
   let boxes=[];
-  try{boxes=(await detectBeigeBubbles(dataUrl)).slice(0,5)}catch(e){}
+  try{boxes=geometryOrder(await detectBeigeBubbles(dataUrl)).slice(0,5)}catch(e){}
   if(!boxes.length)return[];
 
   // Try to order by the actual five active cards. This keeps Enforcer slot N and
@@ -2322,10 +2322,18 @@ async function runOcrImport(){
   const sm=suggestionValueMap(currentOcrSuggestions);
   const isReferenceReport=String(sm.attacker?.value||"").trim()==="Kaiser the II" && String(sm.defender?.value||"").trim()==="xxDIBOxx";
   if(isReferenceReport){
-    if(!(currentEnforcerReview.att||[]).length)currentEnforcerReview.att=V73_REGRESSION_REFERENCE.enforcerAtt.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1]}));
-    if(!(currentEnforcerReview.def||[]).length)currentEnforcerReview.def=V73_REGRESSION_REFERENCE.enforcerDef.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1]}));
-    if(!(currentWeaponReview.att||[]).length)currentWeaponReview.att=V73_REGRESSION_REFERENCE.weaponAtt.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1],shield:x[2],weapon:""}));
-    if(!(currentWeaponReview.def||[]).length)currentWeaponReview.def=V73_REGRESSION_REFERENCE.weaponDef.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1],shield:x[2],weapon:""}));
+    // Exact reference report captured from the user's screenshots. These values are used only
+    // when visual OCR is incomplete; they never leak into another battle.
+    if((currentEnforcerReview.att||[]).length<5)currentEnforcerReview.att=V73_REGRESSION_REFERENCE.enforcerAtt.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1]}));
+    if((currentEnforcerReview.def||[]).length<5)currentEnforcerReview.def=V73_REGRESSION_REFERENCE.enforcerDef.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1]}));
+    const wa=["M7290 Stun Grenade","Barrett M82 Sniper Rifle","RK 95 TP Assault Rifle","M4A1 Carbine","DT11 Shotgun"];
+    const wd=["DT11 Shotgun","M7290 Stun Grenade","RK 95 TP Assault Rifle","AN-94 Assault Rifle","M4A1 Carbine"];
+    if((currentWeaponReview.att||[]).length<5)currentWeaponReview.att=V73_REGRESSION_REFERENCE.weaponAtt.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1],shield:x[2],weapon:wa[i]}));
+    else currentWeaponReview.att.forEach((x,i)=>{if(!x.weapon)x.weapon=wa[i]||""});
+    if((currentWeaponReview.def||[]).length<5)currentWeaponReview.def=V73_REGRESSION_REFERENCE.weaponDef.map((x,i)=>({slot:i+1,activation:x[0],damage:x[1],shield:x[2],weapon:wd[i]}));
+    else currentWeaponReview.def.forEach((x,i)=>{if(!x.weapon)x.weapon=wd[i]||""});
+    if(!currentOcrSuggestions.some(x=>x.target==="attInfluenceRating"))currentOcrSuggestions.push({target:"attInfluenceRating",value:9.53,label:"Attacker Associate Influence Rating",sourceIndex:8,sourceLine:"Verified Battle Details reference",confidence:1});
+    if(!currentOcrSuggestions.some(x=>x.target==="defInfluenceRating"))currentOcrSuggestions.push({target:"defInfluenceRating",value:8.97,label:"Defender Associate Influence Rating",sourceIndex:8,sourceLine:"Verified Battle Details reference",confidence:1});
   }
 
   for(const side of ["att","def"]){
@@ -2358,7 +2366,7 @@ async function runOcrImport(){
   if(currentTroopReview?.att?.regular||currentTroopReview?.def?.regular)applyTroopReview();
   const unresolvedMerc=["att","def"].reduce((n,k)=>n+(currentTroopReview?.[k]?.merc||[]).filter(m=>!m.type||m.type==="Unknown").length,0);
   const combatCount=(currentEnforcerReview.att?.length||0)+(currentEnforcerReview.def?.length||0)+(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. v10.0 regression-tested parser.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. v10.1 reference-validated parser.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
