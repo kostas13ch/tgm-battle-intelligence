@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v11.9</title>
+  <title>TGM Battle Intelligence v12.0</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -131,7 +131,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.9 · OCR Watchdog</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v12.0 · Turbo OCR</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -281,7 +281,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v11.9</h4>
+          <h4>🧬 Super Weapon Intelligence v12.0</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1492,30 +1492,37 @@ function parseNaturalPopupResult(result,mode,imageHeight){
   return{activation,damage:damage??0,shield:shield??0};
 }
 async function ocrPopupNatural(fullResult,dataUrl,b,mode){
-  const attempts=[];
-  for(const scale of [3,2]){
-    const crop=await cropUpscaledNatural(dataUrl,b,scale);
-    const r=await Tesseract.recognize(crop.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
-    const parsed=parseNaturalPopupResult(r,mode,crop.height);
-    let score=(parsed.activation>=1&&parsed.activation<=20)?3:0;
-    if(mode==="weapon"){
-      if(parsed.damage===0||parsed.damage>20)score+=2;
-      if(parsed.shield===0||parsed.shield>20)score+=2;
-    }else if(parsed.damage>20)score+=3;
-    attempts.push({parsed,score});
-  }
-  attempts.sort((a,b)=>b.score-a.score);
-  const best={...(attempts[0]?.parsed||{activation:1,damage:0,shield:0})};
   const full=fullBoxNumericTokens(fullResult,b);
+  const activation=full.find(v=>v.n>=1&&v.n<=20&&v.relY<.48)?.n??1;
+
   if(mode!=="weapon"){
-    if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28);if(x)best.damage=x.n}
+    const damage=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.25)?.n;
+    if(damage!=null)return{activation,damage};
+  }else{
+    const damage=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28&&v.relY<.70)?.n;
+    const shield=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.62)?.n;
+    if(damage!=null&&shield!=null)return{activation,damage,shield};
+  }
+
+  // Fallback: one crop pass only. v11.x did two full OCR passes per popup.
+  const crop=await cropUpscaledNatural(dataUrl,b,2);
+  const r=await Tesseract.recognize(crop.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
+  const best=parseNaturalPopupResult(r,mode,crop.height);
+
+  if(mode!=="weapon"){
+    if(!best.damage){
+      const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28);if(x)best.damage=x.n
+    }
     return best;
   }
-  if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.30&&v.relY<.68);if(x)best.damage=x.n}
-  if(!best.shield){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.64);if(x)best.shield=x.n}
+  if(!best.damage){
+    const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.30&&v.relY<.68);if(x)best.damage=x.n
+  }
+  if(!best.shield){
+    const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.64);if(x)best.shield=x.n
+  }
   return best;
 }
-
 function geometryOrder(boxes){
   const a=boxes.map((b,i)=>({...b,_i:i,cx:b.x+b.w/2,cy:b.y+b.h/2}));
   if(a.length<=1)return a;
@@ -2699,18 +2706,66 @@ function v110SelfTest(){
 window.__TGM_V110_SELFTEST=v110SelfTest();
 
 
-const OCR_SCREENSHOT_TIMEOUT_MS=45000;
-const OCR_STAGE_TIMEOUT_MS=18000;
+const TGM_OCR_MAX_WIDTH=1050;
+let __tgmOcrWorker=null;
+let __tgmOcrLogger=null;
+let __tgmRecognizeInstalled=false;
 
-function withTimeout(promise,ms,label="operation"){
-  let timer;
-  const timeout=new Promise((_,reject)=>{
-    timer=setTimeout(()=>reject(new Error(`${label} timeout after ${Math.round(ms/1000)}s`)),ms);
-  });
-  return Promise.race([Promise.resolve(promise).finally(()=>clearTimeout(timer)),timeout]);
+async function tgmPrepareOcrImage(image){
+  try{
+    const im=await loadDataUrlImage(image);
+    const ow=im.naturalWidth||im.width,oh=im.naturalHeight||im.height;
+    if(!ow||ow<=TGM_OCR_MAX_WIDTH)return{image,scale:1};
+    const scale=TGM_OCR_MAX_WIDTH/ow;
+    const c=document.createElement("canvas");
+    c.width=Math.round(ow*scale);c.height=Math.round(oh*scale);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    return{image:c.toDataURL("image/jpeg",.82),scale};
+  }catch(e){return{image,scale:1}}
 }
-async function yieldUi(){await new Promise(r=>setTimeout(r,25))}
-function setOcrStatusSafe(text){const el=$("ocrStatus");if(el)el.textContent=text}
+function tgmScaleBboxes(result,inv){
+  if(!result?.data||inv===1)return result;
+  const scaleOne=o=>{
+    if(!o||!o.bbox)return;
+    for(const k of ["x0","x1","y0","y1"])if(Number.isFinite(o.bbox[k]))o.bbox[k]*=inv;
+    if(o.baseline){
+      for(const k of ["x0","x1","y0","y1"])if(Number.isFinite(o.baseline[k]))o.baseline[k]*=inv;
+    }
+  };
+  for(const key of ["words","lines","paragraphs","symbols","blocks"]){
+    const a=result.data[key];if(Array.isArray(a))a.forEach(scaleOne);
+  }
+  return result;
+}
+async function tgmGetOcrWorker(){
+  if(__tgmOcrWorker)return __tgmOcrWorker;
+  if(typeof Tesseract==="undefined")throw new Error("Tesseract unavailable");
+  __tgmOcrWorker=await Tesseract.createWorker("eng",1,{
+    logger:m=>{try{__tgmOcrLogger?.(m)}catch(e){}}
+  });
+  return __tgmOcrWorker;
+}
+async function tgmFastRecognize(image,langs="eng",options={}){
+  const worker=await tgmGetOcrWorker();
+  __tgmOcrLogger=options?.logger||null;
+  const params={...options};delete params.logger;
+  if(Object.keys(params).length){
+    try{await worker.setParameters(params)}catch(e){}
+  }
+  const prep=await tgmPrepareOcrImage(image);
+  const result=await worker.recognize(prep.image);
+  __tgmOcrLogger=null;
+  return tgmScaleBboxes(result,prep.scale===1?1:1/prep.scale);
+}
+function installTurboOcr(){
+  if(__tgmRecognizeInstalled||typeof Tesseract==="undefined")return;
+  Tesseract.recognize=tgmFastRecognize;
+  __tgmRecognizeInstalled=true;
+}
+window.addEventListener("pagehide",()=>{
+  try{__tgmOcrWorker?.terminate?.()}catch(e){}
+  __tgmOcrWorker=null;
+});
 async function runOcrImport(){
   // Clear previous visual identity guesses before a new import.
   $("attackerEnforcers").value="";
@@ -2724,15 +2779,14 @@ async function runOcrImport(){
       return;
     }
   }
+  installTurboOcr();
   currentOcrSuggestions=[];$("ocrRawText").value="";$("ocrProgressFill").style.width="0%";
   clearAdvancedOcrFields();
   clearCombatSlotFields();
   const allRaw=[];
   for(let i=0;i<currentScreenshots.length;i++){
-    await yieldUi();
-    const __shotStarted=Date.now();
-    try{
-      await withTimeout((async()=>{
+    await new Promise(r=>setTimeout(r,0));
+
     const shot=currentScreenshots[i];
     $("ocrStatus").textContent=`OCR screenshot ${i+1}/${currentScreenshots.length}…`;
     try{
@@ -2765,16 +2819,7 @@ async function runOcrImport(){
       if((shot.reportType||"")==="Battle Details")currentOcrSuggestions.push(...await v81ParseInfluenceRating(shot.dataUrl,i,result));
       shot.ocrText=text;
     }catch(err){allRaw.push(`===== Screenshot ${i+1} ERROR =====\n${err.message||err}`)}
-  
-      })(),OCR_SCREENSHOT_TIMEOUT_MS,`screenshot ${i+1}`);
-    }catch(__shotErr){
-      console.warn(`Screenshot ${i+1} skipped`,__shotErr);
-      setOcrStatusSafe(`Screenshot ${i+1}/${currentScreenshots.length} παραλείφθηκε λόγω timeout/σφάλματος. Συνεχίζω…`);
-      await yieldUi();
-    }finally{
-      console.info(`Screenshot ${i+1} finished in ${Date.now()-__shotStarted}ms`);
-    }
-}
+  }
   // Regression fallback for the exact Kaiser the II vs xxDIBOxx reference report
   // used to validate this parser. It is deliberately fingerprint-gated, so it can
   // never leak these values into another battle. Dynamic visual parsing remains
@@ -2816,7 +2861,7 @@ async function runOcrImport(){
   $("attackerFaction").value=canonicalFaction($("attackerFaction").value);
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v11.9 watchdog + retry.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v12.0 shared-worker turbo OCR.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -2987,16 +3032,5 @@ initWeaponIntel();
 })();
 </script>
 
-
-<script>
-window.addEventListener("unhandledrejection",e=>{
-  console.warn("Unhandled OCR rejection",e.reason);
-  const el=document.getElementById("ocrStatus");
-  if(el&&/OCR|screenshot/i.test(el.textContent||"")){
-    el.textContent=(el.textContent||"")+" · ⚠️ σφάλμα παρακάμφθηκε";
-  }
-  e.preventDefault();
-});
-</script>
 </body>
 </html>
