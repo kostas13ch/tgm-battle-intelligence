@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v12.0</title>
+  <title>TGM Battle Intelligence v12.1</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -124,14 +124,10 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 .weapon-review-line{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .weapon-review-line span{color:#facc15;font-size:12px;text-align:right}
 
-
-/* v11.8 mobile upload performance */
-#ocrPreview img,.ocr-preview img{max-width:100%;max-height:240px;object-fit:contain}
-
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v12.0 · Turbo OCR</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v12.1 · Fast + Accurate</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -281,7 +277,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v12.0</h4>
+          <h4>🧬 Super Weapon Intelligence v12.1</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1032,33 +1028,6 @@ function inferBattleDetailTypes(rows){
 
 const TGM_VISUAL_REFS={troops:{},weapons:{},enforcers:{}};
 
-
-const TGM_ENFORCER_CANONICAL_NAMES=[
-"Mike","Sparrow","Belladonna","Doxxy","Vinny","Big Shot","Deathlok","Tony","@anonymous",
-"Lupo Solitario","The Tsar","Paulie","T-Roc","El Cazador","Nioh","Kitsune","Onryo","Cee-Jay",
-"El Cortador","Captain","Bubba","Snowstorm","The Count","Jade","Hellcat","White Dove","El Santo",
-"Bone Crusher","Professor","Red Thorn","Killer Queen","Lucky 7","Maestro","Medusa","Nihilista",
-"Titan","Mirror","Ouka","Black Hawk","Huntress","Madame Fragrance","Chupacabra","Mamacita",
-"Fang","Sicario","Blade Shadow","The Arbiter","Tengu","Papi","O-Roc","Longjing","Beehive",
-"The Outsider","Midnight Rabbit","Mickey","Machote"
-];
-const TGM_WEAPON_CANONICAL_NAMES=[
-"M7290 Stun Grenade","Barrett M82 Sniper Rifle","RK 95 TP Assault Rifle","M4A1 Carbine",
-"DT11 Shotgun","AN-94 Assault Rifle","HK UMP 45","SSG 69","M590","FAD Assault Rifle"
-];
-function normalizeKnownEnforcerName(x){
-  const k=String(x||"").toLowerCase().replace(/[^a-z0-9]/g,"");
-  let best="",score=0;
-  for(const n of TGM_ENFORCER_CANONICAL_NAMES){
-    const q=n.toLowerCase().replace(/[^a-z0-9]/g,"");
-    if(k===q)return n;
-    if(k&&q&&(q.includes(k)||k.includes(q))){
-      const z=Math.min(k.length,q.length)/Math.max(k.length,q.length);
-      if(z>score){score=z;best=n}
-    }
-  }
-  return score>=.82?best:"";
-}
 const TGM_VISUAL_FEATURE_CACHE=new Map();
 function canonicalPlayerName(x){
   const t=String(x||"").trim().replace(/\s+/g," ");
@@ -1151,9 +1120,7 @@ async function classifyBattleRowsByIcons(dataUrl,candidates,result){
   for(const r of candidates){
     const y=Math.max(0,Math.round(r.cy-h/2));
     const f=visualFeatureFromCanvas(ctx,x,y,w,Math.min(h,H-y));
-    let m=Object.keys(TGM_VISUAL_REFS.troops).length
-      ?await bestVisualMatch(f,TGM_VISUAL_REFS.troops,.34,.018)
-      :{name:"",score:0,margin:0};
+    let m=await bestVisualMatch(f,TGM_VISUAL_REFS.troops,.34,.018);
 
     // v11.5: NEVER infer troop type from row order or troop count.
     // A report may contain T2/T3/T4 of the same type simultaneously.
@@ -1492,37 +1459,30 @@ function parseNaturalPopupResult(result,mode,imageHeight){
   return{activation,damage:damage??0,shield:shield??0};
 }
 async function ocrPopupNatural(fullResult,dataUrl,b,mode){
-  const full=fullBoxNumericTokens(fullResult,b);
-  const activation=full.find(v=>v.n>=1&&v.n<=20&&v.relY<.48)?.n??1;
-
-  if(mode!=="weapon"){
-    const damage=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.25)?.n;
-    if(damage!=null)return{activation,damage};
-  }else{
-    const damage=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28&&v.relY<.70)?.n;
-    const shield=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.62)?.n;
-    if(damage!=null&&shield!=null)return{activation,damage,shield};
+  const attempts=[];
+  for(const scale of [3,2]){
+    const crop=await cropUpscaledNatural(dataUrl,b,scale);
+    const r=await Tesseract.recognize(crop.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
+    const parsed=parseNaturalPopupResult(r,mode,crop.height);
+    let score=(parsed.activation>=1&&parsed.activation<=20)?3:0;
+    if(mode==="weapon"){
+      if(parsed.damage===0||parsed.damage>20)score+=2;
+      if(parsed.shield===0||parsed.shield>20)score+=2;
+    }else if(parsed.damage>20)score+=3;
+    attempts.push({parsed,score});
   }
-
-  // Fallback: one crop pass only. v11.x did two full OCR passes per popup.
-  const crop=await cropUpscaledNatural(dataUrl,b,2);
-  const r=await Tesseract.recognize(crop.dataUrl,"eng",{tessedit_pageseg_mode:"6"});
-  const best=parseNaturalPopupResult(r,mode,crop.height);
-
+  attempts.sort((a,b)=>b.score-a.score);
+  const best={...(attempts[0]?.parsed||{activation:1,damage:0,shield:0})};
+  const full=fullBoxNumericTokens(fullResult,b);
   if(mode!=="weapon"){
-    if(!best.damage){
-      const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28);if(x)best.damage=x.n
-    }
+    if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.28);if(x)best.damage=x.n}
     return best;
   }
-  if(!best.damage){
-    const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.30&&v.relY<.68);if(x)best.damage=x.n
-  }
-  if(!best.shield){
-    const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.64);if(x)best.shield=x.n
-  }
+  if(!best.damage){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.30&&v.relY<.68);if(x)best.damage=x.n}
+  if(!best.shield){const x=full.find(v=>(v.n===0||v.n>20)&&v.relY>=.64);if(x)best.shield=x.n}
   return best;
 }
+
 function geometryOrder(boxes){
   const a=boxes.map((b,i)=>({...b,_i:i,cx:b.x+b.w/2,cy:b.y+b.h/2}));
   if(a.length<=1)return a;
@@ -1973,9 +1933,6 @@ function mergeCombatPage(existing,incoming){
 function learnedVisualRefs(kind){
   try{return JSON.parse(localStorage.getItem(`tgmLearnedVisualRefs:${kind}`)||"{}")}catch(e){return{}}
 }
-function learnedRefCount(kind){
-  const x=learnedVisualRefs(kind);return Object.values(x).reduce((n,a)=>n+(a?.length||0),0)
-}
 function saveLearnedVisualRef(kind,name,dataUrl){
   if(!name||!dataUrl)return false;
   const all=learnedVisualRefs(kind);
@@ -2016,13 +1973,10 @@ async function enrichCombatItemsWithVisualNames(dataUrl,items,mode){
     const ids=await identifyCombatCards(dataUrl,mode,5);
     for(let i=0;i<Math.min(items.length,ids.length);i++){
       if(mode==="weapon"&&ids[i].name&&ids[i].confidence>=.72){items[i].weapon=ids[i].name;items[i].visualConfidence=ids[i].confidence}
-      // v11.7: only combat-card-specific learned references may auto-name Enforcers.
-      // Public roster images expand the canonical vocabulary, but do not override
-      // the safety threshold after the false Kitsune regression.
-      if(mode==="enforcer"&&ids[i].name&&ids[i].confidence>=.82){
-        items[i].enforcer=normalizeKnownEnforcerName(ids[i].name)||ids[i].name;
-        items[i].visualConfidence=ids[i].confidence;
-      }else if(mode==="enforcer"){items[i].enforcer="";items[i].visualConfidence=0}
+      // v11.6 safety rule: roster portraits are NOT accepted as combat-card identity proof.
+      // Wrong names are worse than Unknown. Enforcer names remain blank until a
+      // combat-card-specific learned template is available.
+      if(mode==="enforcer"){items[i].enforcer="";items[i].visualConfidence=0}
     }
   }catch(e){}
   return items;
@@ -2706,67 +2660,61 @@ function v110SelfTest(){
 window.__TGM_V110_SELFTEST=v110SelfTest();
 
 
-const TGM_OCR_MAX_WIDTH=1050;
-let __tgmOcrWorker=null;
-let __tgmOcrLogger=null;
-let __tgmRecognizeInstalled=false;
+let __tgmSharedWorker=null;
+let __tgmSharedLogger=null;
+let __tgmRecognizePatched=false;
+let __tgmOcrQueue=Promise.resolve();
+let __tgmCropOcrCache=new Map();
 
-async function tgmPrepareOcrImage(image){
-  try{
-    const im=await loadDataUrlImage(image);
-    const ow=im.naturalWidth||im.width,oh=im.naturalHeight||im.height;
-    if(!ow||ow<=TGM_OCR_MAX_WIDTH)return{image,scale:1};
-    const scale=TGM_OCR_MAX_WIDTH/ow;
-    const c=document.createElement("canvas");
-    c.width=Math.round(ow*scale);c.height=Math.round(oh*scale);
-    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-    return{image:c.toDataURL("image/jpeg",.82),scale};
-  }catch(e){return{image,scale:1}}
-}
-function tgmScaleBboxes(result,inv){
-  if(!result?.data||inv===1)return result;
-  const scaleOne=o=>{
-    if(!o||!o.bbox)return;
-    for(const k of ["x0","x1","y0","y1"])if(Number.isFinite(o.bbox[k]))o.bbox[k]*=inv;
-    if(o.baseline){
-      for(const k of ["x0","x1","y0","y1"])if(Number.isFinite(o.baseline[k]))o.baseline[k]*=inv;
-    }
-  };
-  for(const key of ["words","lines","paragraphs","symbols","blocks"]){
-    const a=result.data[key];if(Array.isArray(a))a.forEach(scaleOne);
-  }
-  return result;
-}
-async function tgmGetOcrWorker(){
-  if(__tgmOcrWorker)return __tgmOcrWorker;
+async function tgmGetSharedWorker(){
+  if(__tgmSharedWorker)return __tgmSharedWorker;
   if(typeof Tesseract==="undefined")throw new Error("Tesseract unavailable");
-  __tgmOcrWorker=await Tesseract.createWorker("eng",1,{
-    logger:m=>{try{__tgmOcrLogger?.(m)}catch(e){}}
+  __tgmSharedWorker=await Tesseract.createWorker("eng",1,{
+    logger:m=>{try{__tgmSharedLogger?.(m)}catch(e){}}
   });
-  return __tgmOcrWorker;
+  return __tgmSharedWorker;
 }
-async function tgmFastRecognize(image,langs="eng",options={}){
-  const worker=await tgmGetOcrWorker();
-  __tgmOcrLogger=options?.logger||null;
-  const params={...options};delete params.logger;
-  if(Object.keys(params).length){
-    try{await worker.setParameters(params)}catch(e){}
-  }
-  const prep=await tgmPrepareOcrImage(image);
-  const result=await worker.recognize(prep.image);
-  __tgmOcrLogger=null;
-  return tgmScaleBboxes(result,prep.scale===1?1:1/prep.scale);
+
+function tgmQueue(task){
+  const p=__tgmOcrQueue.then(task,task);
+  __tgmOcrQueue=p.catch(()=>{});
+  return p;
 }
-function installTurboOcr(){
-  if(__tgmRecognizeInstalled||typeof Tesseract==="undefined")return;
-  Tesseract.recognize=tgmFastRecognize;
-  __tgmRecognizeInstalled=true;
+
+async function tgmSharedRecognize(image,langs="eng",options={}){
+  const cacheable=typeof image==="string"&&image.startsWith("data:image/")&&image.length<900000;
+  const psm=String(options?.tessedit_pageseg_mode||"");
+  const key=cacheable?`${psm}|${image.length}|${image.slice(-120)}`:"";
+  if(key&&__tgmCropOcrCache.has(key))return __tgmCropOcrCache.get(key);
+
+  const promise=tgmQueue(async()=>{
+    const worker=await tgmGetSharedWorker();
+    __tgmSharedLogger=options?.logger||null;
+    const params={...options};delete params.logger;
+    if(Object.keys(params).length){
+      try{await worker.setParameters(params)}catch(e){}
+    }
+    // OCR on ORIGINAL image. No resize, no bbox transformation.
+    const result=await worker.recognize(image);
+    __tgmSharedLogger=null;
+    return result;
+  });
+  if(key)__tgmCropOcrCache.set(key,promise);
+  return promise;
 }
+
+function installSharedOcr(){
+  if(__tgmRecognizePatched||typeof Tesseract==="undefined")return;
+  Tesseract.recognize=tgmSharedRecognize;
+  __tgmRecognizePatched=true;
+}
+
 window.addEventListener("pagehide",()=>{
-  try{__tgmOcrWorker?.terminate?.()}catch(e){}
-  __tgmOcrWorker=null;
+  try{__tgmSharedWorker?.terminate?.()}catch(e){}
+  __tgmSharedWorker=null;
 });
 async function runOcrImport(){
+  __tgmCropOcrCache.clear();
   // Clear previous visual identity guesses before a new import.
   $("attackerEnforcers").value="";
   $("defenderEnforcers").value="";
@@ -2779,7 +2727,7 @@ async function runOcrImport(){
       return;
     }
   }
-  installTurboOcr();
+  installSharedOcr();
   currentOcrSuggestions=[];$("ocrRawText").value="";$("ocrProgressFill").style.width="0%";
   clearAdvancedOcrFields();
   clearCombatSlotFields();
@@ -2861,7 +2809,7 @@ async function runOcrImport(){
   $("attackerFaction").value=canonicalFaction($("attackerFaction").value);
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v12.0 shared-worker turbo OCR.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v12.1 shared-worker without image rescaling.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -2882,14 +2830,7 @@ function applyOcrSuggestions(auto=false){
 }
 
 function reportCompleteness(){const checks=[["Παίκτες",!!norm($("attacker").value)&&!!norm($("defender").value)],["Formations",!!$("attackerFormation").value&&!!$("defenderFormation").value],["Troops επιτιθέμενου",num("attBruisers")+num("attHitmen")+num("attBikers")>0],["Troops αμυνόμενου",num("defBruisers")+num("defHitmen")+num("defBikers")>0],["Βασικά stats",num("attCrewAtk")+num("defCrewAtk")>0],["Αποτέλεσμα",!!$("winnerSide").value],["Screenshots",currentScreenshots.length>0],["Screenshots αναφοράς",currentScreenshots.length>=1],["Overview screenshot",currentScreenshots.some(s=>s.reportType==="Overview")],["Buff screenshots",currentScreenshots.filter(s=>s.reportType==="Buff Comparison").length>=1],["Buff Preview screenshot",currentScreenshots.some(s=>s.reportType==="Buff Preview")],["Battle Details screenshot",currentScreenshots.some(s=>s.reportType==="Battle Details")],["Enforcer combat",!!$("attEnforcerSlots").value||!!$("defEnforcerSlots").value],["Super Weapon combat",!!$("attWeaponSlots").value||!!$("defWeaponSlots").value],["Integrity",genericImportIntegrity().ok]];const done=checks.filter(x=>x[1]).length,score=Math.round(done/checks.length*100);return{checks,score}}
-function renderCompleteness(){
-  // v11.7 reference-library telemetry
-  window.__TGM_REFERENCE_LIBRARY={
-    enforcers:TGM_ENFORCER_CANONICAL_NAMES.length,
-    weapons:TGM_WEAPON_CANONICAL_NAMES.length,
-    learnedCombatPortraits:learnedRefCount("enforcer")
-  };
-const r=reportCompleteness(),cls=r.score>=80?"score-good":r.score>=50?"score-mid":"score-bad";$("completenessOutput").innerHTML=`<div class="plan-score ${cls}">${r.score}%</div><div class="completeness-bar"><div class="completeness-fill" style="width:${r.score}%"></div></div><div class="checklist">${r.checks.map(([name,ok])=>`<div class="checkitem ${ok?"ok":""}"><span>${esc(name)}</span><strong>${ok?"✓":"—"}</strong></div>`).join("")}</div>`}
+function renderCompleteness(){const r=reportCompleteness(),cls=r.score>=80?"score-good":r.score>=50?"score-mid":"score-bad";$("completenessOutput").innerHTML=`<div class="plan-score ${cls}">${r.score}%</div><div class="completeness-bar"><div class="completeness-fill" style="width:${r.score}%"></div></div><div class="checklist">${r.checks.map(([name,ok])=>`<div class="checkitem ${ok?"ok":""}"><span>${esc(name)}</span><strong>${ok?"✓":"—"}</strong></div>`).join("")}</div>`}
 
 
 function genericImportIntegrity(){
