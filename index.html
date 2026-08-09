@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v11.4</title>
+  <title>TGM Battle Intelligence v11.5</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.4 · Visual Symbol Recognition</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.5 · Troop Icon + Tier Learning</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -277,7 +277,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v11.4</h4>
+          <h4>🧬 Super Weapon Intelligence v11.5</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1121,15 +1121,9 @@ async function classifyBattleRowsByIcons(dataUrl,candidates,result){
     const f=visualFeatureFromCanvas(ctx,x,y,w,Math.min(h,H-y));
     let m=await bestVisualMatch(f,TGM_VISUAL_REFS.troops,.34,.018);
 
-    // Generic fallback from row order if icon confidence is weak.
-    let type=m.name;
-    if(!type){
-      const idx=candidates.indexOf(r),n=candidates.length;
-      const hasVehicle=n>=4&&Number(candidates[n-1]?.nums?.[0]||0)<=1000;
-      const rs=n-(hasVehicle?4:3);
-      if(idx>=rs&&idx<rs+3)type=["Bruiser","Hitman","Biker"][idx-rs];
-      else if(hasVehicle&&idx===n-1)type="Vehicle";
-    }
+    // v11.5: NEVER infer troop type from row order or troop count.
+    // A report may contain T2/T3/T4 of the same type simultaneously.
+    const type=m.name||"Unknown";
 
     // Mercenary rows use the gold/yellow version of the same Bruiser/Hitman/Biker/Vehicle symbol.
     // The type is learned from shape; gold is only a secondary signal.
@@ -1139,7 +1133,7 @@ async function classifyBattleRowsByIcons(dataUrl,candidates,result){
       const [hh,ss,vv]=rgbToHsv255(id[i],id[i+1],id[i+2]);
       total++;if(hh>=20&&hh<=65&&ss>70&&vv>75)gold++;
     }
-    results.push({type:type||"Unknown",confidence:type?(m.name?Math.min(.995,.72+Math.max(0,m.score)*.25):.72):.35,
+    results.push({type,confidence:m.name?Math.min(.995,.72+Math.max(0,m.score)*.25):.20,
                   score:m.score,margin:m.margin,isMercenary:total?gold/total>.035:false});
   }
   return results;
@@ -1157,154 +1151,126 @@ function sideRowsFromBattleDetails(result,side){
   }
   return out.sort((a,b)=>a.cy-b.cy);
 }
-function splitRegularAndMercRows(rows){
-  let rr=rows.filter(r=>r.nums.length>=2 && r.nums[0]>0);
-  if(rr.length<3)return{regular:null,merc:[]};
-  let vehicle=null;
-  if(rr.length>=4 && rr[rr.length-1].nums[0]<=1000)vehicle=rr.pop();
-  if(rr.length<3)return{regular:null,merc:[]};
-  const base=rr.slice(-3),merc=rr.slice(0,-3);
-  return{regular:{
-    Bruiser:{total:base[0].nums[0]||0,kills:base[0].nums[1]||0,losses:base[0].nums[2]||0},
-    Hitman:{total:base[1].nums[0]||0,kills:base[1].nums[1]||0,losses:base[1].nums[2]||0},
-    Biker:{total:base[2].nums[0]||0,kills:base[2].nums[1]||0,losses:base[2].nums[2]||0},
-    Vehicle:vehicle?{total:vehicle.nums[0]||0,kills:vehicle.nums[1]||0,losses:vehicle.nums[2]||0}:{total:0,kills:0,losses:0}
-  },merc:merc.map((r,i)=>({id:i,total:r.nums[0]||0,kills:r.nums[1]||0,losses:r.nums[2]||0,type:"Unknown"}))};
-}
 
 function troopFieldId(prefix,type,kind="total"){
-  const stem = type==="Hitman" ? "Hitmen" : `${type}s`;
-  if(kind==="total") return `${prefix}${stem}`;
-  if(kind==="kills") return `${prefix}${type}Kills`;
-  if(kind==="losses") return `${prefix}${type}BattleLosses`;
-  return "";
+  const stem=type==="Hitman"?"Hitmen":`${type}s`;
+  if(kind==="total")return`${prefix}${stem}`;
+  if(kind==="kills")return`${prefix}${type}Kills`;
+  if(kind==="losses")return`${prefix}${type}BattleLosses`;
+  return"";
 }
 function writeTroopType(prefix,type,row){
   if(!row)return;
-  const totalEl=$(troopFieldId(prefix,type,"total"));
-  const killEl=$(troopFieldId(prefix,type,"kills"));
-  const lossEl=$(troopFieldId(prefix,type,"losses"));
-  if(totalEl)totalEl.value=row.total||"";
-  if(killEl)killEl.value=row.kills||"";
-  if(lossEl)lossEl.value=row.losses||"";
+  const ids=[troopFieldId(prefix,type,"total"),troopFieldId(prefix,type,"kills"),troopFieldId(prefix,type,"losses")];
+  const vals=[row.total,row.kills,row.losses];
+  ids.forEach((id,i)=>{const e=$(id);if(e)e.value=vals[i]||""});
 }
-function reviewSideTotals(r){
-  const t={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0}};
-  if(r?.regular)for(const k of ["Bruiser","Hitman","Biker"])t[k]={...r.regular[k]};
-  for(const m of r?.merc||[]){if(!t[m.type])continue;t[m.type].total+=+m.total||0;t[m.type].kills+=+m.kills||0;t[m.type].losses+=+m.losses||0}
+function tierFromRowWords(row,side,result){
+  const words=row?.words||[];
+  const maxX=Math.max(...(result?.data?.words||[]).map(w=>w.bbox?.x1||0),1),mid=maxX/2;
+  // Tier digit is beside the troop icon, not in Total/Kills/Losses columns.
+  const lo=side==="att"?0:mid, hi=side==="att"?mid: maxX;
+  const iconLo=lo+(hi-lo)*.015, iconHi=lo+(hi-lo)*.19;
+  const same=words.filter(w=>{
+    const cx=((w.bbox?.x0||0)+(w.bbox?.x1||0))/2;
+    return cx>=iconLo&&cx<=iconHi;
+  });
+  for(const w of same){
+    const m=String(w.text||"").match(/(?:^|[^0-9])([1-9])(?:$|[^0-9])/);
+    if(m)return Number(m[1]);
+  }
+  return null;
+}
+function rowTroopTotals(rows){
+  const t={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0},Vehicle:{total:0,kills:0,losses:0}};
+  for(const r of rows||[]){
+    if(!t[r.type]||!r.type||r.type==="Unknown")continue;
+    t[r.type].total+=Number(r.total||0);
+    t[r.type].kills+=Number(r.kills||0);
+    t[r.type].losses+=Number(r.losses||0);
+  }
   return t;
 }
+function reviewSideTotals(review){return rowTroopTotals(review?.rows||[])}
 function renderTroopReview(){
   const box=$("troopReviewOutput");if(!box)return;
   const one=(side,label)=>{
-    const r=currentTroopReview[side];
-    if(!r?.regular)return`<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν αξιόπιστα Regular T4 rows.</div>`;
-    const a=r.regular;
-    const rows=(r.merc||[]).map((m,i)=>`<div class="review-card"><strong>Mercenary ${i+1}${m.type!=="Unknown"?` → ${m.type} ✓`:""}</strong><div class="card-meta">Total ${Number(m.total).toLocaleString("en-US")} · Kills ${Number(m.kills).toLocaleString("en-US")} · Losses ${Number(m.losses).toLocaleString("en-US")}</div><select data-merc-side="${side}" data-merc-index="${i}"><option value="Unknown">Διάλεξε τύπο</option><option>Bruiser</option><option>Hitman</option><option>Biker</option><option>Vehicle</option></select></div>`).join("");
-    return`<div class="rule-box"><strong>${label} — Regular T4</strong><br>Bruiser ${Number(a.Bruiser.total).toLocaleString("en-US")} · Hitman ${Number(a.Hitman.total).toLocaleString("en-US")} · Biker ${Number(a.Biker.total).toLocaleString("en-US")}${a.Vehicle.total?` · Vehicle ${Number(a.Vehicle.total).toLocaleString("en-US")}`:""}</div>${rows||'<div class="card-meta">Δεν βρέθηκαν Mercenary rows.</div>'}`;
+    const r=currentTroopReview[side],rows=r?.rows||[];
+    if(!rows.length)return`<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν troop rows.</div>`;
+    const cards=rows.map((x,i)=>`<div class="review-card">
+      <strong>Row ${i+1} · ${x.isMercenary?"Mercenary":"Regular"} ${x.type||"Unknown"} ${x.tier?`T${x.tier}`:"T?"}</strong>
+      <div class="card-meta">Total ${Number(x.total||0).toLocaleString("en-US")} · Kills ${Number(x.kills||0).toLocaleString("en-US")} · Losses ${Number(x.losses||0).toLocaleString("en-US")}</div>
+      <div class="grid">
+        <label>Class<select data-troop-side="${side}" data-troop-index="${i}" data-troop-key="class">
+          <option value="Regular" ${!x.isMercenary?"selected":""}>Regular</option>
+          <option value="Mercenary" ${x.isMercenary?"selected":""}>Mercenary</option>
+        </select></label>
+        <label>Type<select data-troop-side="${side}" data-troop-index="${i}" data-troop-key="type">
+          ${["Unknown","Bruiser","Hitman","Biker","Vehicle"].map(v=>`<option ${x.type===v?"selected":""}>${v}</option>`).join("")}
+        </select></label>
+        <label>Tier<select data-troop-side="${side}" data-troop-index="${i}" data-troop-key="tier">
+          <option value="">T?</option>${[1,2,3,4,5,6].map(v=>`<option value="${v}" ${Number(x.tier)===v?"selected":""}>T${v}</option>`).join("")}
+        </select></label>
+      </div>
+    </div>`).join("");
+    const totals=rowTroopTotals(rows);
+    return`<div class="rule-box"><strong>${label} — icon-first rows</strong><br>
+      B ${Number(totals.Bruiser.total).toLocaleString("en-US")} ·
+      H ${Number(totals.Hitman.total).toLocaleString("en-US")} ·
+      Bi ${Number(totals.Biker.total).toLocaleString("en-US")} ·
+      Car ${Number(totals.Vehicle.total).toLocaleString("en-US")}</div>${cards}`;
   };
   box.innerHTML=one("att","Επιτιθέμενος")+one("def","Αμυνόμενος");
-  box.querySelectorAll("[data-merc-side]").forEach(sel=>{
-    const side=sel.dataset.mercSide,idx=+sel.dataset.mercIndex;sel.value=currentTroopReview[side]?.merc?.[idx]?.type||"Unknown";
-    sel.onchange=()=>{
-      if(currentTroopReview[side]?.merc?.[idx])currentTroopReview[side].merc[idx].type=sel.value;
-      applyTroopReview();
-    };
+  box.querySelectorAll("[data-troop-side]").forEach(el=>el.onchange=()=>{
+    const side=el.dataset.troopSide,idx=+el.dataset.troopIndex,key=el.dataset.troopKey,row=currentTroopReview[side]?.rows?.[idx];
+    if(!row)return;
+    if(key==="class")row.isMercenary=el.value==="Mercenary";
+    if(key==="type")row.type=el.value;
+    if(key==="tier")row.tier=el.value?Number(el.value):null;
+    applyTroopReview();renderTroopReview();
   });
 }
 function applyTroopReview(){
-  // Recalculate from the immutable Regular T4 baseline every time.
-  // This prevents double-adding a Mercenary when the user changes its type.
   for(const [side,prefix] of [["att","att"],["def","def"]]){
-    const review=currentTroopReview?.[side];
-    if(!review?.regular)continue;
-
-    const totals=reviewSideTotals(review);
-    for(const type of ["Bruiser","Hitman","Biker"]){
-      writeTroopType(prefix,type,totals[type]);
-    }
+    const rows=currentTroopReview?.[side]?.rows||[];
+    const totals=rowTroopTotals(rows);
+    for(const type of ["Bruiser","Hitman","Biker"])writeTroopType(prefix,type,totals[type]);
   }
-  preview();
-  renderCompleteness();
-
-  const unresolved=["att","def"].reduce((n,side)=>
-    n+(currentTroopReview?.[side]?.merc||[]).filter(m=>!m.type||m.type==="Unknown").length,0);
-
+  preview();renderCompleteness();
+  const unresolved=["att","def"].reduce((n,side)=>n+(currentTroopReview?.[side]?.rows||[])
+    .filter(r=>!r.type||r.type==="Unknown"||!r.tier).length,0);
   $("formMessage").textContent=unresolved
-    ? `Απομένουν ${unresolved} Mercenary rows: διάλεξε μόνο τον troop type.`
-    : "Regular + Mercenaries ενώθηκαν στα τελικά troop totals.";
+    ?`Απομένουν ${unresolved} troop rows χωρίς ασφαλές Type/Tier. Επιβεβαίωσέ τα στο Troop Review.`
+    :"Όλες οι troop rows έχουν Class + Type + Tier και αθροίστηκαν στα τελικά totals.";
 }
-
-function autoResolveSparseMercenary(review){
-  if(!review?.regular||!review?.merc?.length)return false;
-  const unknown=review.merc.filter(m=>!m.type||m.type==="Unknown");
-  if(unknown.length!==1)return false;
-  const m=unknown[0];
-  if(Number(m.total||0)<100000)return false;
-
-  const vals=["Bruiser","Hitman","Biker"].map(type=>({
-    type,total:Number(review.regular[type]?.total||0)
-  }));
-  const sparse=vals.filter(x=>x.total>=0&&x.total<=1000);
-  const strong=vals.filter(x=>x.total>50000);
-
-  // Only act when the pattern is unambiguous: exactly one near-empty regular
-  // combat type and the other two regular types are substantial.
-  if(sparse.length===1&&strong.length===2){
-    m.type=sparse[0].type;
-    m.autoConfidence=.78;
-    m.autoReason="single sparse regular type + large Mercenary row";
-    return true;
-  }
-  return false;
-}
-
 async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
-  const out=[],attRows=sideRowsFromBattleDetails(result,"att"),defRows=sideRowsFromBattleDetails(result,"def"),
-    att=splitRegularAndMercRows(attRows),def=splitRegularAndMercRows(defRows);
-
+  const out=[],attRows=sideRowsFromBattleDetails(result,"att"),defRows=sideRowsFromBattleDetails(result,"def");
   const attTypes=await classifyBattleRowsByIcons(dataUrl,attRows,result);
   const defTypes=await classifyBattleRowsByIcons(dataUrl,defRows,result);
-  const applyTypes=(review,rows,types)=>{
-    if(!review?.merc?.length||!types)return;
-    // IMPORTANT: rows can still include the T4 Vehicle row. Match each Mercenary
-    // by its Total/Kills/Losses tuple instead of using a positional offset.
-    review.merc.forEach(m=>{
-      const idx=rows.findIndex(r =>
-        Number(r.nums?.[0]||0)===Number(m.total||0) &&
-        Number(r.nums?.[1]||0)===Number(m.kills||0) &&
-        Number(r.nums?.[2]||0)===Number(m.losses||0)
-      );
-      const q=idx>=0?types[idx]:null;
-      if(q&&q.confidence>=.50){m.type=q.type;m.autoConfidence=q.confidence}
-    });
-  };
-  applyTypes(att,attRows,attTypes);applyTypes(def,defRows,defTypes);
-  autoResolveSparseMercenary(att);
-  autoResolveSparseMercenary(def);
 
+  const make=(rows,types,side)=>({rows:rows.map((r,i)=>{
+    const q=types?.[i]||{};
+    return{
+      id:i,cy:r.cy,total:r.nums?.[0]||0,kills:r.nums?.[1]||0,losses:r.nums?.[2]||0,
+      type:q.type||"Unknown",tier:tierFromRowWords(r,side,result),
+      isMercenary:!!q.isMercenary,confidence:Number(q.confidence||0),
+      sourceText:r.text||""
+    };
+  })});
+  const att=make(attRows,attTypes,"att"),def=make(defRows,defTypes,"def");
   currentTroopReview={att,def};
-  renderTroopReview();
-  // v9: totals shown in the main form are final totals, not Regular-only totals.
-  // Any confidently recognized Mercenary is merged immediately.
-  applyTroopReview();
+  renderTroopReview();applyTroopReview();
 
-  // Main fields must contain FINAL totals (Regular + confidently identified Mercenaries).
-  // Never overwrite them again with the Regular-only baseline.
   for(const [side,p,r] of [["att","att",att],["def","def",def]]){
-    if(!r.regular)continue;
-    const totals=reviewSideTotals(r);
+    const totals=rowTroopTotals(r.rows);
     for(const type of ["Bruiser","Hitman","Biker"]){
-      const x=totals[type];
-      writeTroopType(p,type,x);
-      out.push({target:troopFieldId(p,type,"total"),value:x.total,label:`${side} ${type} final total`,sourceIndex,sourceLine:"Battle Details · Regular + identified Mercenary",confidence:1});
-      out.push({target:troopFieldId(p,type,"kills"),value:x.kills,label:`${side} ${type} final kills`,sourceIndex,sourceLine:"Battle Details · Regular + identified Mercenary",confidence:1});
-      out.push({target:troopFieldId(p,type,"losses"),value:x.losses,label:`${side} ${type} final losses`,sourceIndex,sourceLine:"Battle Details · Regular + identified Mercenary",confidence:1});
+      const x=totals[type];writeTroopType(p,type,x);
+      out.push({target:troopFieldId(p,type,"total"),value:x.total,label:`${side} ${type} all tiers total`,sourceIndex,sourceLine:"Battle Details · icon/type/tier aggregation",confidence:.99});
+      out.push({target:troopFieldId(p,type,"kills"),value:x.kills,label:`${side} ${type} all tiers kills`,sourceIndex,sourceLine:"Battle Details · icon/type/tier aggregation",confidence:.99});
+      out.push({target:troopFieldId(p,type,"losses"),value:x.losses,label:`${side} ${type} all tiers losses`,sourceIndex,sourceLine:"Battle Details · icon/type/tier aggregation",confidence:.99});
     }
   }
-
-  preview();
-  return out;
+  preview();return out;
 }
 
 function numericTokens(result){
@@ -2752,7 +2718,7 @@ async function runOcrImport(){
   $("attackerFaction").value=canonicalFaction($("attackerFaction").value);
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v11.4 visual-symbol recognition.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v11.5 icon+tier row parser.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -2781,8 +2747,8 @@ function genericImportIntegrity(){
   for(const [side,prefix,raidId] of [
     ["att","att","attackerRaid"],["def","def","defenderRaid"]
   ]){
-    const unresolved=(currentTroopReview?.[side]?.merc||[]).filter(m=>!m.type||m.type==="Unknown");
-    if(unresolved.length)issues.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} Mercenary χωρίς troop type`);
+    const unresolved=(currentTroopReview?.[side]?.rows||[]).filter(r=>!r.type||r.type==="Unknown"||!r.tier);
+    if(unresolved.length)issues.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} troop rows χωρίς ασφαλές Type/Tier`);
 
     const raid=num(raidId);
     const total=num(`${prefix}Bruisers`)+num(`${prefix}Hitmen`)+num(`${prefix}Bikers`);
