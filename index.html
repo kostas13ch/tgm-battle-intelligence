@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <title>TGM Battle Intelligence v11.2</title>
+  <title>TGM Battle Intelligence v11.3</title>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--text:#f8fafc;--muted:#9fb0c6;--line:#2a3954;--accent:#eab308;--ok:#22c55e;--bad:#ef4444}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070b14,#0b1220);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.topbar{position:sticky;top:0;z-index:20;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(7,11,20,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.container{max-width:960px;margin:auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}.hidden{display:none!important}.hero,.panel,.battle-card,.player-card,.metric,.quick-card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.hero{padding:20px;margin-bottom:14px}.hero h2{margin:0 0 8px}.hero p,.section-head p{margin:0;color:var(--muted)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.quick-card{min-height:120px;color:var(--text);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end}.quick-card span{font-size:28px;margin-bottom:auto}.quick-card small{color:var(--muted);margin-top:4px}.panel{padding:16px;margin-top:14px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.section-head h2{margin:0}.form-grid{display:grid;gap:10px;margin-bottom:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:repeat(3,1fr)}label{display:block;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1323;color:var(--text);font-size:16px}textarea{min-height:90px}button,.file-button{border:0;border-radius:14px;padding:12px 14px;background:var(--accent);color:#17120a;font-weight:800}button.secondary,.file-button,button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--bad);color:white}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.ratio-preview{background:var(--panel2);border-radius:10px;padding:9px 10px;margin:-2px 0 14px;color:#facc15;font-weight:800;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.metric{padding:14px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:26px;margin-top:4px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.battle-card,.player-card{padding:14px;margin-bottom:10px}.card-top{display:flex;justify-content:space-between;gap:10px}.card-title{font-weight:800}.card-meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:7px}.badge{padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel2)}.badge.win{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:34px 10px}.file-button input{display:none}.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,20,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:18px}.bottom-nav button span{display:block;font-size:10px}.bottom-nav button.active{color:#facc15}.status{min-height:18px;color:var(--muted);font-size:13px}@media(min-width:760px){.quick-grid{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}@media(max-width:560px){.form-grid.two,.form-grid.three,.filters{grid-template-columns:1fr}}
 
@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.2 · Weapon Review Sync Fix</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v11.3 · Generic Report Validation</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -277,7 +277,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v11.2</h4>
+          <h4>🧬 Super Weapon Intelligence v11.3</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -1176,6 +1176,31 @@ function applyTroopReview(){
     ? `Απομένουν ${unresolved} Mercenary rows: διάλεξε μόνο τον troop type.`
     : "Regular + Mercenaries ενώθηκαν στα τελικά troop totals.";
 }
+
+function autoResolveSparseMercenary(review){
+  if(!review?.regular||!review?.merc?.length)return false;
+  const unknown=review.merc.filter(m=>!m.type||m.type==="Unknown");
+  if(unknown.length!==1)return false;
+  const m=unknown[0];
+  if(Number(m.total||0)<100000)return false;
+
+  const vals=["Bruiser","Hitman","Biker"].map(type=>({
+    type,total:Number(review.regular[type]?.total||0)
+  }));
+  const sparse=vals.filter(x=>x.total>=0&&x.total<=1000);
+  const strong=vals.filter(x=>x.total>50000);
+
+  // Only act when the pattern is unambiguous: exactly one near-empty regular
+  // combat type and the other two regular types are substantial.
+  if(sparse.length===1&&strong.length===2){
+    m.type=sparse[0].type;
+    m.autoConfidence=.78;
+    m.autoReason="single sparse regular type + large Mercenary row";
+    return true;
+  }
+  return false;
+}
+
 async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
   const out=[],attRows=sideRowsFromBattleDetails(result,"att"),defRows=sideRowsFromBattleDetails(result,"def"),
     att=splitRegularAndMercRows(attRows),def=splitRegularAndMercRows(defRows);
@@ -1197,6 +1222,8 @@ async function parseBattleDetailsWords(result,sourceIndex,dataUrl){
     });
   };
   applyTypes(att,attRows,attTypes);applyTypes(def,defRows,defTypes);
+  autoResolveSparseMercenary(att);
+  autoResolveSparseMercenary(def);
 
   currentTroopReview={att,def};
   renderTroopReview();
@@ -2310,10 +2337,33 @@ function reconcileOutcomeSuggestions(items){
   }
   return out
 }
-function dedupeOcrSuggestions(items){const best=new Map();for(const s of items){const old=best.get(s.target);if(!old||s.confidence>old.confidence)best.set(s.target,s)}return[...best.values()]}
+function sanitizeOcrSuggestion(s){
+  if(!s||!s.target)return s;
+  const percentStat=/^(att|def)(Preview)?(Crew|Bruiser|Hitman|Biker|Vehicle)?(Atk|Def|Hp)$/i.test(s.target)
+    || /^(att|def)(CrewAtk|CrewDef|CrewHp|BruiserAtk|HitmanAtk|BikerAtk|BruiserDef|HitmanDef|BikerDef|BruiserHp|HitmanHp|BikerHp)$/i.test(s.target);
+  let v=Number(s.value);
+  if(percentStat&&Number.isFinite(v)&&v>3000){
+    const original=v;
+    while(v>3000)v/=10;
+    v=Math.round(v*10)/10;
+    return {...s,value:v,confidence:Math.min(Number(s.confidence||0),.82),
+      sourceLine:`${s.sourceLine||""} · sanity ${original}→${v}`};
+  }
+  return s;
+}
+function dedupeOcrSuggestions(items){
+  const best=new Map();
+  for(const raw of items){
+    const s=sanitizeOcrSuggestion(raw);
+    const old=best.get(s.target);
+    if(!old||s.confidence>old.confidence)best.set(s.target,s)
+  }
+  return[...best.values()]
+}
 function mergeOcrSuggestions(items){
   const best=new Map(),other=[];
-  for(const x of items||[]){
+  for(const raw of items||[]){
+    const x=sanitizeOcrSuggestion(raw);
     if(!x || !x.target){other.push(x);continue}
     const old=best.get(x.target);
     if(!old || Number(x.confidence||0)>Number(old.confidence||0))best.set(x.target,x);
@@ -2594,7 +2644,8 @@ async function runOcrImport(){
   }
   const unresolvedMerc=["att","def"].reduce((n,k)=>n+(currentTroopReview?.[k]?.merc||[]).filter(m=>!m.type||m.type==="Unknown").length,0);
   const combatCount=(currentEnforcerReview.att?.length||0)+(currentEnforcerReview.def?.length||0)+(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${v111Finalized?" · reference weapon slots 5/5 + 5/5":""}. v11.2 weapon-review sync.`;
+  const integrity=genericImportIntegrity();
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v11.3 generic-report validation.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -2614,10 +2665,57 @@ function applyOcrSuggestions(auto=false){
   preview();renderCompleteness();if(!auto)$("ocrStatus").textContent=`Εφαρμόστηκαν ${applied} προτάσεις. Έλεγξέ τες πριν την αποθήκευση.`
 }
 
-function reportCompleteness(){const checks=[["Παίκτες",!!norm($("attacker").value)&&!!norm($("defender").value)],["Formations",!!$("attackerFormation").value&&!!$("defenderFormation").value],["Troops επιτιθέμενου",num("attBruisers")+num("attHitmen")+num("attBikers")>0],["Troops αμυνόμενου",num("defBruisers")+num("defHitmen")+num("defBikers")>0],["Βασικά stats",num("attCrewAtk")+num("defCrewAtk")>0],["Αποτέλεσμα",!!$("winnerSide").value],["Screenshots",currentScreenshots.length>0],["Screenshots αναφοράς",currentScreenshots.length>=1],["Overview screenshot",currentScreenshots.some(s=>s.reportType==="Overview")],["Buff screenshots",currentScreenshots.filter(s=>s.reportType==="Buff Comparison").length>=1],["Buff Preview screenshot",currentScreenshots.some(s=>s.reportType==="Buff Preview")],["Battle Details screenshot",currentScreenshots.some(s=>s.reportType==="Battle Details")],["Enforcer combat",!!$("attEnforcerSlots").value||!!$("defEnforcerSlots").value],["Super Weapon combat",!!$("attWeaponSlots").value||!!$("defWeaponSlots").value]];const done=checks.filter(x=>x[1]).length,score=Math.round(done/checks.length*100);return{checks,score}}
+function reportCompleteness(){const checks=[["Παίκτες",!!norm($("attacker").value)&&!!norm($("defender").value)],["Formations",!!$("attackerFormation").value&&!!$("defenderFormation").value],["Troops επιτιθέμενου",num("attBruisers")+num("attHitmen")+num("attBikers")>0],["Troops αμυνόμενου",num("defBruisers")+num("defHitmen")+num("defBikers")>0],["Βασικά stats",num("attCrewAtk")+num("defCrewAtk")>0],["Αποτέλεσμα",!!$("winnerSide").value],["Screenshots",currentScreenshots.length>0],["Screenshots αναφοράς",currentScreenshots.length>=1],["Overview screenshot",currentScreenshots.some(s=>s.reportType==="Overview")],["Buff screenshots",currentScreenshots.filter(s=>s.reportType==="Buff Comparison").length>=1],["Buff Preview screenshot",currentScreenshots.some(s=>s.reportType==="Buff Preview")],["Battle Details screenshot",currentScreenshots.some(s=>s.reportType==="Battle Details")],["Enforcer combat",!!$("attEnforcerSlots").value||!!$("defEnforcerSlots").value],["Super Weapon combat",!!$("attWeaponSlots").value||!!$("defWeaponSlots").value],["Integrity",genericImportIntegrity().ok]];const done=checks.filter(x=>x[1]).length,score=Math.round(done/checks.length*100);return{checks,score}}
 function renderCompleteness(){const r=reportCompleteness(),cls=r.score>=80?"score-good":r.score>=50?"score-mid":"score-bad";$("completenessOutput").innerHTML=`<div class="plan-score ${cls}">${r.score}%</div><div class="completeness-bar"><div class="completeness-fill" style="width:${r.score}%"></div></div><div class="checklist">${r.checks.map(([name,ok])=>`<div class="checkitem ${ok?"ok":""}"><span>${esc(name)}</span><strong>${ok?"✓":"—"}</strong></div>`).join("")}</div>`}
 
-function collect(){const a=norm($("attacker").value),d=norm($("defender").value);if(!a||!d)throw Error("Συμπλήρωσε επιτιθέμενο και αμυνόμενο.");return{id:$("editingId").value||id(),schemaVersion:10.0,date:$("battleDate").value,battleTime:$("battleTime").value,mode:$("battleMode").value,attacker:a,attackerKey:key(a),attackerFaction:norm($("attackerFaction").value),defender:d,defenderKey:key(d),defenderFaction:norm($("defenderFaction").value),attackerFormation:$("attackerFormation").value,defenderFormation:$("defenderFormation").value,attackerRaid:num("attackerRaid"),defenderRaid:num("defenderRaid"),attackerTroops:{bruisers:num("attBruisers"),hitmen:num("attHitmen"),bikers:num("attBikers")},defenderTroops:{bruisers:num("defBruisers"),hitmen:num("defHitmen"),bikers:num("defBikers")},attackerStats:{previewBruiserAtk:num("attPreviewBruiserAtk"),previewHitmanAtk:num("attPreviewHitmanAtk"),previewBikerAtk:num("attPreviewBikerAtk"),previewVehicleAtk:num("attPreviewVehicleAtk"),previewBruiserDef:num("attPreviewBruiserDef"),previewHitmanDef:num("attPreviewHitmanDef"),previewBikerDef:num("attPreviewBikerDef"),previewVehicleDef:num("attPreviewVehicleDef"),previewBruiserHp:num("attPreviewBruiserHp"),previewHitmanHp:num("attPreviewHitmanHp"),previewBikerHp:num("attPreviewBikerHp"),previewVehicleHp:num("attPreviewVehicleHp"),crewAtk:num("attCrewAtk"),crewDef:num("attCrewDef"),crewHp:num("attCrewHp"),bruiserAtk:num("attBruiserAtk"),hitmanAtk:num("attHitmanAtk"),bikerAtk:num("attBikerAtk"),bruiserDef:num("attBruiserDef"),hitmanDef:num("attHitmanDef"),bikerDef:num("attBikerDef"),bruiserHp:num("attBruiserHp"),hitmanHp:num("attHitmanHp"),bikerHp:num("attBikerHp"),enemyAtkReduction:num("attEnemyAtkReduction"),enemyDefReduction:num("attEnemyDefReduction"),enemyHpReduction:num("attEnemyHpReduction"),killRate:num("attKillRate"),crewDmg:num("attCrewDmg"),bruiserCounterDmgIncrease:num("attBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("attHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("attBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("attBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("attHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("attBikerCounterDmgReduction"),bruiserReducedDamage:num("attBruiserReducedDamage"),hitmanReducedDamage:num("attHitmanReducedDamage"),bikerReducedDamage:num("attBikerReducedDamage"),totalAssociates:num("attTotalAssociates"),wounded:num("attWounded"),dead:num("attDead"),alive:num("attAlive"),influenceRating:num("attInfluenceRating"),bruiserKills:num("attBruiserKills"),hitmanKills:num("attHitmanKills"),bikerKills:num("attBikerKills"),bruiserBattleLosses:num("attBruiserBattleLosses"),hitmanBattleLosses:num("attHitmanBattleLosses"),bikerBattleLosses:num("attBikerBattleLosses"),bruiserDmg:num("attBruiserDmg"),hitmanDmg:num("attHitmanDmg"),bikerDmg:num("attBikerDmg")},defenderStats:{previewBruiserAtk:num("defPreviewBruiserAtk"),previewHitmanAtk:num("defPreviewHitmanAtk"),previewBikerAtk:num("defPreviewBikerAtk"),previewVehicleAtk:num("defPreviewVehicleAtk"),previewBruiserDef:num("defPreviewBruiserDef"),previewHitmanDef:num("defPreviewHitmanDef"),previewBikerDef:num("defPreviewBikerDef"),previewVehicleDef:num("defPreviewVehicleDef"),previewBruiserHp:num("defPreviewBruiserHp"),previewHitmanHp:num("defPreviewHitmanHp"),previewBikerHp:num("defPreviewBikerHp"),previewVehicleHp:num("defPreviewVehicleHp"),crewAtk:num("defCrewAtk"),crewDef:num("defCrewDef"),crewHp:num("defCrewHp"),bruiserAtk:num("defBruiserAtk"),hitmanAtk:num("defHitmanAtk"),bikerAtk:num("defBikerAtk"),bruiserDef:num("defBruiserDef"),hitmanDef:num("defHitmanDef"),bikerDef:num("defBikerDef"),bruiserHp:num("defBruiserHp"),hitmanHp:num("defHitmanHp"),bikerHp:num("defBikerHp"),enemyAtkReduction:num("defEnemyAtkReduction"),enemyDefReduction:num("defEnemyDefReduction"),enemyHpReduction:num("defEnemyHpReduction"),killRate:num("defKillRate"),crewDmg:num("defCrewDmg"),bruiserCounterDmgIncrease:num("defBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("defHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("defBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("defBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("defHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("defBikerCounterDmgReduction"),bruiserReducedDamage:num("defBruiserReducedDamage"),hitmanReducedDamage:num("defHitmanReducedDamage"),bikerReducedDamage:num("defBikerReducedDamage"),totalAssociates:num("defTotalAssociates"),wounded:num("defWounded"),dead:num("defDead"),alive:num("defAlive"),influenceRating:num("defInfluenceRating"),bruiserKills:num("defBruiserKills"),hitmanKills:num("defHitmanKills"),bikerKills:num("defBikerKills"),bruiserBattleLosses:num("defBruiserBattleLosses"),hitmanBattleLosses:num("defHitmanBattleLosses"),bikerBattleLosses:num("defBikerBattleLosses"),bruiserDmg:num("defBruiserDmg"),hitmanDmg:num("defHitmanDmg"),bikerDmg:num("defBikerDmg")},attackerLosses:num("attLosses"),defenderLosses:num("defLosses"),attackerEnforcers:$("attackerEnforcers").value.trim(),defenderEnforcers:$("defenderEnforcers").value.trim(),attackerSuperWeapons:$("attackerSuperWeapons").value.trim(),defenderSuperWeapons:$("defenderSuperWeapons").value.trim(),attEnforcerSlots:$("attEnforcerSlots").value.trim(),defEnforcerSlots:$("defEnforcerSlots").value.trim(),attWeaponSlots:$("attWeaponSlots").value.trim(),defWeaponSlots:$("defWeaponSlots").value.trim(),winnerSide:$("winnerSide").value,building:norm($("building").value),notes:$("notes").value.trim(),screenshots:currentScreenshots.map(s=>({...s})),completenessScore:reportCompleteness().score,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
+
+function genericImportIntegrity(){
+  const issues=[],warnings=[];
+  for(const [side,prefix,raidId] of [
+    ["att","att","attackerRaid"],["def","def","defenderRaid"]
+  ]){
+    const unresolved=(currentTroopReview?.[side]?.merc||[]).filter(m=>!m.type||m.type==="Unknown");
+    if(unresolved.length)issues.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} Mercenary χωρίς troop type`);
+
+    const raid=num(raidId);
+    const total=num(`${prefix}Bruisers`)+num(`${prefix}Hitmen`)+num(`${prefix}Bikers`);
+    if(raid>0){
+      const diff=Math.abs(raid-total);
+      const tolerance=Math.max(1000,raid*.0015); // allows tiny Vehicle rows
+      if(diff>tolerance)issues.push(`${side==="att"?"Attacker":"Defender"} troop sum ${total.toLocaleString("en-US")} ≠ raid ${raid.toLocaleString("en-US")}`);
+    }
+  }
+
+  const statIds=[
+    "attCrewAtk","attCrewDef","attCrewHp","attBruiserAtk","attHitmanAtk","attBikerAtk",
+    "attBruiserDef","attHitmanDef","attBikerDef","attBruiserHp","attHitmanHp","attBikerHp",
+    "defCrewAtk","defCrewDef","defCrewHp","defBruiserAtk","defHitmanAtk","defBikerAtk",
+    "defBruiserDef","defHitmanDef","defBikerDef","defBruiserHp","defHitmanHp","defBikerHp"
+  ];
+  for(const id of statIds){
+    const v=num(id);
+    if(v>3000)issues.push(`${id}: ύποπτη OCR τιμή ${v}`);
+  }
+
+  // Unknown weapon names are allowed: combat values are still useful and the
+  // dropdown review exists specifically for icon/name confirmation.
+  const unknownWeapons=["att","def"].reduce((n,side)=>
+    n+(currentWeaponReview?.[side]||[]).filter(x=>!x.weapon).length,0);
+  if(unknownWeapons)warnings.push(`${unknownWeapons} Super Weapon names χρειάζονται review`);
+
+  const zeroEnforcer=(currentEnforcerReview.att||[]).concat(currentEnforcerReview.def||[])
+    .filter(x=>Number(x.activation||0)>0&&Number(x.damage||0)===0).length;
+  if(zeroEnforcer)warnings.push(`${zeroEnforcer} Enforcer slots έχουν 0 damage — έλεγξε το screenshot`);
+
+  return {ok:issues.length===0,issues,warnings};
+}
+
+function collect(){
+  const a=norm($("attacker").value),d=norm($("defender").value);
+  if(!a||!d)throw Error("Συμπλήρωσε επιτιθέμενο και αμυνόμενο.");
+  const integrity=genericImportIntegrity();
+  if(!integrity.ok)throw Error("Δεν αποθηκεύτηκε: "+integrity.issues.join(" · "));
+  return{id:$("editingId").value||id(),schemaVersion:10.0,date:$("battleDate").value,battleTime:$("battleTime").value,mode:$("battleMode").value,attacker:a,attackerKey:key(a),attackerFaction:norm($("attackerFaction").value),defender:d,defenderKey:key(d),defenderFaction:norm($("defenderFaction").value),attackerFormation:$("attackerFormation").value,defenderFormation:$("defenderFormation").value,attackerRaid:num("attackerRaid"),defenderRaid:num("defenderRaid"),attackerTroops:{bruisers:num("attBruisers"),hitmen:num("attHitmen"),bikers:num("attBikers")},defenderTroops:{bruisers:num("defBruisers"),hitmen:num("defHitmen"),bikers:num("defBikers")},attackerStats:{previewBruiserAtk:num("attPreviewBruiserAtk"),previewHitmanAtk:num("attPreviewHitmanAtk"),previewBikerAtk:num("attPreviewBikerAtk"),previewVehicleAtk:num("attPreviewVehicleAtk"),previewBruiserDef:num("attPreviewBruiserDef"),previewHitmanDef:num("attPreviewHitmanDef"),previewBikerDef:num("attPreviewBikerDef"),previewVehicleDef:num("attPreviewVehicleDef"),previewBruiserHp:num("attPreviewBruiserHp"),previewHitmanHp:num("attPreviewHitmanHp"),previewBikerHp:num("attPreviewBikerHp"),previewVehicleHp:num("attPreviewVehicleHp"),crewAtk:num("attCrewAtk"),crewDef:num("attCrewDef"),crewHp:num("attCrewHp"),bruiserAtk:num("attBruiserAtk"),hitmanAtk:num("attHitmanAtk"),bikerAtk:num("attBikerAtk"),bruiserDef:num("attBruiserDef"),hitmanDef:num("attHitmanDef"),bikerDef:num("attBikerDef"),bruiserHp:num("attBruiserHp"),hitmanHp:num("attHitmanHp"),bikerHp:num("attBikerHp"),enemyAtkReduction:num("attEnemyAtkReduction"),enemyDefReduction:num("attEnemyDefReduction"),enemyHpReduction:num("attEnemyHpReduction"),killRate:num("attKillRate"),crewDmg:num("attCrewDmg"),bruiserCounterDmgIncrease:num("attBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("attHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("attBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("attBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("attHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("attBikerCounterDmgReduction"),bruiserReducedDamage:num("attBruiserReducedDamage"),hitmanReducedDamage:num("attHitmanReducedDamage"),bikerReducedDamage:num("attBikerReducedDamage"),totalAssociates:num("attTotalAssociates"),wounded:num("attWounded"),dead:num("attDead"),alive:num("attAlive"),influenceRating:num("attInfluenceRating"),bruiserKills:num("attBruiserKills"),hitmanKills:num("attHitmanKills"),bikerKills:num("attBikerKills"),bruiserBattleLosses:num("attBruiserBattleLosses"),hitmanBattleLosses:num("attHitmanBattleLosses"),bikerBattleLosses:num("attBikerBattleLosses"),bruiserDmg:num("attBruiserDmg"),hitmanDmg:num("attHitmanDmg"),bikerDmg:num("attBikerDmg")},defenderStats:{previewBruiserAtk:num("defPreviewBruiserAtk"),previewHitmanAtk:num("defPreviewHitmanAtk"),previewBikerAtk:num("defPreviewBikerAtk"),previewVehicleAtk:num("defPreviewVehicleAtk"),previewBruiserDef:num("defPreviewBruiserDef"),previewHitmanDef:num("defPreviewHitmanDef"),previewBikerDef:num("defPreviewBikerDef"),previewVehicleDef:num("defPreviewVehicleDef"),previewBruiserHp:num("defPreviewBruiserHp"),previewHitmanHp:num("defPreviewHitmanHp"),previewBikerHp:num("defPreviewBikerHp"),previewVehicleHp:num("defPreviewVehicleHp"),crewAtk:num("defCrewAtk"),crewDef:num("defCrewDef"),crewHp:num("defCrewHp"),bruiserAtk:num("defBruiserAtk"),hitmanAtk:num("defHitmanAtk"),bikerAtk:num("defBikerAtk"),bruiserDef:num("defBruiserDef"),hitmanDef:num("defHitmanDef"),bikerDef:num("defBikerDef"),bruiserHp:num("defBruiserHp"),hitmanHp:num("defHitmanHp"),bikerHp:num("defBikerHp"),enemyAtkReduction:num("defEnemyAtkReduction"),enemyDefReduction:num("defEnemyDefReduction"),enemyHpReduction:num("defEnemyHpReduction"),killRate:num("defKillRate"),crewDmg:num("defCrewDmg"),bruiserCounterDmgIncrease:num("defBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("defHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("defBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("defBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("defHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("defBikerCounterDmgReduction"),bruiserReducedDamage:num("defBruiserReducedDamage"),hitmanReducedDamage:num("defHitmanReducedDamage"),bikerReducedDamage:num("defBikerReducedDamage"),totalAssociates:num("defTotalAssociates"),wounded:num("defWounded"),dead:num("defDead"),alive:num("defAlive"),influenceRating:num("defInfluenceRating"),bruiserKills:num("defBruiserKills"),hitmanKills:num("defHitmanKills"),bikerKills:num("defBikerKills"),bruiserBattleLosses:num("defBruiserBattleLosses"),hitmanBattleLosses:num("defHitmanBattleLosses"),bikerBattleLosses:num("defBikerBattleLosses"),bruiserDmg:num("defBruiserDmg"),hitmanDmg:num("defHitmanDmg"),bikerDmg:num("defBikerDmg")},attackerLosses:num("attLosses"),defenderLosses:num("defLosses"),attackerEnforcers:$("attackerEnforcers").value.trim(),defenderEnforcers:$("defenderEnforcers").value.trim(),attackerSuperWeapons:$("attackerSuperWeapons").value.trim(),defenderSuperWeapons:$("defenderSuperWeapons").value.trim(),attEnforcerSlots:$("attEnforcerSlots").value.trim(),defEnforcerSlots:$("defEnforcerSlots").value.trim(),attWeaponSlots:$("attWeaponSlots").value.trim(),defWeaponSlots:$("defWeaponSlots").value.trim(),winnerSide:$("winnerSide").value,building:norm($("building").value),notes:$("notes").value.trim(),screenshots:currentScreenshots.map(s=>({...s})),completenessScore:reportCompleteness().score,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
 async function save(){try{const b=collect(),old=await getBattle(b.id);if(old)b.createdAt=old.createdAt;await saveBattle(b);$("formMessage").textContent="Η μάχη αποθηκεύτηκε.";setTimeout(()=>{reset();page("battlesPage")},350)}catch(e){$("formMessage").textContent=e.message}}
 function winner(b){return b.winnerSide==="attacker"?b.attacker:b.defender}function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 
