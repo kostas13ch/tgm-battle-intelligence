@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.1 · Popup OCR + Weapon Recovery</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.2 · Weapon Object Detector</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -280,7 +280,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v18.1</h4>
+          <h4>🧬 Super Weapon Intelligence v18.2</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -2863,195 +2863,139 @@ v175RecoverCombatPage=async function(shot,index,mode){
 
 
 
-/* ===== v18.1 POPUP OCR + SUPER-WEAPON RECOVERY =====
-   Keeps v18.0 image-layout architecture and dynamic slot mapping.
-   Improvements:
-   - relaxed visual beige-box detector dedicated to 3-row weapon callouts;
-   - multi-variant digit OCR inside each already-detected popup row;
-   - no full-page numeric guessing, no hard-coded formation/slot order;
-   - unknown values stay null rather than being fabricated. */
 
-async function v181RelaxedPopupObjects(dataUrl,mode){
+/* ===== v18.2 WEAPON OBJECT DETECTOR =====
+   Keep the proven v18.0 Enforcer reader unchanged. Super Weapon pages use a
+   dedicated beige-object detector because their callouts are taller (3 rows) and
+   have different aspect ratios. No formation or fixed slot coordinates are used. */
+async function v182WeaponPopupObjects(dataUrl){
   const im=await loadDataUrlImage(dataUrl);
-  const maxW=720,scale=Math.min(1,maxW/im.naturalWidth);
-  const W=Math.max(1,Math.round(im.naturalWidth*scale)),H=Math.max(1,Math.round(im.naturalHeight*scale));
-  const c=document.createElement('canvas');c.width=W;c.height=H;
-  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
-  const id=ctx.getImageData(0,0,W,H),d=id.data,N=W*H;
-  const mask=new Uint8Array(N),seen=new Uint8Array(N),q=new Int32Array(N);
+  const maxW=660,scale=Math.min(1,maxW/(im.naturalWidth||im.width));
+  const W=Math.round((im.naturalWidth||im.width)*scale),H=Math.round((im.naturalHeight||im.height)*scale);
+  const c=document.createElement("canvas");c.width=W;c.height=H;
+  const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
+  const d=ctx.getImageData(0,0,W,H).data,N=W*H;
+  let mask=new Uint8Array(N);
   for(let p=0;p<N;p++){
     const i=p*4,[h,sat,val]=rgbToHsv255(d[i],d[i+1],d[i+2]);
-    // Weapon popups can be slightly darker/greyer than Enforcer popups after JPEG compression.
-    if(h>=4&&h<=85&&sat>=4&&sat<=195&&val>=94)mask[p]=1;
+    // Weapon bubbles are warm cream/beige. Wider tolerance than the generic
+    // detector, while excluding white text and dark UI background.
+    if(h>=5&&h<=88&&sat>=5&&sat<=205&&val>=95)mask[p]=1;
   }
-  // Small closing operation so thin dark glyphs/borders don't fragment the beige object.
-  const closed=mask.slice();
-  for(let pass=0;pass<2;pass++){
-    const base=closed.slice();
-    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
-      const p=y*W+x;if(base[p])continue;
-      let n=0;
-      for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)if(base[(y+yy)*W+x+xx])n++;
-      if(n>=6)closed[p]=1;
-    }
+  // 3x3 close bridges anti-aliased borders and the popup pointer into one object.
+  const dil=new Uint8Array(N),closed=new Uint8Array(N);
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    let on=0;for(let yy=-1;yy<=1&&!on;yy++)for(let xx=-1;xx<=1;xx++)if(mask[(y+yy)*W+x+xx]){on=1;break}
+    dil[y*W+x]=on;
   }
-  const comps=[];
-  for(let p=0;p<N;p++){
-    if(!closed[p]||seen[p])continue;
-    let qh=0,qt=0;q[qt++]=p;seen[p]=1;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    let on=1;for(let yy=-1;yy<=1&&on;yy++)for(let xx=-1;xx<=1;xx++)if(!dil[(y+yy)*W+x+xx]){on=0;break}
+    closed[y*W+x]=on;
+  }
+  const seen=new Uint8Array(N),queue=new Int32Array(N),comps=[];
+  for(let seed=0;seed<N;seed++){
+    if(!closed[seed]||seen[seed])continue;
+    let qh=0,qt=0;queue[qt++]=seed;seen[seed]=1;
     let minX=W,maxX=0,minY=H,maxY=0,area=0;
     while(qh<qt){
-      const z=q[qh++],x=z%W,y=(z/W)|0;area++;
+      const z=queue[qh++],x=z%W,y=(z/W)|0;area++;
       if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
-      if(x>0){const n=z-1;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(x<W-1){const n=z+1;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(y>0){const n=z-W;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
-      if(y<H-1){const n=z+W;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
+      if(x>0){const n=z-1;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(x<W-1){const n=z+1;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(y>0){const n=z-W;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(y<H-1){const n=z+W;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
     }
-    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H,ar=bw/Math.max(1,bh),fill=area/Math.max(1,bw*bh);
-    const okSize=wr>=.115&&wr<=.31&&hr>=(mode==='weapon'?.055:.042)&&hr<=.22;
-    const okAspect=mode==='weapon'?(ar>=1.00&&ar<=2.45):(ar>=1.15&&ar<=3.15);
-    const cy=(minY+maxY)/2;
-    if(okSize&&okAspect&&fill>=.38&&cy>H*.08&&cy<H*.92){
-      const ideal=mode==='weapon'?1.30:1.65;
-      const arScore=Math.exp(-Math.abs(Math.log(Math.max(.02,ar/ideal))));
-      const score=area*(.55+.45*arScore)*(.7+.3*Math.min(1,fill/.75));
-      comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale),cx:(minX+maxX)/(2*scale),cy:(minY+maxY)/(2*scale),_score:score});
+    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H,fill=area/Math.max(1,bw*bh),ar=bw/Math.max(1,bh);
+    // The real weapon callouts are roughly 17-21% of image width and 11-15% of
+    // image height, but allow substantial margin for different devices/crops.
+    if(wr>=.10&&wr<=.32&&hr>=.07&&hr<=.22&&ar>=.85&&ar<=2.25&&fill>=.38&&minY>H*.03&&maxY<H*.90){
+      comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale),fill,ar,
+        cx:(minX+bw/2)/scale,cy:(minY+bh/2)/scale});
     }
   }
-  // De-duplicate near-identical components caused by inner/outer beige borders.
-  comps.sort((a,b)=>b._score-a._score);
+  // NMS: one visual popup must produce one object even if border/pointer splits.
+  comps.sort((a,b)=>(b.area*(.7+.3*b.fill))-(a.area*(.7+.3*a.fill)));
   const keep=[];
-  for(const b of comps){
-    if(keep.some(k=>Math.hypot(k.cx-b.cx,k.cy-b.cy)<Math.min(k.w,b.w)*.18))continue;
-    keep.push(b);if(keep.length>=8)break;
-  }
-  // A combat page has exactly five callouts. Prefer a spatially distributed set.
-  if(keep.length<=5)return keep;
-  const chosen=[];
-  for(const b of keep){
-    const crowd=chosen.reduce((s,k)=>s+(Math.hypot(k.cx-b.cx,k.cy-b.cy)<b.w*.75?1:0),0);
-    if(!crowd)chosen.push(b);
-    if(chosen.length===5)break;
-  }
-  if(chosen.length<5)for(const b of keep){if(!chosen.includes(b))chosen.push(b);if(chosen.length===5)break}
-  return chosen;
+  const iou=(a,b)=>{const x0=Math.max(a.x,b.x),y0=Math.max(a.y,b.y),x1=Math.min(a.x+a.w,b.x+b.w),y1=Math.min(a.y+a.h,b.y+b.h);if(x1<=x0||y1<=y0)return 0;const inter=(x1-x0)*(y1-y0);return inter/(a.w*a.h+b.w*b.h-inter)};
+  for(const b of comps){if(keep.some(k=>iou(k,b)>.28||Math.hypot(k.cx-b.cx,k.cy-b.cy)<Math.min(k.w,b.w)*.35))continue;keep.push(b);if(keep.length===5)break}
+  return keep;
 }
 
-async function v181PopupObjects(dataUrl,mode){
-  let boxes=[];
-  try{boxes=await v180PopupObjects(dataUrl,mode)}catch(e){}
-  if(boxes.length===5)return boxes;
-  try{boxes=await v181RelaxedPopupObjects(dataUrl,mode)}catch(e){console.warn('v18.1 relaxed popup detector',e)}
-  return boxes.length===5?boxes:[];
-}
-
-function v181NormalizeDigitsText(t){
-  return String(t||'').replace(/[OoQD]/g,'0').replace(/[Il|!]/g,'1').replace(/[Ss]/g,'5').replace(/[Bb]/g,'8');
-}
-function v181NumberCandidates(text){
-  const out=[];
-  for(const m of v181NormalizeDigitsText(text).matchAll(/\d[\d,\. ]*/g)){
-    const raw=m[0].replace(/[ .]/g,'').replace(/,/g,'');
-    if(!raw)continue;const n=parseInt(raw,10);if(Number.isFinite(n))out.push(n);
-  }
-  return out;
-}
-
-async function v181OcrNumberBand(dataUrl,b,cy,rowIndex,mode,fullResult){
-  const im=await loadDataUrlImage(dataUrl),activation=rowIndex===0;
-  // Stay safely inside the numeric region. Weapon icons occupy a wider left column.
-  const left=mode==='weapon'?.36:.34;
-  const x=b.x+b.w*left,w=b.w*(.97-left);
-  const bandH=b.h*(mode==='weapon'?.205:.265);
-  const y=Math.max(b.y+1,cy-bandH/2),h=Math.min(b.y+b.h-1-y,bandH);
-  const votes=new Map();
-  const add=(n,weight=1)=>{
-    if(!Number.isFinite(n))return;
-    if(activation){if(n<0||n>20)return}else{if(!(n===0||n>=100))return}
-    votes.set(n,(votes.get(n)||0)+weight);
-  };
-  for(const scale of [5,7,9]){
-    const base=document.createElement('canvas');base.width=Math.max(150,Math.round(w*scale));base.height=Math.max(55,Math.round(h*scale));
-    const bx=base.getContext('2d',{willReadFrequently:true});bx.imageSmoothingEnabled=false;bx.drawImage(im,x,y,w,h,0,0,base.width,base.height);
-    const src=bx.getImageData(0,0,base.width,base.height);
-    const variants=[['gray',null],['thr',125],['thr',145],['thr',165],['thr',185],['thr',205]];
-    for(const [kind,thr] of variants){
-      const cc=document.createElement('canvas');cc.width=base.width;cc.height=base.height;const cx=cc.getContext('2d');
-      if(kind==='gray')cx.drawImage(base,0,0);
+async function v182WeaponNumber(dataUrl,b,rowIndex,fullResult){
+  const im=await loadDataUrlImage(dataUrl);
+  // Three stable rows within the detected popup object. These are relative to the
+  // popup itself, not to formation or screen coordinates.
+  const rel=[.20,.50,.80][rowIndex],bandH=b.h*.22;
+  const x=b.x+b.w*.31,w=b.w*.65,y=b.y+b.h*rel-bandH/2,h=bandH;
+  const candidates=[];
+  for(const mult of [4,5.5,7]){
+    const base=document.createElement('canvas');base.width=Math.max(110,Math.round(w*mult));base.height=Math.max(38,Math.round(h*mult));
+    const bx=base.getContext('2d',{willReadFrequently:true});bx.drawImage(im,x,y,w,h,0,0,base.width,base.height);
+    const raw=bx.getImageData(0,0,base.width,base.height);
+    const variants=[null,135,155,175,195];
+    for(const th of variants){
+      let url;
+      if(th==null)url=base.toDataURL('image/png');
       else{
-        const copy=new ImageData(new Uint8ClampedArray(src.data),src.width,src.height),dd=copy.data;
-        for(let i=0;i<dd.length;i+=4){
-          const g=.299*dd[i]+.587*dd[i+1]+.114*dd[i+2];const v=g<thr?0:255;dd[i]=dd[i+1]=dd[i+2]=v;dd[i+3]=255;
-        }
-        cx.putImageData(copy,0,0);
+        const cc=document.createElement('canvas');cc.width=base.width;cc.height=base.height;const xx=cc.getContext('2d');
+        const id=new ImageData(new Uint8ClampedArray(raw.data),raw.width,raw.height),dd=id.data;
+        for(let i=0;i<dd.length;i+=4){const lum=.299*dd[i]+.587*dd[i+1]+.114*dd[i+2];const v=lum<th?0:255;dd[i]=dd[i+1]=dd[i+2]=v;dd[i+3]=255}
+        xx.putImageData(id,0,0);url=cc.toDataURL('image/png');
       }
-      for(const psm of ['7','8']){
-        try{
-          const r=await Tesseract.recognize(cc.toDataURL('image/png'),'eng',{tessedit_pageseg_mode:psm,tessedit_char_whitelist:'0123456789,'});
-          for(const n of v181NumberCandidates(r?.data?.text||''))add(n,1);
-        }catch(e){}
+      for(const psm of ['7','13']){
+        try{const r=await Tesseract.recognize(url,'eng',{tessedit_pageseg_mode:psm,tessedit_char_whitelist:'0123456789,'});
+          const ms=String(r?.data?.text||'').match(/\d[\d,]*/g)||[];for(const m of ms){const n=v180NumFromText(m);if(Number.isFinite(n))candidates.push(n)}}catch(e){}
       }
     }
   }
-  // Full-page OCR is used only if its word center is inside the SAME popup row.
-  for(const ww of (fullResult?.data?.words||[])){
-    if(!ww.bbox)continue;const wx=(ww.bbox.x0+ww.bbox.x1)/2,wy=(ww.bbox.y0+ww.bbox.y1)/2;
-    if(wx<x||wx>x+w||Math.abs(wy-cy)>bandH*.46)continue;
-    for(const n of v181NumberCandidates(ww.text))add(n,2);
+  const activation=rowIndex===0,valid=candidates.filter(n=>activation?(n>=0&&n<=20):(n===0||n>=100));
+  // Add full-page OCR only if the word center is inside this exact row of this popup.
+  for(const q of (fullResult?.data?.words||[])){
+    if(!q.bbox)continue;const cx=(q.bbox.x0+q.bbox.x1)/2,cy=(q.bbox.y0+q.bbox.y1)/2;
+    if(cx<x||cx>x+w||Math.abs(cy-(b.y+b.h*rel))>bandH*.55)continue;
+    const n=v180NumFromText(q.text);if(Number.isFinite(n)&&(activation?(n<=20):(n===0||n>=100)))valid.push(n);
   }
-  if(!votes.size)return null;
-  const ranked=[...votes.entries()].sort((a,b)=>b[1]-a[1]||String(b[0]).length-String(a[0]).length);
-  // Avoid weak one-off hallucinations. Multiple preprocessing views must agree.
-  if(ranked[0][1]<2)return null;
+  if(!valid.length)return null;
+  const freq=new Map();for(const n of valid)freq.set(n,(freq.get(n)||0)+1);
+  const ranked=[...freq.entries()].sort((a,b)=>b[1]-a[1]||String(b[0]).length-String(a[0]).length);
   return ranked[0][0];
 }
 
-async function v181ExtractCombatObjects(fullResult,dataUrl,mode){
-  const boxes=await v181PopupObjects(dataUrl,mode);
-  if(boxes.length!==5)return[];
-  let cards=[];try{cards=await v127CombatCardCenters(dataUrl,mode,5)}catch(e){}
+async function v182ExtractWeapons(fullResult,dataUrl){
+  const boxes=await v182WeaponPopupObjects(dataUrl);
+  if(boxes.length!==5){console.warn('v18.2 weapon popup count',boxes.length);return[]}
+  let cards=[];try{cards=await v127CombatCardCenters(dataUrl,'weapon',5)}catch(e){}
   let pairs=v180PairPopupCards(boxes,cards);
-  pairs.sort((a,b)=>{
-    const ay=a.card?.cy??a.popup.cy,by=b.card?.cy??b.popup.cy;
-    const ax=a.card?.cx??a.popup.cx,bx=b.card?.cx??b.popup.cx;
-    return ay-by||ax-bx;
-  });
+  pairs.sort((a,b)=>{const ay=a.card?.cy??a.popup.cy,by=b.card?.cy??b.popup.cy,ax=a.card?.cx??a.popup.cx,bx=b.card?.cx??b.popup.cx;return ay-by||ax-bx});
   const out=[];
   for(let i=0;i<pairs.length;i++){
-    const p=pairs[i],expected=mode==='weapon'?3:2;
-    const centers=await v180RowCenters(dataUrl,p.popup,expected),nums=[];
-    for(let r=0;r<expected;r++)nums.push(await v181OcrNumberBand(dataUrl,p.popup,centers[r],r,mode,fullResult));
-    out.push({slot:i+1,activation:Number.isFinite(nums[0])?nums[0]:null,damage:Number.isFinite(nums[1])?nums[1]:null,
-      shield:mode==='weapon'?(Number.isFinite(nums[2])?nums[2]:null):undefined,gx:p.popup.cx,gy:p.popup.cy,
-      cardX:p.card?.cx??null,cardY:p.card?.cy??null,weapon:'',enforcer:''});
+    const p=pairs[i],activation=await v182WeaponNumber(dataUrl,p.popup,0,fullResult),damage=await v182WeaponNumber(dataUrl,p.popup,1,fullResult),shield=await v182WeaponNumber(dataUrl,p.popup,2,fullResult);
+    out.push({slot:i+1,activation:Number.isFinite(activation)?activation:null,damage:Number.isFinite(damage)?damage:null,shield:Number.isFinite(shield)?shield:null,
+      gx:p.popup.cx,gy:p.popup.cy,cardX:p.card?.cx??null,cardY:p.card?.cy??null,weapon:'',enforcer:''});
   }
   return out;
 }
 
+// Only Super Weapons are overridden in v18.2. Enforcers stay exactly on v18.0.
+const v182BaseCombatExtractor=extractCombatPopups;
 extractCombatPopups=async function(fullResult,dataUrl,mode){
-  try{return await v181ExtractCombatObjects(fullResult,dataUrl,mode)}catch(e){console.warn('v18.1 combat extraction failed',e);return[]}
+  if(mode==='weapon'){try{return await v182ExtractWeapons(fullResult,dataUrl)}catch(e){console.warn('v18.2 weapon extraction failed',e);return[]}}
+  return v182BaseCombatExtractor(fullResult,dataUrl,mode);
 };
+
+const v182BaseRecovery=v175RecoverCombatPage;
 v175RecoverCombatPage=async function(shot,index,mode){
-  const side=shot.side==='Defender'?'def':'att';
-  let fullResult=null;try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){}
-  let items=await v181ExtractCombatObjects(fullResult,shot.dataUrl,mode);
+  if(mode!=='weapon')return v182BaseRecovery(shot,index,mode);
+  const side=shot.side==='Defender'?'def':'att';let fullResult=null;
+  try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){}
+  let items=await v182ExtractWeapons(fullResult,shot.dataUrl);
   if(items.length!==5)return false;
-  items=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,mode);
-  if(mode==='enforcer'){
-    currentEnforcerReview[side]=items.map((x,i)=>({...x,slot:i+1}));
-    $(side==='att'?'attEnforcerSlots':'defEnforcerSlots').value=v180SlotText(currentEnforcerReview[side],'enforcer');
-    const names=currentEnforcerReview[side].map(x=>x.enforcer).filter(Boolean);
-    if(names.length===5)$(side==='att'?'attackerEnforcers':'defenderEnforcers').value=[...new Set(names)].join(', ');
-    v167SuccessfulDomains.add('Enforcers');
-  }else{
-    currentWeaponReview[side]=items.map((x,i)=>({...x,slot:i+1}));
-    $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=v180SlotText(currentWeaponReview[side],'weapon');
-    const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
-    if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
-    v167SuccessfulDomains.add('Super Weapons');
-  }
-  return true;
+  items=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,'weapon');
+  currentWeaponReview[side]=items.map((x,i)=>({...x,slot:i+1}));
+  $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=v180SlotText(currentWeaponReview[side],'weapon');
+  const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
+  if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
+  v167SuccessfulDomains.add('Super Weapons');renderWeaponReview();return true;
 };
 
 const COMBAT_MODIFIER_PATTERNS=[
