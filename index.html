@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.7 · True v5.3 Weapon Pipeline</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.8 · Dedicated v5.3 Weapon OCR</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3648,7 +3648,7 @@ window.addEventListener("pagehide",()=>{
   try{old?.terminate?.()}catch(e){}
 });
 
-/* ===== v18.7 TRUE v5.3 Super Weapon pipeline =====
+/* ===== v18.8 DEDICATED v5.3 Super Weapon OCR pipeline =====
    Restores the exact successful v5.3 numeric-word+bbox logic for Super Weapon pages.
    Important: this is deliberately separate from the newer Enforcer/image-layout engine.
    The standard 9-shot package supplies only page type/side; weapon order is NOT hardcoded.
@@ -3672,8 +3672,37 @@ function v187DetectWeaponBubbles(result){
     if(uniq.some(u=>Math.abs(u.x-x.x)<70&&Math.abs(u.y-x.y)<55))continue;
     uniq.push(x);
   }
-  return uniq.slice(0,3).map((x,i)=>({...x,slot:i+1}));
+  return uniq.slice(0,5).map((x,i)=>({...x,slot:i+1}));
 }
+async function v188RecognizeWeaponLikeV53(dataUrl){
+  // Important: do NOT use the global stable OCR wrapper here. v5.3 used a fresh
+  // Tesseract.js v5 recognition path whose result.data.words carried the bbox data
+  // consumed by detectCombatBubbles. Recreate that path with a dedicated worker.
+  if(typeof Tesseract==="undefined")throw new Error("Tesseract unavailable");
+  let worker=null;
+  try{
+    worker=await Tesseract.createWorker("eng",1);
+    try{await worker.setParameters({
+      tessedit_pageseg_mode:"3",
+      tessedit_char_whitelist:"",
+      tessedit_char_blacklist:"",
+      preserve_interword_spaces:"0"
+    })}catch(e){}
+    return await worker.recognize(dataUrl);
+  }finally{
+    try{await worker?.terminate?.()}catch(e){}
+  }
+}
+async function v188ParseWeaponCombat(dataUrl,sourceIndex,side){
+  const dedicated=await v188RecognizeWeaponLikeV53(dataUrl);
+  const items=v187DetectWeaponBubbles(dedicated);
+  const k=side==="Attacker"?"att":side==="Defender"?"def":null;
+  if(!k||!items.length)return[];
+  currentWeaponReview[k]=items;
+  renderWeaponReview();
+  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · dedicated v5.3 OCR+bbox",confidence:.91}];
+}
+
 async function v187ParseWeaponCombat(result,sourceIndex,side){
   const items=v187DetectWeaponBubbles(result);
   const k=side==="Attacker"?"att":side==="Defender"?"def":null;
@@ -3798,7 +3827,7 @@ async function runOcrImport(){
       }
       if((shot.reportType||"")==="Super Weapons"){
         const before=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-        const parsed=await v187ParseWeaponCombat(result,i,shot.side);
+        const parsed=await v188ParseWeaponCombat(shot.dataUrl,i,shot.side);
         currentOcrSuggestions.push(...parsed);
         const after=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
         if(after>before||parsed.some(x=>/Weapon slots/i.test(String(x.label||""))))v167SuccessfulDomains.add("Super Weapons");
