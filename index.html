@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.6 · Robust Combat Bands</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.7 · Visual Popup Object Engine</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -1505,7 +1505,7 @@ async function detectBeigeBubbles(dataUrl){
   for(let p=0;p<N;p++){
     const i=p*4,[h,sat,val]=rgbToHsv255(d[i],d[i+1],d[i+2]);
     // Beige popup background: warm, bright, low/medium saturation.
-    if(h>=8 && h<=78 && sat>=8 && sat<=180 && val>=112)mask[p]=1;
+    if(h>=5 && h<=92 && sat>=5 && sat<=205 && val>=92)mask[p]=1;
   }
   const comps=[];
   const dirs=[-1,1,-W,W];
@@ -1522,7 +1522,7 @@ async function detectBeigeBubbles(dataUrl){
       if(y<H-1){const n=z+W;if(mask[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
     }
     const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H;
-    if(area>1200*scale*scale && wr>=.11&&wr<=.30&&hr>=.045&&hr<=.30){
+    if(area>650*scale*scale && wr>=.075&&wr<=.38&&hr>=.025&&hr<=.34){
       comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale)});
     }
   }
@@ -1875,7 +1875,7 @@ async function v81ReadPopup(dataUrl,b,mode){
   const top=vals.filter(x=>x.n>=1&&x.n<=20&&x.relY<.42&&x.conf>=35)
     .sort((a,b)=>b.conf-a.conf);
   let activation=top[0]?.n||await v81FocusedNumber(dataUrl,b,.08,.40);
-  if(!(activation>=1&&activation<=20))activation=1;
+  if(!(activation>=1&&activation<=20))activation=0;
 
   const mid=vals.filter(x=>x.n>=100&&x.relY>=.38&&x.relY<.72)
     .sort((a,b)=>b.conf-a.conf);
@@ -2556,7 +2556,7 @@ async function parseWeaponCombat(result,sourceIndex,side,dataUrl){
 
 
 
-/* ===== v17.5 dynamic combat slot mapping =====
+/* ===== v17.7 visual popup object + dynamic combat mapping =====
    Formation-safe recovery: no fixed Enforcer/weapon identity order is assumed.
    Each visible popup is paired to the nearest ACTIVE card on that screenshot,
    then slots are ordered by the active-card geometry of that page. */
@@ -2564,7 +2564,14 @@ async function v175DynamicCombatItems(dataUrl,mode){
   let boxes=[];
   try{ boxes=await detectBeigeBubbles(dataUrl); }catch(e){}
   if(!boxes.length)return [];
-  boxes=geometryOrder(boxes).slice(0,5);
+  // v17.7: treat each beige callout as a visual object first. Remove tiny/huge
+  // false positives before any OCR; no number from outside a detected popup is accepted.
+  const im0=await loadDataUrlImage(dataUrl), pageArea=im0.naturalWidth*im0.naturalHeight;
+  boxes=geometryOrder(boxes).filter(b=>{
+    const ar=b.w/Math.max(1,b.h), a=(b.w*b.h)/pageArea;
+    return ar>=0.75 && ar<=5.8 && a>=0.002 && a<=0.075;
+  }).slice(0,5);
+  if(!boxes.length)return [];
 
   let cards=[];
   try{ cards=await v127CombatCardCenters(dataUrl,mode,5); }catch(e){}
@@ -2613,8 +2620,12 @@ async function v175DynamicCombatItems(dataUrl,mode){
       const n=await v81FocusedNumber(dataUrl,b,.66,.98);
       if(Number.isFinite(n) && (n===0||n>20))p.shield=n;
     }
-    items.push({activation:(p.activation>=1&&p.activation<=20)?p.activation:1,
-      damage:Number(p.damage||0),shield:mode==='weapon'?Number(p.shield||0):undefined,
+    const activation=(p.activation>=1&&p.activation<=20)?p.activation:0;
+    const damage=Number(p.damage||0);
+    const shield=mode==='weapon'?Number(p.shield||0):undefined;
+    // A popup with no credible activation and no combat value is not a combat popup.
+    if(!activation && !damage && !(mode==='weapon'&&shield)) continue;
+    items.push({activation, damage,shield,
       gx:b.x+b.w/2,gy:b.y+b.h/2,cardX:pair.card?.cx??null,cardY:pair.card?.cy??null,
       weapon:'',enforcer:''});
   }
@@ -2642,132 +2653,6 @@ async function v175RecoverCombatPage(shot,index,mode){
   return true;
 }
 
-
-
-/* ===== v17.6 robust combat-band parser =====
-   Reads only the numeric right-hand portion of each beige callout. This avoids
-   weapon/enforcer icons contaminating OCR (the v17.5 202,700 false match).
-   Mapping remains formation-safe: popup <-> active card is geometry-based and
-   no character/weapon identity or fixed formation order is assumed. */
-function v176ParseBandNumber(text,pred){
-  const a=[...String(text||'').replace(/[Oo]/g,'0').matchAll(/\d[\d,]*/g)]
-    .map(m=>parseInt(m[0].replace(/,/g,''),10)).filter(Number.isFinite).filter(pred);
-  return a.length?a[0]:null;
-}
-async function v176OcrNumericBand(dataUrl,b,y0,y1,pred){
-  const im=await loadDataUrlImage(dataUrl);
-  // Numeric text begins well to the right of the red stat icon. A tighter x crop
-  // is the key regression fix for false numbers created by icon + digits OCR.
-  const sx=b.x+b.w*.38, sy=b.y+b.h*y0, sw=b.w*.58, sh=b.h*(y1-y0);
-  const results=[];
-  for(const scale of [5,4]){
-    const c=document.createElement('canvas');
-    c.width=Math.max(1,Math.round(sw*scale)); c.height=Math.max(1,Math.round(sh*scale));
-    const ctx=c.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);
-    // Variant 1: natural crop.
-    for(const variant of ['natural','bw']){
-      let url=c.toDataURL('image/png');
-      if(variant==='bw'){
-        const id=ctx.getImageData(0,0,c.width,c.height),d=id.data;
-        for(let i=0;i<d.length;i+=4){
-          const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-          const v=g<155?0:255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
-        }
-        ctx.putImageData(id,0,0); url=c.toDataURL('image/png');
-      }
-      for(const psm of ['7','13']){
-        try{
-          const r=await Tesseract.recognize(url,'eng',{
-            tessedit_pageseg_mode:psm,
-            tessedit_char_whitelist:'0123456789,'
-          });
-          const n=v176ParseBandNumber(r?.data?.text,pred); if(n!=null)results.push(n);
-        }catch(e){}
-      }
-    }
-  }
-  if(!results.length)return null;
-  // Majority vote; ties prefer the lower value because icon contamination tends
-  // to concatenate extra digits rather than remove them.
-  const f=new Map(); for(const n of results)f.set(n,(f.get(n)||0)+1);
-  return [...f.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0][0];
-}
-async function v176ReadPopup(dataUrl,b,mode){
-  const activation=await v176OcrNumericBand(dataUrl,b,.08,mode==='weapon'?.34:.43,n=>n>=1&&n<=20);
-  if(mode!=='weapon'){
-    const damage=await v176OcrNumericBand(dataUrl,b,.42,.94,n=>n===0||n>=100);
-    return {activation:(activation>=1&&activation<=20)?activation:1,damage:Number(damage??0)};
-  }
-  const damage=await v176OcrNumericBand(dataUrl,b,.32,.67,n=>n===0||n>=100);
-  const shield=await v176OcrNumericBand(dataUrl,b,.64,.97,n=>n===0||n>=100);
-  return {activation:(activation>=1&&activation<=20)?activation:1,damage:Number(damage??0),shield:Number(shield??0)};
-}
-async function v176DynamicCombatItems(dataUrl,mode){
-  let boxes=[]; try{boxes=await detectBeigeBubbles(dataUrl)}catch(e){}
-  // A combat-detail page is expected to expose five callouts. Keep all plausible
-  // components and choose by area/geometry instead of relying on formation order.
-  if(!boxes.length)return[];
-  boxes=boxes.slice(0,12);
-  let cards=[]; try{cards=await v127CombatCardCenters(dataUrl,mode,5)}catch(e){}
-  const pairs=[];
-  if(cards.length){
-    const cand=[];
-    boxes.forEach((p,pi)=>cards.forEach((c,ci)=>{
-      const pcx=p.x+p.w/2,pcy=p.y+p.h/2;
-      cand.push({pi,ci,d:Math.hypot(pcx-c.cx,pcy-c.cy)});
-    }));
-    cand.sort((a,b)=>a.d-b.d); const up=new Set(),uc=new Set();
-    for(const q of cand){
-      if(up.has(q.pi)||uc.has(q.ci))continue;
-      up.add(q.pi);uc.add(q.ci);pairs.push({popup:boxes[q.pi],card:cards[q.ci]});
-      if(pairs.length>=5)break;
-    }
-  }
-  if(pairs.length<5){
-    const used=new Set(pairs.map(x=>boxes.indexOf(x.popup)));
-    for(const [i,p] of geometryOrder(boxes).entries()){
-      const oi=boxes.indexOf(p); if(used.has(oi))continue;
-      pairs.push({popup:p,card:null}); if(pairs.length>=5)break;
-    }
-  }
-  // Slot labels are just stable page-local order. They do NOT imply a fixed
-  // enforcer/weapon identity across formations.
-  pairs.sort((a,b)=>{
-    const ay=a.card?.cy??(a.popup.y+a.popup.h/2),by=b.card?.cy??(b.popup.y+b.popup.h/2);
-    const ax=a.card?.cx??(a.popup.x+a.popup.w/2),bx=b.card?.cx??(b.popup.x+b.popup.w/2);
-    return ay-by||ax-bx;
-  });
-  const out=[];
-  for(const pair of pairs.slice(0,5)){
-    const p=await v176ReadPopup(dataUrl,pair.popup,mode);
-    out.push({...p,weapon:'',enforcer:'',gx:pair.popup.x+pair.popup.w/2,gy:pair.popup.y+pair.popup.h/2,
-      cardX:pair.card?.cx??null,cardY:pair.card?.cy??null});
-  }
-  return out.map((x,i)=>({...x,slot:i+1}));
-}
-async function v176RecoverCombatPage(shot,index,mode){
-  const side=shot.side==='Defender'?'def':'att';
-  const items=await v176DynamicCombatItems(shot.dataUrl,mode); if(!items.length)return false;
-  // Save numeric combat data FIRST. Visual-name recognition is optional and may
-  // fail on iPhone memory; it must never erase activations/damage/shield.
-  let named=items;
-  try{named=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,mode==='enforcer'?'enforcer':'weapon')}catch(e){console.warn('v17.6 optional visual-name match failed',e)}
-  if(mode==='enforcer'){
-    currentEnforcerReview[side]=named.slice(0,5).map((x,i)=>({...x,slot:i+1}));
-    $(side==='att'?'attEnforcerSlots':'defEnforcerSlots').value=enforcerSlotsText(currentEnforcerReview[side]);
-    const names=currentEnforcerReview[side].map(x=>x.enforcer).filter(Boolean);
-    if(names.length===5)$(side==='att'?'attackerEnforcers':'defenderEnforcers').value=[...new Set(names)].join(', ');
-    v167SuccessfulDomains.add('Enforcers');
-  }else{
-    currentWeaponReview[side]=named.slice(0,5).map((x,i)=>({...x,slot:i+1}));
-    $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=weaponSlotsText(currentWeaponReview[side]);
-    const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
-    if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
-    v167SuccessfulDomains.add('Super Weapons');
-  }
-  return true;
-}
 
 const COMBAT_MODIFIER_PATTERNS=[
   {rx:/enemy\s*atk\s*reduction/i,base:"EnemyAtkReduction"},
@@ -3489,7 +3374,7 @@ async function runOcrImport(){
       allRaw.push(`===== Screenshot ${i+1} ERROR =====\n${err.message||err}`);
     }
   }
-  // v17.6 second visual pass for the standard package. This deliberately does
+  // v17.7 second visual pass for the standard package. This deliberately does
   // not trust a fixed card order: only package page TYPE/SIDE is fixed; slot mapping
   // itself is reconstructed from active cards + popup geometry on each screenshot.
   if(currentScreenshots.length===9){
@@ -3498,9 +3383,9 @@ async function runOcrImport(){
       if(!shot||!f)continue;
       shot.reportType=f.reportType; shot.side=f.side;
       try{
-        if(i===4||i===5)await v176RecoverCombatPage(shot,i,'enforcer');
-        else await v176RecoverCombatPage(shot,i,'weapon');
-      }catch(e){console.warn('v17.6 robust combat recovery failed',i,e)}
+        if(i===4||i===5)await v175RecoverCombatPage(shot,i,'enforcer');
+        else await v175RecoverCombatPage(shot,i,'weapon');
+      }catch(e){console.warn('v17.7 visual popup recovery failed',i,e)}
     }
     renderEnforcerReview();renderWeaponReview();
   }
@@ -3574,7 +3459,7 @@ async function runOcrImport(){
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
   const v166Partial=v166OcrFailureCount>0?` · ⚠️ ${v166OcrFailureCount}/${currentScreenshots.length} screenshots απέτυχαν στο OCR`:"";
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v17.6 robust combat-band parser.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v17.7 visual-popup object parser.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
