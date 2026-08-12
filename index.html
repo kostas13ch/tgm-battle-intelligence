@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.5 · Geometry-First Weapon Extraction</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.6 · Restored v5.3 Weapon Parser</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -4287,6 +4287,52 @@ async function v185ExtractWeapons(fullResult,dataUrl){
 }
 extractCombatPopups=async function(fullResult,dataUrl,mode){if(mode==='weapon'){try{return await v185ExtractWeapons(fullResult,dataUrl)}catch(e){console.warn('v18.5 weapon extraction failed',e);return[]}}return v182BaseCombatExtractor(fullResult,dataUrl,mode);};
 v175RecoverCombatPage=async function(shot,index,mode){if(mode!=='weapon')return v182BaseRecovery(shot,index,mode);const side=shot.side==='Defender'?'def':'att';let fullResult=null;try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){}let items=await v185ExtractWeapons(fullResult,shot.dataUrl);if(items.length!==5)return false;items=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,'weapon');currentWeaponReview[side]=items.map((x,i)=>({...x,slot:i+1}));$(side==='att'?'attWeaponSlots':'defWeaponSlots').value=v180SlotText(currentWeaponReview[side],'weapon');const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');v167SuccessfulDomains.add('Super Weapons');renderWeaponReview();return true;};
+</script>
+
+
+<script>
+/* ===== v18.6 RESTORED v5.3 SUPER-WEAPON PARSER =====
+   Restores the proven v5.3 combat-bubble algorithm for Super Weapons.
+   It reads Tesseract numeric words + bbox coordinates directly:
+   activation (integer 1..20) -> nearby damage/shield values >=100.
+   No colour/card detector and no formation-specific order.
+   The proven game model uses exactly 3 real Super Weapon combat slots per side. */
+function v186LegacyWeaponBubbles(result){
+  const toks=numericTokens(result),cand=[];
+  for(const a of toks.filter(t=>Number.isInteger(t.val)&&t.val>=1&&t.val<=20)){
+    const near=toks.filter(t=>t!==a&&t.val>=100&&Math.abs(t.cx-a.cx)<190&&t.cy>a.cy-10&&t.cy<a.cy+150)
+      .sort((x,y)=>Math.hypot(x.cx-a.cx,x.cy-a.cy)-Math.hypot(y.cx-a.cx,y.cy-a.cy));
+    if(!near.length)continue;
+    cand.push({x:a.cx,y:a.cy,gx:a.cx,gy:a.cy,activation:a.val,damage:near[0]?.val||0,shield:near[1]?.val||0,weapon:'',enforcer:''});
+  }
+  const uniq=[];
+  for(const x of cand.sort((a,b)=>a.y-b.y||a.x-b.x)){
+    if(uniq.some(u=>Math.abs(u.x-x.x)<70&&Math.abs(u.y-x.y)<55))continue;
+    uniq.push(x);
+  }
+  return uniq.slice(0,3).map((x,i)=>({...x,slot:i+1}));
+}
+const v186BaseExtractCombatPopups=extractCombatPopups;
+extractCombatPopups=async function(fullResult,dataUrl,mode){
+  if(mode==='weapon'){
+    try{return v186LegacyWeaponBubbles(fullResult)}catch(e){console.warn('v18.6 legacy weapon parser failed',e);return[]}
+  }
+  return v186BaseExtractCombatPopups(fullResult,dataUrl,mode);
+};
+const v186BaseRecovery=v175RecoverCombatPage;
+v175RecoverCombatPage=async function(shot,index,mode){
+  if(mode!=='weapon')return v186BaseRecovery(shot,index,mode);
+  const side=shot.side==='Defender'?'def':'att';
+  let fullResult=null;
+  try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng')}catch(e){return false}
+  let items=v186LegacyWeaponBubbles(fullResult);
+  if(!items.length)return false;
+  currentWeaponReview[side]=items;
+  $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=weaponSlotsText(items);
+  v167SuccessfulDomains.add('Super Weapons');
+  renderWeaponReview();
+  return true;
+};
 </script>
 
 </body>
