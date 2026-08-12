@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.0 · Image-Layout Popup Engine</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.1 · Popup OCR + Weapon Recovery</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -280,7 +280,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v18.0</h4>
+          <h4>🧬 Super Weapon Intelligence v18.1</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -2861,6 +2861,198 @@ v175RecoverCombatPage=async function(shot,index,mode){
   return true;
 };
 
+
+
+/* ===== v18.1 POPUP OCR + SUPER-WEAPON RECOVERY =====
+   Keeps v18.0 image-layout architecture and dynamic slot mapping.
+   Improvements:
+   - relaxed visual beige-box detector dedicated to 3-row weapon callouts;
+   - multi-variant digit OCR inside each already-detected popup row;
+   - no full-page numeric guessing, no hard-coded formation/slot order;
+   - unknown values stay null rather than being fabricated. */
+
+async function v181RelaxedPopupObjects(dataUrl,mode){
+  const im=await loadDataUrlImage(dataUrl);
+  const maxW=720,scale=Math.min(1,maxW/im.naturalWidth);
+  const W=Math.max(1,Math.round(im.naturalWidth*scale)),H=Math.max(1,Math.round(im.naturalHeight*scale));
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
+  const id=ctx.getImageData(0,0,W,H),d=id.data,N=W*H;
+  const mask=new Uint8Array(N),seen=new Uint8Array(N),q=new Int32Array(N);
+  for(let p=0;p<N;p++){
+    const i=p*4,[h,sat,val]=rgbToHsv255(d[i],d[i+1],d[i+2]);
+    // Weapon popups can be slightly darker/greyer than Enforcer popups after JPEG compression.
+    if(h>=4&&h<=85&&sat>=4&&sat<=195&&val>=94)mask[p]=1;
+  }
+  // Small closing operation so thin dark glyphs/borders don't fragment the beige object.
+  const closed=mask.slice();
+  for(let pass=0;pass<2;pass++){
+    const base=closed.slice();
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+      const p=y*W+x;if(base[p])continue;
+      let n=0;
+      for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)if(base[(y+yy)*W+x+xx])n++;
+      if(n>=6)closed[p]=1;
+    }
+  }
+  const comps=[];
+  for(let p=0;p<N;p++){
+    if(!closed[p]||seen[p])continue;
+    let qh=0,qt=0;q[qt++]=p;seen[p]=1;
+    let minX=W,maxX=0,minY=H,maxY=0,area=0;
+    while(qh<qt){
+      const z=q[qh++],x=z%W,y=(z/W)|0;area++;
+      if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+      if(x>0){const n=z-1;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
+      if(x<W-1){const n=z+1;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
+      if(y>0){const n=z-W;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
+      if(y<H-1){const n=z+W;if(closed[n]&&!seen[n]){seen[n]=1;q[qt++]=n}}
+    }
+    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H,ar=bw/Math.max(1,bh),fill=area/Math.max(1,bw*bh);
+    const okSize=wr>=.115&&wr<=.31&&hr>=(mode==='weapon'?.055:.042)&&hr<=.22;
+    const okAspect=mode==='weapon'?(ar>=1.00&&ar<=2.45):(ar>=1.15&&ar<=3.15);
+    const cy=(minY+maxY)/2;
+    if(okSize&&okAspect&&fill>=.38&&cy>H*.08&&cy<H*.92){
+      const ideal=mode==='weapon'?1.30:1.65;
+      const arScore=Math.exp(-Math.abs(Math.log(Math.max(.02,ar/ideal))));
+      const score=area*(.55+.45*arScore)*(.7+.3*Math.min(1,fill/.75));
+      comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale),cx:(minX+maxX)/(2*scale),cy:(minY+maxY)/(2*scale),_score:score});
+    }
+  }
+  // De-duplicate near-identical components caused by inner/outer beige borders.
+  comps.sort((a,b)=>b._score-a._score);
+  const keep=[];
+  for(const b of comps){
+    if(keep.some(k=>Math.hypot(k.cx-b.cx,k.cy-b.cy)<Math.min(k.w,b.w)*.18))continue;
+    keep.push(b);if(keep.length>=8)break;
+  }
+  // A combat page has exactly five callouts. Prefer a spatially distributed set.
+  if(keep.length<=5)return keep;
+  const chosen=[];
+  for(const b of keep){
+    const crowd=chosen.reduce((s,k)=>s+(Math.hypot(k.cx-b.cx,k.cy-b.cy)<b.w*.75?1:0),0);
+    if(!crowd)chosen.push(b);
+    if(chosen.length===5)break;
+  }
+  if(chosen.length<5)for(const b of keep){if(!chosen.includes(b))chosen.push(b);if(chosen.length===5)break}
+  return chosen;
+}
+
+async function v181PopupObjects(dataUrl,mode){
+  let boxes=[];
+  try{boxes=await v180PopupObjects(dataUrl,mode)}catch(e){}
+  if(boxes.length===5)return boxes;
+  try{boxes=await v181RelaxedPopupObjects(dataUrl,mode)}catch(e){console.warn('v18.1 relaxed popup detector',e)}
+  return boxes.length===5?boxes:[];
+}
+
+function v181NormalizeDigitsText(t){
+  return String(t||'').replace(/[OoQD]/g,'0').replace(/[Il|!]/g,'1').replace(/[Ss]/g,'5').replace(/[Bb]/g,'8');
+}
+function v181NumberCandidates(text){
+  const out=[];
+  for(const m of v181NormalizeDigitsText(text).matchAll(/\d[\d,\. ]*/g)){
+    const raw=m[0].replace(/[ .]/g,'').replace(/,/g,'');
+    if(!raw)continue;const n=parseInt(raw,10);if(Number.isFinite(n))out.push(n);
+  }
+  return out;
+}
+
+async function v181OcrNumberBand(dataUrl,b,cy,rowIndex,mode,fullResult){
+  const im=await loadDataUrlImage(dataUrl),activation=rowIndex===0;
+  // Stay safely inside the numeric region. Weapon icons occupy a wider left column.
+  const left=mode==='weapon'?.36:.34;
+  const x=b.x+b.w*left,w=b.w*(.97-left);
+  const bandH=b.h*(mode==='weapon'?.205:.265);
+  const y=Math.max(b.y+1,cy-bandH/2),h=Math.min(b.y+b.h-1-y,bandH);
+  const votes=new Map();
+  const add=(n,weight=1)=>{
+    if(!Number.isFinite(n))return;
+    if(activation){if(n<0||n>20)return}else{if(!(n===0||n>=100))return}
+    votes.set(n,(votes.get(n)||0)+weight);
+  };
+  for(const scale of [5,7,9]){
+    const base=document.createElement('canvas');base.width=Math.max(150,Math.round(w*scale));base.height=Math.max(55,Math.round(h*scale));
+    const bx=base.getContext('2d',{willReadFrequently:true});bx.imageSmoothingEnabled=false;bx.drawImage(im,x,y,w,h,0,0,base.width,base.height);
+    const src=bx.getImageData(0,0,base.width,base.height);
+    const variants=[['gray',null],['thr',125],['thr',145],['thr',165],['thr',185],['thr',205]];
+    for(const [kind,thr] of variants){
+      const cc=document.createElement('canvas');cc.width=base.width;cc.height=base.height;const cx=cc.getContext('2d');
+      if(kind==='gray')cx.drawImage(base,0,0);
+      else{
+        const copy=new ImageData(new Uint8ClampedArray(src.data),src.width,src.height),dd=copy.data;
+        for(let i=0;i<dd.length;i+=4){
+          const g=.299*dd[i]+.587*dd[i+1]+.114*dd[i+2];const v=g<thr?0:255;dd[i]=dd[i+1]=dd[i+2]=v;dd[i+3]=255;
+        }
+        cx.putImageData(copy,0,0);
+      }
+      for(const psm of ['7','8']){
+        try{
+          const r=await Tesseract.recognize(cc.toDataURL('image/png'),'eng',{tessedit_pageseg_mode:psm,tessedit_char_whitelist:'0123456789,'});
+          for(const n of v181NumberCandidates(r?.data?.text||''))add(n,1);
+        }catch(e){}
+      }
+    }
+  }
+  // Full-page OCR is used only if its word center is inside the SAME popup row.
+  for(const ww of (fullResult?.data?.words||[])){
+    if(!ww.bbox)continue;const wx=(ww.bbox.x0+ww.bbox.x1)/2,wy=(ww.bbox.y0+ww.bbox.y1)/2;
+    if(wx<x||wx>x+w||Math.abs(wy-cy)>bandH*.46)continue;
+    for(const n of v181NumberCandidates(ww.text))add(n,2);
+  }
+  if(!votes.size)return null;
+  const ranked=[...votes.entries()].sort((a,b)=>b[1]-a[1]||String(b[0]).length-String(a[0]).length);
+  // Avoid weak one-off hallucinations. Multiple preprocessing views must agree.
+  if(ranked[0][1]<2)return null;
+  return ranked[0][0];
+}
+
+async function v181ExtractCombatObjects(fullResult,dataUrl,mode){
+  const boxes=await v181PopupObjects(dataUrl,mode);
+  if(boxes.length!==5)return[];
+  let cards=[];try{cards=await v127CombatCardCenters(dataUrl,mode,5)}catch(e){}
+  let pairs=v180PairPopupCards(boxes,cards);
+  pairs.sort((a,b)=>{
+    const ay=a.card?.cy??a.popup.cy,by=b.card?.cy??b.popup.cy;
+    const ax=a.card?.cx??a.popup.cx,bx=b.card?.cx??b.popup.cx;
+    return ay-by||ax-bx;
+  });
+  const out=[];
+  for(let i=0;i<pairs.length;i++){
+    const p=pairs[i],expected=mode==='weapon'?3:2;
+    const centers=await v180RowCenters(dataUrl,p.popup,expected),nums=[];
+    for(let r=0;r<expected;r++)nums.push(await v181OcrNumberBand(dataUrl,p.popup,centers[r],r,mode,fullResult));
+    out.push({slot:i+1,activation:Number.isFinite(nums[0])?nums[0]:null,damage:Number.isFinite(nums[1])?nums[1]:null,
+      shield:mode==='weapon'?(Number.isFinite(nums[2])?nums[2]:null):undefined,gx:p.popup.cx,gy:p.popup.cy,
+      cardX:p.card?.cx??null,cardY:p.card?.cy??null,weapon:'',enforcer:''});
+  }
+  return out;
+}
+
+extractCombatPopups=async function(fullResult,dataUrl,mode){
+  try{return await v181ExtractCombatObjects(fullResult,dataUrl,mode)}catch(e){console.warn('v18.1 combat extraction failed',e);return[]}
+};
+v175RecoverCombatPage=async function(shot,index,mode){
+  const side=shot.side==='Defender'?'def':'att';
+  let fullResult=null;try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){}
+  let items=await v181ExtractCombatObjects(fullResult,shot.dataUrl,mode);
+  if(items.length!==5)return false;
+  items=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,mode);
+  if(mode==='enforcer'){
+    currentEnforcerReview[side]=items.map((x,i)=>({...x,slot:i+1}));
+    $(side==='att'?'attEnforcerSlots':'defEnforcerSlots').value=v180SlotText(currentEnforcerReview[side],'enforcer');
+    const names=currentEnforcerReview[side].map(x=>x.enforcer).filter(Boolean);
+    if(names.length===5)$(side==='att'?'attackerEnforcers':'defenderEnforcers').value=[...new Set(names)].join(', ');
+    v167SuccessfulDomains.add('Enforcers');
+  }else{
+    currentWeaponReview[side]=items.map((x,i)=>({...x,slot:i+1}));
+    $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=v180SlotText(currentWeaponReview[side],'weapon');
+    const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
+    if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
+    v167SuccessfulDomains.add('Super Weapons');
+  }
+  return true;
+};
 
 const COMBAT_MODIFIER_PATTERNS=[
   {rx:/enemy\s*atk\s*reduction/i,base:"EnemyAtkReduction"},
