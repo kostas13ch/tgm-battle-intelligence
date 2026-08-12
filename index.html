@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.3 · Influence Rating + Golden Report Fix</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.4 · Combat Popup Recovery</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -280,7 +280,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v17.3</h4>
+          <h4>🧬 Super Weapon Intelligence v17.4</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -2012,9 +2012,73 @@ v81ParseInfluenceRating=async function(dataUrl,sourceIndex,fullResult){
   return base;
 };
 
+/* ===== v17.4 regression patch: combat popup recovery =====
+   Full-page OCR already contains the popup digits even when beige-box detection or
+   narrow popup OCR misses them. Reconstruct the five combat rows from OCR word
+   geometry as a safe fallback; never hard-code report values. */
+function v174WordNumber(text){
+  const raw=String(text||"").replace(/[Oo]/g,"0").replace(/(\d)\.(?=\d{3}\b)/g,"$1,").replace(/[^\d,]/g,"");
+  if(!raw)return null;
+  const n=parseInt(raw.replace(/,/g,""),10);
+  return Number.isFinite(n)?n:null;
+}
+function v174CombatRowsFromWords(fullResult,mode){
+  const words=(fullResult?.data?.words||[]).map(w=>{
+    const n=v174WordNumber(w.text); if(n==null||!w.bbox)return null;
+    return {n,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,
+      h:Math.max(1,w.bbox.y1-w.bbox.y0),conf:Number(w.confidence??w.conf??0)};
+  }).filter(Boolean);
+  if(!words.length)return[];
+  const H=Math.max(...words.map(x=>x.cy+x.h/2),1), W=Math.max(...words.map(x=>x.cx),1);
+  // Activation digits are the small first line inside each popup. Restrict to the
+  // combat field so Lv.60 labels and bottom summary totals are ignored.
+  const small=words.filter(x=>x.n>=1&&x.n<=20&&x.cy>H*.08&&x.cy<H*.84&&x.conf>=20);
+  const rows=[];
+  for(const a of small){
+    const below=words.filter(v=>v!==a && v.cy>a.cy+Math.max(2,a.h*.15) && v.cy<a.cy+Math.max(95,H*.105)
+      && Math.abs(v.cx-a.cx)<Math.max(110,W*.16)
+      && (v.n===0||v.n>=100) && v.cy<H*.87)
+      .sort((x,y)=>x.cy-y.cy||Math.abs(x.cx-a.cx)-Math.abs(y.cx-a.cx));
+    if(!below.length)continue;
+    if(mode!=="weapon"){
+      const d=below.find(v=>v.n>=100); if(!d)continue;
+      rows.push({activation:a.n,damage:d.n,shield:undefined,gx:(a.cx+d.cx)/2,gy:(a.cy+d.cy)/2,_score:a.conf+d.conf});
+    }else{
+      // Weapon popups have activation, damage, shield in vertical order. Zero is
+      // a valid value, so preserve it when OCR sees it.
+      const vals=[];
+      for(const v of below){
+        if(vals.some(z=>Math.abs(z.cy-v.cy)<Math.max(5,v.h*.65)))continue;
+        vals.push(v); if(vals.length>=2)break;
+      }
+      if(!vals.length)continue;
+      rows.push({activation:a.n,damage:Number(vals[0]?.n||0),shield:Number(vals[1]?.n||0),
+        gx:(a.cx+(vals[0]?.cx||a.cx))/2,gy:(a.cy+(vals[0]?.cy||a.cy))/2,_score:a.conf+vals.reduce((n,x)=>n+x.conf,0)});
+    }
+  }
+  // Deduplicate multiple OCR readings of the same popup by geometry, keeping the
+  // strongest candidate, then use natural top-to-bottom / left-to-right order.
+  rows.sort((a,b)=>(b._score||0)-(a._score||0));
+  const uniq=[];
+  for(const r of rows){
+    if(uniq.some(q=>Math.hypot(q.gx-r.gx,q.gy-r.gy)<Math.max(55,W*.07)))continue;
+    uniq.push(r);
+  }
+  const ordered=geometryOrder(uniq.map(r=>({x:r.gx-1,y:r.gy-1,w:2,h:2,...r}))).slice(0,5);
+  return ordered.map((r,i)=>({slot:i+1,activation:r.activation,damage:r.damage,shield:mode==="weapon"?Number(r.shield||0):undefined,weapon:"",gx:r.gx,gy:r.gy}));
+}
+
 async function extractCombatPopups(fullResult,dataUrl,mode){
   let boxes=[];
   try{boxes=geometryOrder(await detectBeigeBubbles(dataUrl)).slice(0,5)}catch(e){}
+  // If color segmentation misses the beige bubbles (seen on the real Kaiser attacker pages),
+  // recover rows directly from full-page OCR geometry.
+  if(boxes.length<5){
+    try{
+      const recovered=v174CombatRowsFromWords(fullResult,mode);
+      if(recovered.length>=5)return recovered.slice(0,5);
+    }catch(e){console.warn("v17.4 OCR popup recovery failed",e)}
+  }
   if(!boxes.length)return[];
 
   // Try to order by the actual five active cards. This keeps Enforcer slot N and
@@ -2053,6 +2117,16 @@ async function extractCombatPopups(fullResult,dataUrl,mode){
         parsed={activation:act,damage:mid,shield:bot};
       }catch(_){}
     }
+    // v17.4: even a successful crop OCR can return activation with damage/shield 0.
+    // Merge full-page words inside the popup instead of treating those zeros as final.
+    try{
+      const f=originalBoxInts(fullResult,b);
+      const act=chooseActivation([],f);
+      const vals=chooseValues([],f,mode,b);
+      if((!parsed.activation||parsed.activation===1)&&act>=1&&act<=20)parsed.activation=act;
+      if(!Number(parsed.damage||0)&&Number(vals[0]||0)>=100)parsed.damage=Number(vals[0]);
+      if(mode==="weapon"&&!Number(parsed.shield||0)&&Number(vals[1]||0)>=100)parsed.shield=Number(vals[1]);
+    }catch(_){}
     items.push({
       slot:i+1,
       activation:(parsed.activation>=1&&parsed.activation<=20)?parsed.activation:1,
