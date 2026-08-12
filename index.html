@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.6 · Restored v5.3 Weapon Parser</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.7 · True v5.3 Weapon Pipeline</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3647,6 +3647,42 @@ window.addEventListener("pagehide",()=>{
   __tgmOcrWorker=null;
   try{old?.terminate?.()}catch(e){}
 });
+
+/* ===== v18.7 TRUE v5.3 Super Weapon pipeline =====
+   Restores the exact successful v5.3 numeric-word+bbox logic for Super Weapon pages.
+   Important: this is deliberately separate from the newer Enforcer/image-layout engine.
+   The standard 9-shot package supplies only page type/side; weapon order is NOT hardcoded.
+*/
+function v187NumericTokens(result){
+  return (result?.data?.words||[]).map(w=>{
+    const val=numericWordValue(w);if(val==null)return null;
+    return {val,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2};
+  }).filter(Boolean);
+}
+function v187DetectWeaponBubbles(result){
+  const toks=v187NumericTokens(result),cand=[];
+  for(const a of toks.filter(t=>Number.isInteger(t.val)&&t.val>=1&&t.val<=20)){
+    const near=toks.filter(t=>t!==a&&t.val>=100&&Math.abs(t.cx-a.cx)<190&&t.cy>a.cy-10&&t.cy<a.cy+150)
+      .sort((x,y)=>Math.hypot(x.cx-a.cx,x.cy-a.cy)-Math.hypot(y.cx-a.cx,y.cy-a.cy));
+    if(!near.length)continue;
+    cand.push({x:a.cx,y:a.cy,activation:a.val,damage:near[0]?.val||0,shield:near[1]?.val||0,weapon:""});
+  }
+  const uniq=[];
+  for(const x of cand.sort((a,b)=>a.y-b.y||a.x-b.x)){
+    if(uniq.some(u=>Math.abs(u.x-x.x)<70&&Math.abs(u.y-x.y)<55))continue;
+    uniq.push(x);
+  }
+  return uniq.slice(0,3).map((x,i)=>({...x,slot:i+1}));
+}
+async function v187ParseWeaponCombat(result,sourceIndex,side){
+  const items=v187DetectWeaponBubbles(result);
+  const k=side==="Attacker"?"att":side==="Defender"?"def":null;
+  if(!k||!items.length)return[];
+  currentWeaponReview[k]=items;
+  renderWeaponReview();
+  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · v5.3 bbox pipeline",confidence:.90}];
+}
+
 async function runOcrImport(){
   if(!currentScreenshots.length){$("ocrStatus").textContent="Πρόσθεσε πρώτα screenshots.";return}
   if(typeof Tesseract==="undefined"){
@@ -3762,7 +3798,7 @@ async function runOcrImport(){
       }
       if((shot.reportType||"")==="Super Weapons"){
         const before=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-        const parsed=await parseWeaponCombat(result,i,shot.side,shot.dataUrl);
+        const parsed=await v187ParseWeaponCombat(result,i,shot.side);
         currentOcrSuggestions.push(...parsed);
         const after=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
         if(after>before||parsed.some(x=>/Weapon slots/i.test(String(x.label||""))))v167SuccessfulDomains.add("Super Weapons");
@@ -3797,7 +3833,7 @@ async function runOcrImport(){
       shot.reportType=f.reportType; shot.side=f.side;
       try{
         if(i===4||i===5)await v175RecoverCombatPage(shot,i,'enforcer');
-        else await v175RecoverCombatPage(shot,i,'weapon');
+        else { /* v18.7: preserve successful v5.3 bbox weapon results; no later visual overwrite */ }
       }catch(e){console.warn('v17.5 dynamic combat recovery failed',i,e)}
     }
     renderEnforcerReview();renderWeaponReview();
