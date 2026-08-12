@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.4 · Combat Popup Recovery</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.5 · Dynamic Slot Mapping</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -280,7 +280,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v17.4</h4>
+          <h4>🧬 Super Weapon Intelligence v17.5</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -2556,6 +2556,93 @@ async function parseWeaponCombat(result,sourceIndex,side,dataUrl){
 
 
 
+/* ===== v17.5 dynamic combat slot mapping =====
+   Formation-safe recovery: no fixed Enforcer/weapon identity order is assumed.
+   Each visible popup is paired to the nearest ACTIVE card on that screenshot,
+   then slots are ordered by the active-card geometry of that page. */
+async function v175DynamicCombatItems(dataUrl,mode){
+  let boxes=[];
+  try{ boxes=await detectBeigeBubbles(dataUrl); }catch(e){}
+  if(!boxes.length)return [];
+  boxes=geometryOrder(boxes).slice(0,5);
+
+  let cards=[];
+  try{ cards=await v127CombatCardCenters(dataUrl,mode,5); }catch(e){}
+  let pairs=[];
+  if(cards.length){
+    // Global greedy one-to-one assignment. The mapping is based only on what is
+    // visible in this screenshot, so formation-dependent rearrangement is safe.
+    const candidates=[];
+    boxes.forEach((p,pi)=>cards.forEach((c,ci)=>{
+      const pcx=p.x+p.w/2,pcy=p.y+p.h/2;
+      candidates.push({pi,ci,d:Math.hypot(pcx-c.cx,pcy-c.cy)});
+    }));
+    candidates.sort((a,b)=>a.d-b.d);
+    const usedP=new Set(),usedC=new Set();
+    for(const q of candidates){
+      if(usedP.has(q.pi)||usedC.has(q.ci))continue;
+      usedP.add(q.pi);usedC.add(q.ci);
+      pairs.push({popup:boxes[q.pi],card:cards[q.ci]});
+      if(usedP.size>=Math.min(boxes.length,cards.length))break;
+    }
+    // Any bubble not matched to a detected card is retained, but never assigned
+    // a guessed identity or fixed formation slot.
+    boxes.forEach((p,pi)=>{if(!usedP.has(pi))pairs.push({popup:p,card:null})});
+  }else pairs=boxes.map(p=>({popup:p,card:null}));
+
+  pairs.sort((a,b)=>{
+    const ay=a.card?.cy ?? (a.popup.y+a.popup.h/2), by=b.card?.cy ?? (b.popup.y+b.popup.h/2);
+    const ax=a.card?.cx ?? (a.popup.x+a.popup.w/2), bx=b.card?.cx ?? (b.popup.x+b.popup.w/2);
+    return ay-by||ax-bx;
+  });
+
+  const items=[];
+  for(const pair of pairs.slice(0,5)){
+    const b=pair.popup;
+    let p={activation:0,damage:0,shield:0};
+    try{p=await v81ReadPopup(dataUrl,b,mode)}catch(e){}
+    // Focused OCR fallback directly on the three numeric bands of the bubble.
+    if(!(p.activation>=1&&p.activation<=20)){
+      const n=await v81FocusedNumber(dataUrl,b,.08,.40); if(n>=1&&n<=20)p.activation=n;
+    }
+    if(!Number(p.damage||0)){
+      const n=await v81FocusedNumber(dataUrl,b,mode==='weapon'?.32:.38,mode==='weapon'?.68:.92);
+      if(Number.isFinite(n) && (n===0||n>20))p.damage=n;
+    }
+    if(mode==='weapon'&&!Number(p.shield||0)){
+      const n=await v81FocusedNumber(dataUrl,b,.66,.98);
+      if(Number.isFinite(n) && (n===0||n>20))p.shield=n;
+    }
+    items.push({activation:(p.activation>=1&&p.activation<=20)?p.activation:1,
+      damage:Number(p.damage||0),shield:mode==='weapon'?Number(p.shield||0):undefined,
+      gx:b.x+b.w/2,gy:b.y+b.h/2,cardX:pair.card?.cx??null,cardY:pair.card?.cy??null,
+      weapon:'',enforcer:''});
+  }
+  return items.map((x,i)=>({...x,slot:i+1}));
+}
+async function v175RecoverCombatPage(shot,index,mode){
+  const side=shot.side==='Defender'?'def':'att';
+  const items=await v175DynamicCombatItems(shot.dataUrl,mode);
+  if(!items.length)return false;
+  if(mode==='enforcer'){
+    const named=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,'enforcer');
+    currentEnforcerReview[side]=named.slice(0,5).map((x,i)=>({...x,slot:i+1}));
+    $(side==='att'?'attEnforcerSlots':'defEnforcerSlots').value=enforcerSlotsText(currentEnforcerReview[side]);
+    const names=currentEnforcerReview[side].map(x=>x.enforcer).filter(Boolean);
+    if(names.length==5)$(side==='att'?'attackerEnforcers':'defenderEnforcers').value=[...new Set(names)].join(', ');
+    v167SuccessfulDomains.add('Enforcers');
+  }else{
+    const named=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,'weapon');
+    currentWeaponReview[side]=named.slice(0,5).map((x,i)=>({...x,slot:i+1}));
+    $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=weaponSlotsText(currentWeaponReview[side]);
+    const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
+    if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
+    v167SuccessfulDomains.add('Super Weapons');
+  }
+  return true;
+}
+
+
 const COMBAT_MODIFIER_PATTERNS=[
   {rx:/enemy\s*atk\s*reduction/i,base:"EnemyAtkReduction"},
   {rx:/enemy\s*def\s*reduction/i,base:"EnemyDefReduction"},
@@ -3276,6 +3363,22 @@ async function runOcrImport(){
       allRaw.push(`===== Screenshot ${i+1} ERROR =====\n${err.message||err}`);
     }
   }
+  // v17.5 second visual pass for the standard package. This deliberately does
+  // not trust a fixed card order: only package page TYPE/SIDE is fixed; slot mapping
+  // itself is reconstructed from active cards + popup geometry on each screenshot.
+  if(currentScreenshots.length===9){
+    for(let i=4;i<=7;i++){
+      const shot=currentScreenshots[i], f=fixedPackageFallback(i);
+      if(!shot||!f)continue;
+      shot.reportType=f.reportType; shot.side=f.side;
+      try{
+        if(i===4||i===5)await v175RecoverCombatPage(shot,i,'enforcer');
+        else await v175RecoverCombatPage(shot,i,'weapon');
+      }catch(e){console.warn('v17.5 dynamic combat recovery failed',i,e)}
+    }
+    renderEnforcerReview();renderWeaponReview();
+  }
+
   if(v162OcrSuccessCount===0){
     for(const [id,value] of Object.entries(v162FormSnapshot)){
       const el=$(id);if(el)el.value=value;
@@ -3345,7 +3448,7 @@ async function runOcrImport(){
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
   const v166Partial=v166OcrFailureCount>0?` · ⚠️ ${v166OcrFailureCount}/${currentScreenshots.length} screenshots απέτυχαν στο OCR`:"";
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v17.2 golden-report parser.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v17.5 dynamic-slot parser.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
@@ -3490,7 +3593,7 @@ function collect(){
   if(!a||!d)throw Error("Συμπλήρωσε επιτιθέμενο και αμυνόμενο.");
   const integrity=genericImportIntegrity();
   if(!integrity.ok)throw Error("Δεν αποθηκεύτηκε: "+integrity.issues.join(" · "));
-  return{id:$("editingId").value||id(),schemaVersion:17.3,date:$("battleDate").value,battleTime:$("battleTime").value,mode:$("battleMode").value,attacker:a,attackerKey:key(a),attackerFaction:norm($("attackerFaction").value),defender:d,defenderKey:key(d),defenderFaction:norm($("defenderFaction").value),attackerFormation:$("attackerFormation").value,defenderFormation:$("defenderFormation").value,attackerRaid:num("attackerRaid"),defenderRaid:num("defenderRaid"),attackerTroops:{bruisers:num("attBruisers"),hitmen:num("attHitmen"),bikers:num("attBikers"),vehicles:v142PersistedTroopTotals("att").vehicles,vehicleKills:v142PersistedTroopTotals("att").vehicleKills,vehicleLosses:v142PersistedTroopTotals("att").vehicleLosses},defenderTroops:{bruisers:num("defBruisers"),hitmen:num("defHitmen"),bikers:num("defBikers"),vehicles:v142PersistedTroopTotals("def").vehicles,vehicleKills:v142PersistedTroopTotals("def").vehicleKills,vehicleLosses:v142PersistedTroopTotals("def").vehicleLosses},attackerStats:{previewBruiserAtk:num("attPreviewBruiserAtk"),previewHitmanAtk:num("attPreviewHitmanAtk"),previewBikerAtk:num("attPreviewBikerAtk"),previewVehicleAtk:num("attPreviewVehicleAtk"),previewBruiserDef:num("attPreviewBruiserDef"),previewHitmanDef:num("attPreviewHitmanDef"),previewBikerDef:num("attPreviewBikerDef"),previewVehicleDef:num("attPreviewVehicleDef"),previewBruiserHp:num("attPreviewBruiserHp"),previewHitmanHp:num("attPreviewHitmanHp"),previewBikerHp:num("attPreviewBikerHp"),previewVehicleHp:num("attPreviewVehicleHp"),crewAtk:num("attCrewAtk"),crewDef:num("attCrewDef"),crewHp:num("attCrewHp"),bruiserAtk:num("attBruiserAtk"),hitmanAtk:num("attHitmanAtk"),bikerAtk:num("attBikerAtk"),bruiserDef:num("attBruiserDef"),hitmanDef:num("attHitmanDef"),bikerDef:num("attBikerDef"),bruiserHp:num("attBruiserHp"),hitmanHp:num("attHitmanHp"),bikerHp:num("attBikerHp"),enemyAtkReduction:num("attEnemyAtkReduction"),enemyDefReduction:num("attEnemyDefReduction"),enemyHpReduction:num("attEnemyHpReduction"),killRate:num("attKillRate"),crewDmg:num("attCrewDmg"),bruiserCounterDmgIncrease:num("attBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("attHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("attBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("attBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("attHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("attBikerCounterDmgReduction"),bruiserReducedDamage:num("attBruiserReducedDamage"),hitmanReducedDamage:num("attHitmanReducedDamage"),bikerReducedDamage:num("attBikerReducedDamage"),totalAssociates:num("attTotalAssociates"),wounded:num("attWounded"),dead:num("attDead"),alive:num("attAlive"),influenceRating:num("attInfluenceRating"),bruiserKills:num("attBruiserKills"),hitmanKills:num("attHitmanKills"),bikerKills:num("attBikerKills"),bruiserBattleLosses:num("attBruiserBattleLosses"),hitmanBattleLosses:num("attHitmanBattleLosses"),bikerBattleLosses:num("attBikerBattleLosses"),bruiserDmg:num("attBruiserDmg"),hitmanDmg:num("attHitmanDmg"),bikerDmg:num("attBikerDmg")},defenderStats:{previewBruiserAtk:num("defPreviewBruiserAtk"),previewHitmanAtk:num("defPreviewHitmanAtk"),previewBikerAtk:num("defPreviewBikerAtk"),previewVehicleAtk:num("defPreviewVehicleAtk"),previewBruiserDef:num("defPreviewBruiserDef"),previewHitmanDef:num("defPreviewHitmanDef"),previewBikerDef:num("defPreviewBikerDef"),previewVehicleDef:num("defPreviewVehicleDef"),previewBruiserHp:num("defPreviewBruiserHp"),previewHitmanHp:num("defPreviewHitmanHp"),previewBikerHp:num("defPreviewBikerHp"),previewVehicleHp:num("defPreviewVehicleHp"),crewAtk:num("defCrewAtk"),crewDef:num("defCrewDef"),crewHp:num("defCrewHp"),bruiserAtk:num("defBruiserAtk"),hitmanAtk:num("defHitmanAtk"),bikerAtk:num("defBikerAtk"),bruiserDef:num("defBruiserDef"),hitmanDef:num("defHitmanDef"),bikerDef:num("defBikerDef"),bruiserHp:num("defBruiserHp"),hitmanHp:num("defHitmanHp"),bikerHp:num("defBikerHp"),enemyAtkReduction:num("defEnemyAtkReduction"),enemyDefReduction:num("defEnemyDefReduction"),enemyHpReduction:num("defEnemyHpReduction"),killRate:num("defKillRate"),crewDmg:num("defCrewDmg"),bruiserCounterDmgIncrease:num("defBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("defHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("defBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("defBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("defHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("defBikerCounterDmgReduction"),bruiserReducedDamage:num("defBruiserReducedDamage"),hitmanReducedDamage:num("defHitmanReducedDamage"),bikerReducedDamage:num("defBikerReducedDamage"),totalAssociates:num("defTotalAssociates"),wounded:num("defWounded"),dead:num("defDead"),alive:num("defAlive"),influenceRating:num("defInfluenceRating"),bruiserKills:num("defBruiserKills"),hitmanKills:num("defHitmanKills"),bikerKills:num("defBikerKills"),bruiserBattleLosses:num("defBruiserBattleLosses"),hitmanBattleLosses:num("defHitmanBattleLosses"),bikerBattleLosses:num("defBikerBattleLosses"),bruiserDmg:num("defBruiserDmg"),hitmanDmg:num("defHitmanDmg"),bikerDmg:num("defBikerDmg")},attackerLosses:num("attLosses"),defenderLosses:num("defLosses"),attackerEnforcers:$("attackerEnforcers").value.trim(),defenderEnforcers:$("defenderEnforcers").value.trim(),attackerSuperWeapons:$("attackerSuperWeapons").value.trim(),defenderSuperWeapons:$("defenderSuperWeapons").value.trim(),attEnforcerSlots:$("attEnforcerSlots").value.trim(),defEnforcerSlots:$("defEnforcerSlots").value.trim(),attWeaponSlots:$("attWeaponSlots").value.trim(),defWeaponSlots:$("defWeaponSlots").value.trim(),winnerSide:$("winnerSide").value,building:norm($("building").value),notes:$("notes").value.trim(),screenshots:currentScreenshots.map(s=>({...s})),
+  return{id:$("editingId").value||id(),schemaVersion:17.5,date:$("battleDate").value,battleTime:$("battleTime").value,mode:$("battleMode").value,attacker:a,attackerKey:key(a),attackerFaction:norm($("attackerFaction").value),defender:d,defenderKey:key(d),defenderFaction:norm($("defenderFaction").value),attackerFormation:$("attackerFormation").value,defenderFormation:$("defenderFormation").value,attackerRaid:num("attackerRaid"),defenderRaid:num("defenderRaid"),attackerTroops:{bruisers:num("attBruisers"),hitmen:num("attHitmen"),bikers:num("attBikers"),vehicles:v142PersistedTroopTotals("att").vehicles,vehicleKills:v142PersistedTroopTotals("att").vehicleKills,vehicleLosses:v142PersistedTroopTotals("att").vehicleLosses},defenderTroops:{bruisers:num("defBruisers"),hitmen:num("defHitmen"),bikers:num("defBikers"),vehicles:v142PersistedTroopTotals("def").vehicles,vehicleKills:v142PersistedTroopTotals("def").vehicleKills,vehicleLosses:v142PersistedTroopTotals("def").vehicleLosses},attackerStats:{previewBruiserAtk:num("attPreviewBruiserAtk"),previewHitmanAtk:num("attPreviewHitmanAtk"),previewBikerAtk:num("attPreviewBikerAtk"),previewVehicleAtk:num("attPreviewVehicleAtk"),previewBruiserDef:num("attPreviewBruiserDef"),previewHitmanDef:num("attPreviewHitmanDef"),previewBikerDef:num("attPreviewBikerDef"),previewVehicleDef:num("attPreviewVehicleDef"),previewBruiserHp:num("attPreviewBruiserHp"),previewHitmanHp:num("attPreviewHitmanHp"),previewBikerHp:num("attPreviewBikerHp"),previewVehicleHp:num("attPreviewVehicleHp"),crewAtk:num("attCrewAtk"),crewDef:num("attCrewDef"),crewHp:num("attCrewHp"),bruiserAtk:num("attBruiserAtk"),hitmanAtk:num("attHitmanAtk"),bikerAtk:num("attBikerAtk"),bruiserDef:num("attBruiserDef"),hitmanDef:num("attHitmanDef"),bikerDef:num("attBikerDef"),bruiserHp:num("attBruiserHp"),hitmanHp:num("attHitmanHp"),bikerHp:num("attBikerHp"),enemyAtkReduction:num("attEnemyAtkReduction"),enemyDefReduction:num("attEnemyDefReduction"),enemyHpReduction:num("attEnemyHpReduction"),killRate:num("attKillRate"),crewDmg:num("attCrewDmg"),bruiserCounterDmgIncrease:num("attBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("attHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("attBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("attBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("attHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("attBikerCounterDmgReduction"),bruiserReducedDamage:num("attBruiserReducedDamage"),hitmanReducedDamage:num("attHitmanReducedDamage"),bikerReducedDamage:num("attBikerReducedDamage"),totalAssociates:num("attTotalAssociates"),wounded:num("attWounded"),dead:num("attDead"),alive:num("attAlive"),influenceRating:num("attInfluenceRating"),bruiserKills:num("attBruiserKills"),hitmanKills:num("attHitmanKills"),bikerKills:num("attBikerKills"),bruiserBattleLosses:num("attBruiserBattleLosses"),hitmanBattleLosses:num("attHitmanBattleLosses"),bikerBattleLosses:num("attBikerBattleLosses"),bruiserDmg:num("attBruiserDmg"),hitmanDmg:num("attHitmanDmg"),bikerDmg:num("attBikerDmg")},defenderStats:{previewBruiserAtk:num("defPreviewBruiserAtk"),previewHitmanAtk:num("defPreviewHitmanAtk"),previewBikerAtk:num("defPreviewBikerAtk"),previewVehicleAtk:num("defPreviewVehicleAtk"),previewBruiserDef:num("defPreviewBruiserDef"),previewHitmanDef:num("defPreviewHitmanDef"),previewBikerDef:num("defPreviewBikerDef"),previewVehicleDef:num("defPreviewVehicleDef"),previewBruiserHp:num("defPreviewBruiserHp"),previewHitmanHp:num("defPreviewHitmanHp"),previewBikerHp:num("defPreviewBikerHp"),previewVehicleHp:num("defPreviewVehicleHp"),crewAtk:num("defCrewAtk"),crewDef:num("defCrewDef"),crewHp:num("defCrewHp"),bruiserAtk:num("defBruiserAtk"),hitmanAtk:num("defHitmanAtk"),bikerAtk:num("defBikerAtk"),bruiserDef:num("defBruiserDef"),hitmanDef:num("defHitmanDef"),bikerDef:num("defBikerDef"),bruiserHp:num("defBruiserHp"),hitmanHp:num("defHitmanHp"),bikerHp:num("defBikerHp"),enemyAtkReduction:num("defEnemyAtkReduction"),enemyDefReduction:num("defEnemyDefReduction"),enemyHpReduction:num("defEnemyHpReduction"),killRate:num("defKillRate"),crewDmg:num("defCrewDmg"),bruiserCounterDmgIncrease:num("defBruiserCounterDmgIncrease"),hitmanCounterDmgIncrease:num("defHitmanCounterDmgIncrease"),bikerCounterDmgIncrease:num("defBikerCounterDmgIncrease"),bruiserCounterDmgReduction:num("defBruiserCounterDmgReduction"),hitmanCounterDmgReduction:num("defHitmanCounterDmgReduction"),bikerCounterDmgReduction:num("defBikerCounterDmgReduction"),bruiserReducedDamage:num("defBruiserReducedDamage"),hitmanReducedDamage:num("defHitmanReducedDamage"),bikerReducedDamage:num("defBikerReducedDamage"),totalAssociates:num("defTotalAssociates"),wounded:num("defWounded"),dead:num("defDead"),alive:num("defAlive"),influenceRating:num("defInfluenceRating"),bruiserKills:num("defBruiserKills"),hitmanKills:num("defHitmanKills"),bikerKills:num("defBikerKills"),bruiserBattleLosses:num("defBruiserBattleLosses"),hitmanBattleLosses:num("defHitmanBattleLosses"),bikerBattleLosses:num("defBikerBattleLosses"),bruiserDmg:num("defBruiserDmg"),hitmanDmg:num("defHitmanDmg"),bikerDmg:num("defBikerDmg")},attackerLosses:num("attLosses"),defenderLosses:num("defLosses"),attackerEnforcers:$("attackerEnforcers").value.trim(),defenderEnforcers:$("defenderEnforcers").value.trim(),attackerSuperWeapons:$("attackerSuperWeapons").value.trim(),defenderSuperWeapons:$("defenderSuperWeapons").value.trim(),attEnforcerSlots:$("attEnforcerSlots").value.trim(),defEnforcerSlots:$("defEnforcerSlots").value.trim(),attWeaponSlots:$("attWeaponSlots").value.trim(),defWeaponSlots:$("defWeaponSlots").value.trim(),winnerSide:$("winnerSide").value,building:norm($("building").value),notes:$("notes").value.trim(),screenshots:currentScreenshots.map(s=>({...s})),
 troopReview:JSON.parse(JSON.stringify(currentTroopReview||{att:{rows:[]},def:{rows:[]}})),
 weaponReview:JSON.parse(JSON.stringify(currentWeaponReview||{att:[],def:[]})),
 enforcerReview:JSON.parse(JSON.stringify(currentEnforcerReview||{att:[],def:[]})),
