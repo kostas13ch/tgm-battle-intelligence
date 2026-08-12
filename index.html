@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.0 · Real-Report Recovery Build</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v17.1 · Real-Report Regression Fix</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -138,7 +138,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
       <button class="quick-card" data-page="statsPage"><span>📊</span><strong>Στατιστικά</strong><small>Σύνοψη δεδομένων</small></button>
     </div>
     <div id="dashboardStats" class="metrics"></div>
-    <article class="panel"><h3>Βασικές δυνατότητες</h3><ul><li>Unified Regular + Mercenary troop totals</li><li>Multi-page Buff Comparison merge</li><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
+    <article class="panel"><h3>Βασικές δυνατότητες</h3><ul><li>Unified Regular + Mercenary troop totals</li><li>Multi-page Buff Comparison merge</li><li>Super Weapon Intelligence library με πραγματικά effects</li><li>Guaranteed vs probabilistic weapon-effect classification</li><li>Visual troop-icon matching inside Battle Details</li><li>Mercenaries are merged into Bruiser/Hitman/Biker by icon shape</li><li>Battle report date + time</li><li>Enforcer/Super Weapon slot damage tracking</li><li>Battle report date/time extraction</li><li>Enforcer & Super Weapon combat-detail extraction</li><li>Regular + Mercenary troops are merged by combat type</li><li>Region-aware label parser</li><li>Multi-parser modifier merge (v17.1 regression fix)</li><li>Buff Preview stats</li><li>Player/faction detection by screen position</li><li>Derived loss consistency checks</li><li>Fixed 9-Screenshot Battle Parser</li><li>Dedicated Buff Preview slot</li><li>Overview player detection</li><li>Two-column attacker/defender parsing</li><li>T4 troop battle results</li><li>Smart Battle Import</li><li>Automatic screenshot classification</li><li>Dual-side combat stats</li><li>Explainable Battle Coach</li><li>Meta Detector</li><li>Stat Shift Optimizer</li><li>Evidence-Based Counter Model</li><li>Weighted Evidence & Confidence</li><li>Battle Replay Timeline</li><li>Smart Counter Tags</li><li>Data Confidence Score</li><li>Screenshot Review Queue</li><li>Report Completeness Score</li><li>Similar Battle Finder</li><li>Screenshot Vault με συμπίεση εικόνων</li><li>IndexedDB</li><li>Μοναδικό Battle ID</li><li>Επεξεργασία/διαγραφή</li><li>Player profiles</li><li>Export/Import backup</li></ul></article>
   </section>
 
   <section id="battleFormPage" class="page hidden">
@@ -280,7 +280,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
             <label>🔴 Αμυνόμενος<textarea id="defWeaponSlots" rows="7" placeholder="slot · activations · damage · shield"></textarea></label>
           </div>
           <div class="storage-warning">Τα slots συνδέονται ανά θέση: Enforcer slot 1 ↔ Super Weapon slot 1 κ.ο.κ. Έτσι κρατάμε ποιο weapon συνδέεται με ποιον enforcer ακόμη κι όταν το OCR δεν γνωρίζει το όνομα του portrait.</div>
-          <h4>🧬 Super Weapon Intelligence v17.0</h4>
+          <h4>🧬 Super Weapon Intelligence v17.1</h4>
           <p class="card-meta">Βιβλιοθήκη πραγματικών effects από τα screenshots σου. Επίλεξε weapon για να δεις ακριβώς τι κάνει και πώς πρέπει να αξιολογείται.</p>
           <div class="form-grid two"><label>Weapon library<select id="weaponIntelSelect"></select></label><label>Πλευρά<select id="weaponIntelSide"><option value="attacker">Επιτιθέμενος</option><option value="defender">Αμυνόμενος</option></select></label></div>
           <div id="weaponIntelOutput" class="counter-output">Επίλεξε Super Weapon.</div>
@@ -2788,6 +2788,38 @@ function modifierKindFromText(t){
 
   return "";
 }
+function dynamicModifierAnchors(result){
+  const words=(result?.data?.words||[]).filter(w=>w?.bbox&&String(w.text||"").trim());
+  if(!words.length)return[];
+  const rows=rowsFromWords(words).sort((a,b)=>a.cy-b.cy),anchors=[];
+  for(let i=0;i<rows.length;i++){
+    let text="",kind="",last=i;
+    for(let j=i;j<Math.min(rows.length,i+4);j++){
+      if(j>i&&rows[j].cy-rows[j-1].cy>75)break;
+      text=(text+" "+rows[j].words.map(w=>w.text).join(" ")).replace(/\s+/g," " ).trim();
+      kind=modifierKindFromText(text);
+      if(kind){last=j;break;}
+    }
+    if(kind){
+      const segment=rows.slice(i,last+1);
+      const y0=Math.min(...segment.flatMap(r=>r.words.map(w=>w.bbox.y0)));
+      const y1=Math.max(...segment.flatMap(r=>r.words.map(w=>w.bbox.y1)));
+      if(!anchors.some(a=>a.kind===kind&&Math.abs(a.cy-(y0+y1)/2)<35))
+        anchors.push({kind,text,cy:(y0+y1)/2});
+      i=last;
+    }
+  }
+  return anchors;
+}
+function mergeModifierSuggestions(...sets){
+  const best=new Map();
+  for(const x of sets.flat()){
+    if(!x?.target||x.value==null||!Number.isFinite(Number(x.value)))continue;
+    const prev=best.get(x.target);
+    if(!prev||Number(x.confidence||0)>Number(prev.confidence||0))best.set(x.target,x);
+  }
+  return [...best.values()];
+}
 function parseCombatModifierWords(result,sourceIndex){
   const words=result?.data?.words||[],out=[];
   if(!words.length)return out;
@@ -3044,8 +3076,29 @@ async function runOcrImport(){
         if(hpCount<6)currentOcrSuggestions.push(...await v170FocusedBuffPreviewOcr(shot.dataUrl,i));
       }
       if((shot.reportType||"")==="Buff Comparison"){
+        // v17.1 regression fix: a partially successful parser must not suppress the
+        // other parsers. Real-report v17.0 filled some DMG fields and therefore
+        // skipped fallback extraction for Kill Rate / Crew DMG / Counter / Reduced Damage.
         const fullMods=v125FullPageStatRows(result,i);
-        const parsed=fullMods.length?fullMods:parseCombatModifierWords(result,i);
+        const wordMods=parseCombatModifierWords(result,i);
+        let cropMods=[];
+        const have=new Set([...fullMods,...wordMods].map(x=>x.target));
+        const wanted=[
+          "attKillRate","defKillRate","attCrewDmg","defCrewDmg",
+          "attBruiserCounterDmgIncrease","defBruiserCounterDmgIncrease",
+          "attHitmanCounterDmgIncrease","defHitmanCounterDmgIncrease",
+          "attBikerCounterDmgIncrease","defBikerCounterDmgIncrease",
+          "attBruiserCounterDmgReduction","defBruiserCounterDmgReduction",
+          "attHitmanCounterDmgReduction","defHitmanCounterDmgReduction",
+          "attBikerCounterDmgReduction","defBikerCounterDmgReduction",
+          "attBruiserReducedDamage","defBruiserReducedDamage",
+          "attHitmanReducedDamage","defHitmanReducedDamage",
+          "attBikerReducedDamage","defBikerReducedDamage"
+        ];
+        if(wanted.some(t=>!have.has(t))){
+          try{cropMods=await parseCombatModifierCrops(result,shot.dataUrl,i)}catch(e){console.warn("modifier crop fallback failed",e)}
+        }
+        const parsed=mergeModifierSuggestions(fullMods,wordMods,cropMods);
         currentOcrSuggestions.push(...parsed);
         if(parsed.length)v167SuccessfulDomains.add("Buff Comparison");
       }
