@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.8 · Dedicated v5.3 Weapon OCR</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.9 · Weapon OCR Diagnostic</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3693,14 +3693,60 @@ async function v188RecognizeWeaponLikeV53(dataUrl){
     try{await worker?.terminate?.()}catch(e){}
   }
 }
+function v189WeaponDiagnostic(result,sourceIndex,side){
+  const data=result?.data||{};
+  const words=Array.isArray(data.words)?data.words:[];
+  const nums=[];
+  for(const w of words){
+    const raw=String(w?.text||"").trim();
+    const val=numericWordValue(w);
+    if(val==null)continue;
+    const b=w?.bbox||{};
+    nums.push({raw,val,x0:b.x0??null,y0:b.y0??null,x1:b.x1??null,y1:b.y1??null});
+  }
+  const small=nums.filter(n=>Number.isInteger(n.val)&&n.val>=1&&n.val<=20);
+  const large=nums.filter(n=>n.val>=100);
+  const summary=[
+    `WEAPON OCR DIAGNOSTIC · ${side} · source ${sourceIndex+1}`,
+    `data keys: ${Object.keys(data).join(", ")||"(none)"}`,
+    `text chars: ${String(data.text||"").length}`,
+    `words: ${words.length}`,
+    `numeric tokens: ${nums.length}`,
+    `activation candidates 1-20: ${small.length}`,
+    `value candidates >=100: ${large.length}`,
+    `NUMERIC TOKENS:`,
+    ...(nums.length?nums.slice(0,120).map(n=>`${n.raw} => ${n.val} @ [${n.x0},${n.y0},${n.x1},${n.y1}]`):["(none)"]),
+    `OCR TEXT:`,
+    String(data.text||"").slice(0,5000)||"(empty)"
+  ].join("\n");
+  window.__tgmWeaponDiagnostics=window.__tgmWeaponDiagnostics||[];
+  window.__tgmWeaponDiagnostics.push(summary);
+  return summary;
+}
+function v189RenderDiagnostics(){
+  let box=document.getElementById("v189WeaponDiagnostics");
+  if(!box){
+    box=document.createElement("section");
+    box.id="v189WeaponDiagnostics";
+    box.className="card";
+    box.style.marginTop="12px";
+    box.innerHTML='<h3>🧪 v18.9 Super Weapon OCR Diagnostic</h3><p class="muted">Raw OCR output used by the weapon parser. Keep this visible in the PDF.</p><pre id="v189WeaponDiagnosticsText" style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;max-height:none"></pre>';
+    const anchor=document.getElementById("battleFormPage")||document.querySelector("main")||document.body;
+    anchor.appendChild(box);
+  }
+  const pre=document.getElementById("v189WeaponDiagnosticsText");
+  if(pre)pre.textContent=(window.__tgmWeaponDiagnostics||[]).join("\n\n====================\n\n");
+}
 async function v188ParseWeaponCombat(dataUrl,sourceIndex,side){
   const dedicated=await v188RecognizeWeaponLikeV53(dataUrl);
+  v189WeaponDiagnostic(dedicated,sourceIndex,side);
+  v189RenderDiagnostics();
   const items=v187DetectWeaponBubbles(dedicated);
   const k=side==="Attacker"?"att":side==="Defender"?"def":null;
   if(!k||!items.length)return[];
   currentWeaponReview[k]=items;
   renderWeaponReview();
-  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · dedicated v5.3 OCR+bbox",confidence:.91}];
+  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · v18.9 diagnostic OCR+bbox",confidence:.91}];
 }
 
 async function v187ParseWeaponCombat(result,sourceIndex,side){
@@ -3713,6 +3759,8 @@ async function v187ParseWeaponCombat(result,sourceIndex,side){
 }
 
 async function runOcrImport(){
+  window.__tgmWeaponDiagnostics=[];
+  const oldDiag=document.getElementById("v189WeaponDiagnostics"); if(oldDiag)oldDiag.remove();
   if(!currentScreenshots.length){$("ocrStatus").textContent="Πρόσθεσε πρώτα screenshots.";return}
   if(typeof Tesseract==="undefined"){
     const ok=await ensureTesseractLoaded(true);
