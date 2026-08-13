@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.0 · TSV Weapon OCR Recovery</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1 · Single-Worker Weapon Recovery</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3621,7 +3621,14 @@ async function tgmStableRecognize(image,langs="eng",options={}){
     }
 
     // ORIGINAL image only: no resize and no coordinate transformation.
-    const result=await worker.recognize(image);
+    // v19.1: request word-level geometry/TSV from the SAME shared worker.
+    // This avoids spawning a second OCR worker on iPhone (which can fail silently from memory pressure).
+    let result;
+    try{
+      result=await worker.recognize(image,{}, {text:true,tsv:true,blocks:true,hocr:true});
+    }catch(e){
+      result=await worker.recognize(image);
+    }
     __tgmOcrLogger=null;
     return result;
   });
@@ -3674,6 +3681,44 @@ function v187DetectWeaponBubbles(result){
   }
   return uniq.slice(0,5).map((x,i)=>({...x,slot:i+1}));
 }
+
+function v191EnsureWordBoxes(result){
+  const data=result?.data||{};
+  if(Array.isArray(data.words)&&data.words.length)return result;
+  const tsv=String(data.tsv||"");
+  if(!tsv.trim())return result;
+  const words=[];
+  const lines=tsv.split(/\r?\n/);
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const c=lines[i].split("\t");
+    if(c.length<12||Number(c[0])!==5)continue;
+    const left=Number(c[6]),top=Number(c[7]),width=Number(c[8]),height=Number(c[9]);
+    const confidence=Number(c[10]);
+    const text=c.slice(11).join("\t").trim();
+    if(!text||![left,top,width,height].every(Number.isFinite))continue;
+    words.push({text,confidence,bbox:{x0:left,y0:top,x1:left+width,y1:top+height}});
+  }
+  data.words=words;
+  return result;
+}
+function v191ParseWeaponCombatFromMainResult(result,sourceIndex,side){
+  v191EnsureWordBoxes(result);
+  const items=v187DetectWeaponBubbles(result);
+  const k=side==="Attacker"?"att":side==="Defender"?"def":null;
+  if(!k||!items.length)return[];
+  // IMPORTANT: do not call renderWeaponReview here. The review renderer syncs from
+  // the still-empty textareas and would erase freshly detected rows before applyOcrSuggestions().
+  return [{
+    target:k==="att"?"attWeaponSlots":"defWeaponSlots",
+    value:weaponSlotsText(items),
+    label:`${side} Super Weapon slots`,
+    sourceIndex,
+    sourceLine:"Super Weapon Battle Details · shared worker TSV/word bbox",
+    confidence:.97
+  }];
+}
+
 async function v188RecognizeWeaponLikeV53(dataUrl){
   // v19.0: request TSV explicitly. Some Tesseract.js v5 worker builds return text
   // but omit data.words; TSV always carries level-5 word boxes and confidence.
@@ -3897,7 +3942,10 @@ async function runOcrImport(){
       }
       if((shot.reportType||"")==="Super Weapons"){
         const before=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
-        const parsed=await v188ParseWeaponCombat(shot.dataUrl,i,shot.side);
+        v191EnsureWordBoxes(result);
+        const __w=(result?.data?.words||[]), __tsv=String(result?.data?.tsv||"");
+        allRaw.push(`WEAPON DEBUG ${shot.side}: words=${__w.length} tsvChars=${__tsv.length} numeric=${v187NumericTokens(result).length}`);
+        const parsed=v191ParseWeaponCombatFromMainResult(result,i,shot.side);
         currentOcrSuggestions.push(...parsed);
         const after=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
         if(after>before||parsed.some(x=>/Weapon slots/i.test(String(x.label||""))))v167SuccessfulDomains.add("Super Weapons");
@@ -4007,7 +4055,7 @@ async function runOcrImport(){
   $("defenderFaction").value=canonicalFaction($("defenderFaction").value);
   const integrity=genericImportIntegrity();
   const v166Partial=v166OcrFailureCount>0?` · ⚠️ ${v166OcrFailureCount}/${currentScreenshots.length} screenshots απέτυχαν στο OCR`:"";
-  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v17.5 dynamic-slot parser.`;
+  $("ocrStatus").textContent=`Ολοκληρώθηκε. ${currentOcrSuggestions.length} πεδία · combat slots ${combatCount}/20 · unresolved mercenaries ${unresolvedMerc}${v166Partial}. ${integrity.ok?"✅ integrity OK":"⚠️ "+integrity.issues.join(" · ")}${integrity.warnings.length?" · "+integrity.warnings.join(" · "):""}. v19.1 single-worker weapon parser.`;
 }
 function applyOcrSuggestions(auto=false){
   const checks=[...document.querySelectorAll("[data-ocr-apply]")];
