@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1 · Single-Worker Weapon Recovery</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1R · Restored v11.2 Weapon Engine</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -4518,5 +4518,70 @@ v175RecoverCombatPage=async function(shot,index,mode){
 };
 </script>
 
+<script>
+/* ===== v19.1R FINAL LOAD-ORDER FIX =====
+   Root cause found by full source diff: legacy v18.6 was physically loaded AFTER
+   v19.0/v19.1 and therefore silently overrode every newer Super Weapon extractor.
+   This final patch is deliberately last and restores the proven v11.2 five-slot
+   popup engine for weapons only. Enforcer extraction remains untouched. */
+async function v191rWeaponExtractor(fullResult,dataUrl){
+  let boxes=[];
+  try{boxes=geometryOrder(await detectBeigeBubbles(dataUrl)).slice(0,5)}catch(e){}
+  if(!boxes.length)return[];
+  let orderedBoxes=null;
+  try{
+    const cards=await v81ActiveCardCenters(dataUrl,5);
+    if(cards?.length>=5){
+      const pairs=v81AssociatePopupToCards(boxes,cards);
+      if(pairs?.length>=5){
+        orderedBoxes=pairs.sort((a,b)=>a.card.cy-b.card.cy||a.card.cx-b.card.cx).map(x=>x.popup).slice(0,5);
+      }
+    }
+  }catch(e){}
+  if(!orderedBoxes)orderedBoxes=v80GeometryRows(boxes,80).slice(0,5);
+  const items=[];
+  for(let i=0;i<orderedBoxes.length;i++){
+    const b=orderedBoxes[i];
+    let parsed={activation:1,damage:0,shield:0};
+    try{parsed=await v81ReadPopup(dataUrl,b,'weapon')}catch(e){
+      try{
+        const full=fullBoxNumericTokens(fullResult,b);
+        const act=full.filter(x=>x.n>=1&&x.n<=20&&x.relY<.45).sort((a,b)=>b.conf-a.conf)[0]?.n||1;
+        const mid=full.filter(x=>x.n>=100&&x.relY>=.28&&x.relY<.72).sort((a,b)=>b.conf-a.conf)[0]?.n||0;
+        const bot=full.filter(x=>x.n>=100&&x.relY>=.62).sort((a,b)=>b.conf-a.conf)[0]?.n||0;
+        parsed={activation:act,damage:mid,shield:bot};
+      }catch(_){}
+    }
+    items.push({slot:i+1,activation:(parsed.activation>=1&&parsed.activation<=20)?parsed.activation:1,damage:Number(parsed.damage||0),shield:Number(parsed.shield||0),weapon:'',gx:b.cx||b.x+b.w/2,gy:b.cy||b.y+b.h/2});
+  }
+  return items;
+}
+const v191rEnforcerExtractor=extractCombatPopups;
+extractCombatPopups=async function(fullResult,dataUrl,mode){
+  if(mode==='weapon')return await v191rWeaponExtractor(fullResult,dataUrl);
+  return await v191rEnforcerExtractor(fullResult,dataUrl,mode);
+};
+// Critical: override the LAST legacy recovery handler as well.
+v175RecoverCombatPage=async function(shot,index,mode){
+  if(mode!=='weapon'){
+    // Do not run a second recovery pass for Enforcers; their normal v18 engine is stable.
+    return false;
+  }
+  const side=shot.side==='Defender'?'def':'att';
+  let fullResult=null;
+  try{fullResult=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){}
+  let items=await v191rWeaponExtractor(fullResult,shot.dataUrl);
+  if(!items.length)return false;
+  try{items=await enrichCombatItemsWithVisualNames(shot.dataUrl,items,'weapon')}catch(e){}
+  currentWeaponReview[side]=items.map((x,i)=>({...x,slot:i+1}));
+  $(side==='att'?'attWeaponSlots':'defWeaponSlots').value=weaponSlotsText(currentWeaponReview[side]);
+  const names=currentWeaponReview[side].map(x=>x.weapon).filter(Boolean);
+  if(names.length)$(side==='att'?'attackerSuperWeapons':'defenderSuperWeapons').value=[...new Set(names)].join(', ');
+  try{v167SuccessfulDomains.add('Super Weapons')}catch(e){}
+  renderWeaponReview();
+  return true;
+};
+console.info('TGM v19.1R final weapon engine active');
+</script>
 </body>
 </html>
