@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v18.9 · Weapon OCR Diagnostic</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.0 · TSV Weapon OCR Recovery</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3675,20 +3675,42 @@ function v187DetectWeaponBubbles(result){
   return uniq.slice(0,5).map((x,i)=>({...x,slot:i+1}));
 }
 async function v188RecognizeWeaponLikeV53(dataUrl){
-  // Important: do NOT use the global stable OCR wrapper here. v5.3 used a fresh
-  // Tesseract.js v5 recognition path whose result.data.words carried the bbox data
-  // consumed by detectCombatBubbles. Recreate that path with a dedicated worker.
+  // v19.0: request TSV explicitly. Some Tesseract.js v5 worker builds return text
+  // but omit data.words; TSV always carries level-5 word boxes and confidence.
   if(typeof Tesseract==="undefined")throw new Error("Tesseract unavailable");
   let worker=null;
   try{
     worker=await Tesseract.createWorker("eng",1);
     try{await worker.setParameters({
       tessedit_pageseg_mode:"3",
-      tessedit_char_whitelist:"",
-      tessedit_char_blacklist:"",
       preserve_interword_spaces:"0"
     })}catch(e){}
-    return await worker.recognize(dataUrl);
+    let result;
+    try{
+      result=await worker.recognize(dataUrl,{}, {text:true,tsv:true,blocks:true});
+    }catch(e){
+      result=await worker.recognize(dataUrl);
+    }
+    const data=result?.data||{};
+    if(!Array.isArray(data.words)||!data.words.length){
+      const tsv=String(data.tsv||"");
+      const lines=tsv.split(/\r?\n/);
+      const words=[];
+      for(let i=1;i<lines.length;i++){
+        if(!lines[i].trim())continue;
+        const c=lines[i].split("\t");
+        if(c.length<12)continue;
+        const level=Number(c[0]);
+        if(level!==5)continue;
+        const left=Number(c[6]),top=Number(c[7]),width=Number(c[8]),height=Number(c[9]);
+        const confidence=Number(c[10]);
+        const text=c.slice(11).join("\t").trim();
+        if(!text||![left,top,width,height].every(Number.isFinite))continue;
+        words.push({text,confidence,bbox:{x0:left,y0:top,x1:left+width,y1:top+height}});
+      }
+      data.words=words;
+    }
+    return result;
   }finally{
     try{await worker?.terminate?.()}catch(e){}
   }
@@ -3730,7 +3752,7 @@ function v189RenderDiagnostics(){
     box.id="v189WeaponDiagnostics";
     box.className="card";
     box.style.marginTop="12px";
-    box.innerHTML='<h3>🧪 v18.9 Super Weapon OCR Diagnostic</h3><p class="muted">Raw OCR output used by the weapon parser. Keep this visible in the PDF.</p><pre id="v189WeaponDiagnosticsText" style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;max-height:none"></pre>';
+    box.innerHTML='<h3>🧪 v19.0 Super Weapon OCR Diagnostic</h3><p class="muted">Raw OCR output used by the weapon parser. Keep this visible in the PDF.</p><pre id="v189WeaponDiagnosticsText" style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;max-height:none"></pre>';
     const anchor=document.getElementById("battleFormPage")||document.querySelector("main")||document.body;
     anchor.appendChild(box);
   }
@@ -3746,7 +3768,7 @@ async function v188ParseWeaponCombat(dataUrl,sourceIndex,side){
   if(!k||!items.length)return[];
   currentWeaponReview[k]=items;
   renderWeaponReview();
-  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · v18.9 diagnostic OCR+bbox",confidence:.91}];
+  return [{target:k==="att"?"attWeaponSlots":"defWeaponSlots",value:weaponSlotsText(items),label:`${side} Super Weapon combat`,sourceIndex,sourceLine:"Super Weapon Battle Details · v19.0 TSV/words bbox",confidence:.91}];
 }
 
 async function v187ParseWeaponCombat(result,sourceIndex,side){
