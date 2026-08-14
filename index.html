@@ -5301,12 +5301,12 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
     const oldAtt=currentEnforcerReview?.att||[], oldDef=currentEnforcerReview?.def||[];
     currentEnforcerReview.att=att.map((damage,i)=>({
       ...(oldAtt[i]||{}),slot:i+1,activation:attAct[i],damage,
-      enforcer:i===3?'El Santo':(i===4?'Hellcat':(oldAtt[i]?.enforcer||''))
+      enforcer:(oldAtt[i]?.enforcer||'')
     }));
     currentEnforcerReview.def=def.map((damage,i)=>({
       ...(oldDef[i]||{}),slot:i+1,activation:defAct[i],damage,
       // Never inherit the known false Hellcat guess on defender slot 3.
-      enforcer:(i===2 && v126CanonicalEnforcerName(oldDef[i]?.enforcer)==='Hellcat')?'':(oldDef[i]?.enforcer||'')
+      enforcer:(oldDef[i]?.enforcer||'')
     }));
     if($('attEnforcerSlots')) $('attEnforcerSlots').value=v180SlotText(currentEnforcerReview.att,'enforcer');
     if($('defEnforcerSlots')) $('defEnforcerSlots').value=v180SlotText(currentEnforcerReview.def,'enforcer');
@@ -5333,5 +5333,91 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R13 · Verified Enforcer + Winner Guard';}catch(e){}
 })();
 </script>\n
+
+<script>
+/* ===== v19.1R14 TRUE VISUAL ENFORCER RECOGNITION =====
+   - No battle/slot-specific Enforcer names.
+   - Preserve R13 verified activation/damage guard and R10 weapon pipeline.
+   - Identify portraits from the active card image against the embedded reference library.
+   - If evidence is not strong enough, leave the name blank/Unknown.
+*/
+(function(){
+  const R14_SCORE=.68, R14_MARGIN=.15;
+  async function r14IdentifyEnforcerCards(dataUrl,count=5){
+    const im=await loadDataUrlImage(dataUrl);
+    const C=document.createElement('canvas'); C.width=im.naturalWidth||im.width; C.height=im.naturalHeight||im.height;
+    const ctx=C.getContext('2d',{willReadFrequently:true}); ctx.drawImage(im,0,0,C.width,C.height);
+    const cards=await v127CombatCardCenters(dataUrl,'enforcer',count);
+    let lib={...V127_COMBAT_ENFORCER_REFS};
+    try{
+      const learned=learnedVisualRefs('enforcer');
+      for(const [name,urls] of Object.entries(learned||{})) (urls||[]).forEach((url,j)=>lib[`${name}@@learn${j}`]=url);
+    }catch(e){}
+    const out=[];
+    for(const card of cards.slice(0,count)){
+      const size=100, x=Math.max(0,card.cx-size/2), y=Math.max(0,card.cy-size/2);
+      const f=visualFeatureFromCanvas(ctx,x,y,Math.min(size,C.width-x),Math.min(size,C.height-y));
+      const m=await v127GroupedVisualMatch(f,lib,R14_SCORE,R14_MARGIN);
+      const name=m.name?v126CanonicalEnforcerName(m.name):'';
+      out.push({name,score:Number(m.score||0),margin:Number(m.margin||0),cx:card.cx,cy:card.cy});
+    }
+    return out;
+  }
+  function r14Commit(side,ids){
+    const items=(currentEnforcerReview?.[side]||[]).map((x,i)=>({
+      ...x,
+      slot:i+1,
+      enforcer:(ids[i]&&ids[i].name)?ids[i].name:'',
+      visualConfidence:(ids[i]&&ids[i].name)?ids[i].score:0,
+      visualMargin:(ids[i]&&ids[i].name)?ids[i].margin:0
+    }));
+    currentEnforcerReview[side]=items;
+    const slotId=side==='att'?'attEnforcerSlots':'defEnforcerSlots';
+    if($(slotId)) $(slotId).value=v180SlotText(items,'enforcer');
+    const names=items.map(x=>x.enforcer).filter(Boolean);
+    const namesId=side==='att'?'attackerEnforcers':'defenderEnforcers';
+    if($(namesId)) $(namesId).value=names.join(', ');
+    renderEnforcerReview();
+  }
+
+  const r14BaseRecovery=v175RecoverCombatPage;
+  v175RecoverCombatPage=async function(shot,index,mode){
+    const ok=await r14BaseRecovery(shot,index,mode);
+    if(mode!=='enforcer' || !ok) return ok;
+    try{
+      const side=shot.side==='Defender'?'def':'att';
+      const ids=await r14IdentifyEnforcerCards(shot.dataUrl,5);
+      // Card detector must see all five positions. Otherwise do not guess any identity.
+      if(ids.length!==5){
+        r14Commit(side,[]);
+        return ok;
+      }
+      r14Commit(side,ids);
+      window.__TGM_R14_LAST_VISUAL=window.__TGM_R14_LAST_VISUAL||{};
+      window.__TGM_R14_LAST_VISUAL[side]=ids;
+    }catch(e){console.warn('R14 enforcer visual recognition',e)}
+    return ok;
+  };
+
+  // R13's verified numeric guard may run after recovery. It now preserves, rather than invents,
+  // Enforcer names; refresh the fields from the visual state after suggestions are applied.
+  const r14BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=r14BaseApply(auto);
+    try{
+      for(const side of ['att','def']){
+        const ids=window.__TGM_R14_LAST_VISUAL?.[side];
+        if(ids&&ids.length===5) r14Commit(side,ids);
+      }
+      preview(); renderCompleteness();
+    }catch(e){}
+    return out;
+  };
+
+  window.__TGM_R14_SELFTEST={hardcodedEnforcerNames:false,score:R14_SCORE,margin:R14_MARGIN,unknownFallback:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R14 · Visual Enforcer Recognition';}catch(e){}
+})();
+</script>
+
 </body>
 </html>
