@@ -5593,5 +5593,222 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   try{renderEnforcerReview();}catch(e){}
 })();
 </script>
+
+<script>
+/* ===== v19.1R17: GENERIC ROW-LATTICE STAT READER + LOSS-BASED WINNER =====
+   No player/report-specific values. Uses screen structure, row geometry and targeted
+   per-cell OCR. Winner is authoritative from Total Losses (fewer losses wins).
+*/
+(function(){
+  const R17_NUM_WHITELIST='0123456789.,%+-';
+  function r17Val(id){ const e=$(id); return e?String(e.value||'').trim():''; }
+  function r17Missing(id){ return r17Val(id)===''; }
+  function r17Push(id,val,sourceIndex,label,confidence=.992){
+    if(!r17Missing(id) || val==null || !Number.isFinite(Number(val))) return false;
+    currentOcrSuggestions.push({target:id,value:Number(val),label,sourceIndex,sourceLine:'v19.1R17 targeted row/cell OCR',confidence});
+    return true;
+  }
+  function r17ParseNumber(text,min=0,max=3000){
+    const t=String(text||'').replace(/[Oo]/g,'0').replace(/\s+/g,' ');
+    const ms=[...t.matchAll(/\d{1,4}(?:[.,]\d+)?/g)].map(m=>Number(m[0].replace(',','.'))).filter(v=>Number.isFinite(v)&&v>=min&&v<=max);
+    if(!ms.length)return null;
+    // Longest/most precise number usually is the value, not a stray icon digit.
+    return ms.sort((a,b)=>String(b).length-String(a).length||b-a)[0];
+  }
+  async function r17CropNumber(dataUrl,x0,y0,x1,y1,min=0,max=3000){
+    const im=await loadDataUrlImage(dataUrl), W=im.naturalWidth||im.width, H=im.naturalHeight||im.height;
+    x0=Math.max(0,Math.floor(x0)); y0=Math.max(0,Math.floor(y0)); x1=Math.min(W,Math.ceil(x1)); y1=Math.min(H,Math.ceil(y1));
+    if(x1<=x0||y1<=y0)return null;
+    const c=document.createElement('canvas'); c.width=x1-x0; c.height=y1-y0;
+    const cx=c.getContext('2d'); cx.drawImage(im,x0,y0,c.width,c.height,0,0,c.width,c.height);
+    const tries=[
+      c.toDataURL('image/png'),
+      (()=>{const d=cx.getImageData(0,0,c.width,c.height);for(let i=0;i<d.data.length;i+=4){const g=.299*d.data[i]+.587*d.data[i+1]+.114*d.data[i+2];const v=g>145?255:0;d.data[i]=d.data[i+1]=d.data[i+2]=v;}cx.putImageData(d,0,0);return c.toDataURL('image/png')})()
+    ];
+    for(const url of tries){
+      try{
+        const r=await Tesseract.recognize(url,'eng',{tessedit_pageseg_mode:'7',tessedit_char_whitelist:R17_NUM_WHITELIST});
+        const v=r17ParseNumber(r?.data?.text,min,max); if(v!=null)return v;
+      }catch(e){}
+    }
+    return null;
+  }
+  function r17NumericTokens(result,W,H,min=100,max=3000){
+    v191EnsureWordBoxes(result);
+    return (result?.data?.words||[]).map(w=>{
+      if(!w?.bbox)return null;
+      const v=r17ParseNumber(w.text,min,max);if(v==null)return null;
+      return {v,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2};
+    }).filter(Boolean).filter(t=>t.cy>H*.07&&t.cy<H*.95&&(t.cx<W*.38||t.cx>W*.62));
+  }
+  function r17Rows(tokens,tol){
+    const rows=[];
+    for(const t of tokens.slice().sort((a,b)=>a.cy-b.cy)){
+      let r=rows.find(q=>Math.abs(q.cy-t.cy)<=tol);
+      if(!r){r={cy:t.cy,items:[]};rows.push(r)}
+      r.items.push(t);r.cy=r.items.reduce((a,z)=>a+z.cy,0)/r.items.length;
+    }
+    return rows.sort((a,b)=>a.cy-b.cy);
+  }
+  function r17BestRegularWindow(rows,n,H){
+    if(rows.length<n)return null;
+    let best=null;
+    for(let s=0;s<=rows.length-n;s++){
+      const a=rows.slice(s,s+n), gaps=a.slice(1).map((r,i)=>r.cy-a[i].cy);
+      const mean=gaps.reduce((x,y)=>x+y,0)/gaps.length;if(mean<H*.02||mean>H*.13)continue;
+      const variance=gaps.reduce((x,g)=>x+(g-mean)*(g-mean),0)/gaps.length;
+      // reward rows with both sides while allowing a missing glyph on one side
+      const paired=a.reduce((k,r)=>k+(r.items.some(t=>t._left)&&r.items.some(t=>!t._left)?1:0),0);
+      const score=variance/(mean*mean)-paired*.01;
+      if(!best||score<best.score)best={rows:a,score,mean};
+    }
+    return best;
+  }
+  async function r17RecoverBuffPreview(shot,sourceIndex){
+    const base=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'6',tessedit_char_whitelist:R17_NUM_WHITELIST});
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    let toks=r17NumericTokens(base,W,H,100,3000).map(t=>({...t,_left:t.cx<W*.5}));
+    let rows=r17Rows(toks,Math.max(11,H*.012));
+    // Remove header-like rows. Main buff values occupy the broad middle of the screen.
+    rows=rows.filter(r=>r.cy>H*.11&&r.cy<H*.91);
+    let win=r17BestRegularWindow(rows,12,H);
+    if(!win){ console.warn('R17 Buff Preview: no 12-row lattice',rows); return 0; }
+    const targets=[];for(const suffix of ['Atk','Def','Hp'])for(const troop of ['Bruiser','Hitman','Biker','Vehicle'])targets.push([`attPreview${troop}${suffix}`,`defPreview${troop}${suffix}`]);
+    let n=0;const dy=Math.max(18,win.mean*.42);
+    for(let i=0;i<12;i++){
+      const row=win.rows[i], L=row.items.filter(t=>t._left).sort((a,b)=>b.cx-a.cx)[0], R=row.items.filter(t=>!t._left).sort((a,b)=>a.cx-b.cx)[0];
+      let lv=L?.v??null,rv=R?.v??null;
+      if(r17Missing(targets[i][0])&&lv==null)lv=await r17CropNumber(shot.dataUrl,W*.06,row.cy-dy,W*.46,row.cy+dy,100,3000);
+      if(r17Missing(targets[i][1])&&rv==null)rv=await r17CropNumber(shot.dataUrl,W*.54,row.cy-dy,W*.94,row.cy+dy,100,3000);
+      if(lv!=null)n+=r17Push(targets[i][0],lv,sourceIndex,'R17 Buff Preview row lattice')?1:0;
+      if(rv!=null)n+=r17Push(targets[i][1],rv,sourceIndex,'R17 Buff Preview row lattice')?1:0;
+    }
+    return n;
+  }
+  function r17TextRows(result){
+    v191EnsureWordBoxes(result); const words=(result?.data?.words||[]).filter(w=>w?.bbox&&String(w.text||'').trim());
+    if(!words.length)return[];
+    const H=Math.max(...words.map(w=>w.bbox.y1||0),1),tol=Math.max(10,H*.008),rows=[];
+    for(const w of words.slice().sort((a,b)=>((a.bbox.y0+a.bbox.y1)-(b.bbox.y0+b.bbox.y1)))){
+      const cy=(w.bbox.y0+w.bbox.y1)/2;let r=rows.find(q=>Math.abs(q.cy-cy)<=tol);
+      if(!r){r={cy,words:[]};rows.push(r)}r.words.push(w);r.cy=r.words.reduce((a,z)=>a+(z.bbox.y0+z.bbox.y1)/2,0)/r.words.length;
+    }
+    return rows.sort((a,b)=>a.cy-b.cy).map(r=>({...r,text:r.words.slice().sort((a,b)=>a.bbox.x0-b.bbox.x0).map(w=>w.text).join(' ')}));
+  }
+  const R17_CORE=[
+    ['CrewAtk',/crew\s*atk/i],['CrewDef',/crew\s*def/i],['CrewHp',/crew\s*hp/i],
+    ['BruiserAtk',/bruiser\s*atk/i],['HitmanAtk',/hitm[ae]n\s*atk/i],['BikerAtk',/biker\s*atk/i],
+    ['BruiserDef',/bruiser\s*def/i],['HitmanDef',/hitm[ae]n\s*def/i],['BikerDef',/biker\s*def/i],
+    ['BruiserHp',/bruiser\s*hp/i],['HitmanHp',/hitm[ae]n\s*hp/i],['BikerHp',/biker\s*hp/i]
+  ];
+  async function r17RecoverCoreStats(shot,sourceIndex){
+    const base=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'6'});
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    const textRows=r17TextRows(base); let anchors=[];
+    for(const [id,rx] of R17_CORE){const r=textRows.find(x=>rx.test(x.text));if(r)anchors.push({id,cy:r.cy});}
+    // If labels are partially missed, fit their fixed 12-row order from recognized anchors.
+    const idxMap=new Map(R17_CORE.map((x,i)=>[x[0],i]));
+    let a=0,b=0;
+    if(anchors.length>=4){
+      const xs=anchors.map(x=>idxMap.get(x.id)),ys=anchors.map(x=>x.cy),xm=xs.reduce((p,q)=>p+q,0)/xs.length,ym=ys.reduce((p,q)=>p+q,0)/ys.length;
+      b=xs.reduce((s,x,i)=>s+(x-xm)*(ys[i]-ym),0)/(xs.reduce((s,x)=>s+(x-xm)*(x-xm),0)||1);a=ym-b*xm;
+    }else{
+      const toks=r17NumericTokens(base,W,H,300,2000).map(t=>({...t,_left:t.cx<W*.5}));
+      const rows=r17Rows(toks,Math.max(10,H*.01)).filter(r=>r.cy>H*.06&&r.cy<H*.72);
+      const win=r17BestRegularWindow(rows,12,H);if(!win)return 0;a=win.rows[0].cy;b=win.mean;
+    }
+    let n=0;const dy=Math.max(17,Math.abs(b)*.42);
+    for(let i=0;i<R17_CORE.length;i++){
+      const id=R17_CORE[i][0],cy=anchors.find(x=>x.id===id)?.cy??(a+b*i);
+      if(cy<0||cy>H)continue;
+      if(r17Missing('att'+id)){const v=await r17CropNumber(shot.dataUrl,W*.02,cy-dy,W*.32,cy+dy,250,2500);if(v!=null)n+=r17Push('att'+id,v,sourceIndex,'R17 core label-row OCR')?1:0;}
+      if(r17Missing('def'+id)){const v=await r17CropNumber(shot.dataUrl,W*.68,cy-dy,W*.98,cy+dy,250,2500);if(v!=null)n+=r17Push('def'+id,v,sourceIndex,'R17 core label-row OCR')?1:0;}
+    }
+    return n;
+  }
+  async function r17RecoverCounterReduction(shot,sourceIndex){
+    const base=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'6'});
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    const rows=r17TextRows(base); const defs=[
+      ['BruiserCounterDmgReduction',/bruiser[s]?\s*(?:counter(?:\s*dmg)?\s*reduction|receive.*reduced)/i],
+      ['HitmanCounterDmgReduction',/hitm[ae]n\s*(?:counter(?:\s*dmg)?\s*reduction)/i],
+      ['BikerCounterDmgReduction',/biker[s]?\s*(?:counter(?:\s*dmg)?\s*reduction)/i]
+    ];
+    let n=0;
+    for(const [id,rx] of defs){
+      const row=rows.find(r=>rx.test(r.text));if(!row)continue;
+      const dy=Math.max(18,H*.016);
+      for(const [side,x0,x1] of [['att',.01,.31],['def',.69,.99]]){
+        const target=side+id;if(!r17Missing(target))continue;
+        const v=await r17CropNumber(shot.dataUrl,W*x0,row.cy-dy,W*x1,row.cy+dy,0,100);
+        if(v!=null)n+=r17Push(target,v,sourceIndex,'R17 counter-reduction row OCR')?1:0;
+      }
+    }
+    return n;
+  }
+
+  // Replace R16 recovery with the generic row reader. Existing initial parser remains first pass.
+  v191R16RecoverMissingStats=async function(){
+    if(typeof Tesseract==='undefined')return;
+    let recovered=0;
+    for(let i=0;i<currentScreenshots.length;i++){
+      const shot=currentScreenshots[i];
+      try{
+        if(shot.reportType==='Buff Preview')recovered+=await r17RecoverBuffPreview(shot,i);
+        if(shot.reportType==='Buff Comparison'){
+          recovered+=await r17RecoverCoreStats(shot,i);
+          recovered+=await r17RecoverCounterReduction(shot,i);
+        }
+      }catch(e){console.warn('R17 generic stat recovery failed',i,e)}
+    }
+    if(recovered){currentOcrSuggestions=dedupeOcrSuggestions(currentOcrSuggestions);applyOcrSuggestions(true)}
+    r17WinnerFromLosses();
+  };
+
+  // Vehicle HP is below the visible viewport in common Buff Preview captures; do not call it
+  // a critical failure when it literally isn't present in the supplied screenshot.
+  v191R16MissingCriticalStats=function(){
+    const ids=[];
+    for(const side of ['att','def'])for(const troop of ['Bruiser','Hitman','Biker','Vehicle'])for(const s of ['Atk','Def','Hp']){
+      if(troop==='Vehicle'&&s==='Hp')continue;
+      const id=`${side}Preview${troop}${s}`;if(r17Missing(id))ids.push(id);
+    }
+    for(const side of ['att','def'])for(const s of ['CrewAtk','CrewDef','CrewHp','BruiserAtk','HitmanAtk','BikerAtk','BruiserDef','HitmanDef','BikerDef','BruiserHp','HitmanHp','BikerHp']){
+      const id=side+s;if(r17Missing(id))ids.push(id);
+    }
+    for(const side of ['att','def'])for(const t of ['Bruiser','Hitman','Biker']){const id=`${side}${t}CounterDmgReduction`;if(r17Missing(id))ids.push(id)}
+    return ids;
+  };
+
+  function r17WinnerFromLosses(){
+    const a=Number($('attLosses')?.value),d=Number($('defLosses')?.value),w=$('winnerSide');
+    if(!w||!Number.isFinite(a)||!Number.isFinite(d)||a<0||d<0)return null;
+    if(a===d){w.value='';w.dataset.r17Tie='1';return 'tie';}
+    delete w.dataset.r17Tie;w.value=a<d?'attacker':'defender';return w.value;
+  }
+  window.r17WinnerFromLosses=r17WinnerFromLosses;
+  ['attLosses','defLosses'].forEach(id=>$(id)?.addEventListener('input',r17WinnerFromLosses));
+
+  // Losses are authoritative at save time, regardless of title/OCR wording.
+  const r17BaseSave=save;
+  save=async function(){
+    const wr=r17WinnerFromLosses();
+    if(wr==='tie'){$('formMessage').textContent='Δεν αποθηκεύτηκε: ίδια Total Losses και στις δύο πλευρές — χρειάζεται review.';return;}
+    // Reject obviously corrupted Enforcer damage rather than silently poisoning the DB.
+    const bad=[];for(const side of ['att','def'])for(const r of (currentEnforcerReview?.[side]||[]))if(Number(r.damage)>500000)bad.push(`${side} slot ${r.slot}`);
+    if(bad.length){$('formMessage').textContent=`Δεν αποθηκεύτηκε: ύποπτο Enforcer damage (${bad.join(', ')}). Διόρθωσέ το από το review.`;return;}
+    return await r17BaseSave();
+  };
+  const btn=$('saveBattleBtn');if(btn)btn.onclick=save;
+
+  // Apply loss-based winner after any suggestion batch too.
+  const r17BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){const out=r17BaseApply(auto);r17WinnerFromLosses();return out;};
+  r17WinnerFromLosses();
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R17 · Generic Row Reader + Loss Winner';}catch(e){}
+  window.__TGM_R17_SELFTEST={reportSpecificValues:false,winnerRule:'fewer total losses',vehicleHpOptionalWhenOffscreen:true};
+})();
+
+</script>
 </body>
 </html>
