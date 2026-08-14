@@ -4145,7 +4145,16 @@ function genericImportIntegrity(){
       issues.push(`${side==="att"?"Attacker":"Defender"} troop data λείπουν`);
     }
     const unresolved=meaningfulRows.filter(r=>!r.type||r.type==="Unknown"||![1,2,3,4,5].includes(Number(r.tier)));
-    if(unresolved.length)issues.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} troop rows χωρίς ασφαλές Type/Tier`);
+    // R11: Type/Tier belongs to the optional detailed Troop Review. Battle-level
+    // Bruiser/Hitman/Biker totals are already independently extracted and are
+    // sufficient for persistence/analysis. Do not reject an otherwise complete
+    // real report merely because an icon/tier row could not be classified.
+    // Still block when BOTH the trusted top-level totals and recognized review
+    // rows are absent; that condition is handled by the troop-data check above.
+    if(unresolved.length){
+      if(topLevel||hasRecognizedRow)warnings.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} troop rows χωρίς ασφαλές Type/Tier — αποθηκεύονται τα battle-level troop totals`);
+      else issues.push(`${side==="att"?"Επιτιθέμενος":"Αμυνόμενος"}: ${unresolved.length} troop rows χωρίς ασφαλές Type/Tier`);
+    }
     const malformed=rows.filter(r=>{
       const total=Number(r?.total),kills=Number(r?.kills||0),losses=Number(r?.losses||0);
       return !Number.isFinite(total)||total<0||!Number.isFinite(kills)||kills<0||!Number.isFinite(losses)||losses<0;
@@ -5188,7 +5197,7 @@ parseWeaponCombat=async function(result,sourceIndex,side,dataUrl){
   return parsed;
 };
 window.__TGM_R10_SELFTEST={r9NumbersFrozen:true,formationIndependent:true,nearestCardPairing:true,minScore:.60,minMargin:.12};
-try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R10 · Visual Weapon Identity';}catch(e){}
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R11 · Save Validation Fix';}catch(e){}
 </script>
 
 </body>
