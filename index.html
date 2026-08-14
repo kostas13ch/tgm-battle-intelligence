@@ -4704,5 +4704,45 @@ try{
   const p=document.querySelector('header.topbar p');
   if(p)p.textContent='v19.1R3 · Light-Popup Weapon Detector';
 }catch(e){}
-</script>\n</body>
+</script>\n<script>
+// v19.1R4: OCR-anchor weapon recovery. Avoids popup color/shape detection entirely.
+async function v191r4WeaponItemsFromAnchors(fullResult,dataUrl){
+  v191EnsureWordBoxes(fullResult);
+  const toks=v187NumericTokens(fullResult).filter(t=>Number.isFinite(t.val));
+  if(!toks.length)return [];
+  const acts=toks.filter(t=>t.val>=1&&t.val<=20);
+  const big=toks.filter(t=>t.val===0||t.val>=100);
+  const candidates=[];
+  for(const a of acts){
+    const near=big.filter(n=>{
+      const dy=n.cy-a.cy, dx=n.cx-a.cx;
+      return dy>-25 && dy<260 && dx>-80 && dx<420;
+    }).sort((u,v)=>u.cy-v.cy||u.cx-v.cx);
+    if(!near.length)continue;
+    const first=near[0], second=near.find(n=>n!==first && n.cy>first.cy+3) || near[1];
+    const score=(first?2:0)+(second?2:0)-Math.abs((first?.cx||a.cx)-a.cx)/500;
+    candidates.push({a,first,second,score});
+  }
+  candidates.sort((x,y)=>y.score-x.score);
+  const chosen=[];
+  for(const c of candidates){
+    if(chosen.some(q=>Math.hypot(q.a.cx-c.a.cx,q.a.cy-c.a.cy)<55))continue;
+    chosen.push(c); if(chosen.length>=5)break;
+  }
+  if(!chosen.length)return [];
+  chosen.sort((x,y)=>x.a.cy-y.a.cy||x.a.cx-y.a.cx);
+  return chosen.map((c,i)=>({slot:i+1,activation:c.a.val,damage:Number(c.first?.val||0),shield:Number(c.second?.val||0),weapon:'',gx:c.a.cx,gy:c.a.cy}));
+}
+const __v191r4ExtractCombatPopups=extractCombatPopups;
+extractCombatPopups=async function(fullResult,dataUrl,mode){
+  if(mode!=='weapon')return __v191r4ExtractCombatPopups(fullResult,dataUrl,mode);
+  try{
+    const anchored=await v191r4WeaponItemsFromAnchors(fullResult,dataUrl);
+    if(anchored.length)return anchored;
+  }catch(e){console.warn('v19.1R4 anchor recovery failed',e)}
+  return __v191r4ExtractCombatPopups(fullResult,dataUrl,mode);
+};
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R4 · OCR-Anchor Weapon Recovery';}catch(e){}
+</script>
+</body>
 </html>
