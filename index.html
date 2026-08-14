@@ -5125,5 +5125,71 @@ window.__TGM_R9_SELFTEST={exactFiveRequired:true,r8Baseline:true,duplicateOnlyRe
 try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R9 · Duplicate-Safe Weapon OCR';}catch(e){}
 </script>
 
+<script>
+/* ===== v19.1R10: VISUAL SUPER WEAPON IDENTITY =====
+   R9 numeric extraction is frozen. R10 adds only weapon identity.
+   It detects the five active colored weapon cards, compares each 100x100 card crop
+   against the embedded real-game reference library, then assigns each recognized card
+   to the nearest already-detected popup. No formation/order hardcoding is used.
+*/
+const __v191r10PreviousParseWeaponCombat=parseWeaponCombat;
+async function v191r10WeaponCardIds(dataUrl){
+  const im=await loadDataUrlImage(dataUrl);
+  const C=document.createElement('canvas');C.width=im.naturalWidth||im.width;C.height=im.naturalHeight||im.height;
+  const ctx=C.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,C.width,C.height);
+  const cards=await v127CombatCardCenters(dataUrl,'weapon',5);
+  const ids=[];
+  for(const card of cards.slice(0,5)){
+    const size=100,x=Math.max(0,card.cx-size/2),y=Math.max(0,card.cy-size/2);
+    const f=visualFeatureFromCanvas(ctx,x,y,Math.min(size,C.width-x),Math.min(size,C.height-y));
+    const m=await v127GroupedVisualMatch(f,V127_COMBAT_WEAPON_REFS,.60,.12);
+    ids.push({cx:card.cx,cy:card.cy,name:m.name||'',score:Number(m.score||0),margin:Number(m.margin||0)});
+  }
+  return ids;
+}
+function v191r10AttachWeaponNames(items,cards){
+  const available=new Set(cards.map((_,i)=>i));
+  for(const item of items){
+    let best=-1,bestD=Infinity;
+    for(const i of available){
+      const c=cards[i];
+      const d=Math.hypot(Number(item.gx||0)-c.cx,Number(item.gy||0)-c.cy);
+      if(d<bestD){bestD=d;best=i}
+    }
+    if(best>=0){
+      const c=cards[best]; available.delete(best);
+      if(c.name){item.weapon=c.name;item.visualConfidence=c.score;item.visualMargin=c.margin}
+    }
+  }
+  return items;
+}
+parseWeaponCombat=async function(result,sourceIndex,side,dataUrl){
+  const parsed=await __v191r10PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  const k=side==='Attacker'?'att':side==='Defender'?'def':null;
+  if(!k||!(currentWeaponReview[k]?.length===5))return parsed;
+  try{
+    const cards=await v191r10WeaponCardIds(dataUrl);
+    if(cards.length===5){
+      v191r10AttachWeaponNames(currentWeaponReview[k],cards);
+      reconcileCombatSlots(k);
+      const id=k==='att'?'attWeaponSlots':'defWeaponSlots';
+      const value=weaponSlotsText(currentWeaponReview[k]);
+      if($(id))$(id).value=value;
+      const named=currentWeaponReview[k].map(x=>x.weapon).filter(Boolean);
+      if(named.length){
+        const namesId=k==='att'?'attackerSuperWeapons':'defenderSuperWeapons';
+        if($(namesId))$(namesId).value=[...new Set(named)].join(', ');
+      }
+      renderWeaponReview();
+      return [{target:id,value,label:`${side} Super Weapon slots + visual identity`,sourceIndex,
+        sourceLine:'v19.1R10 R9 numbers + nearest-card visual reference identity',confidence:.995}];
+    }
+  }catch(e){console.warn('R10 visual weapon identity',e)}
+  return parsed;
+};
+window.__TGM_R10_SELFTEST={r9NumbersFrozen:true,formationIndependent:true,nearestCardPairing:true,minScore:.60,minMargin:.12};
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R10 · Visual Weapon Identity';}catch(e){}
+</script>
+
 </body>
 </html>
