@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1R · Restored v11.2 Weapon Engine</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1R2 · Run-Loop Weapon Fix</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -3945,7 +3945,7 @@ async function runOcrImport(){
         v191EnsureWordBoxes(result);
         const __w=(result?.data?.words||[]), __tsv=String(result?.data?.tsv||"");
         allRaw.push(`WEAPON DEBUG ${shot.side}: words=${__w.length} tsvChars=${__tsv.length} numeric=${v187NumericTokens(result).length}`);
-        const parsed=v191ParseWeaponCombatFromMainResult(result,i,shot.side);
+        const parsed=await parseWeaponCombat(result,i,shot.side,shot.dataUrl);
         currentOcrSuggestions.push(...parsed);
         const after=(currentWeaponReview.att?.length||0)+(currentWeaponReview.def?.length||0);
         if(after>before||parsed.some(x=>/Weapon slots/i.test(String(x.label||""))))v167SuccessfulDomains.add("Super Weapons");
@@ -4582,6 +4582,11 @@ v175RecoverCombatPage=async function(shot,index,mode){
   return true;
 };
 console.info('TGM v19.1R final weapon engine active');
+</script>
+
+<script>
+console.info("TGM v19.1R2: Super Weapon run-loop now calls parseWeaponCombat(result,index,side,dataUrl) -> active final extractCombatPopups engine");
+window.__TGM_WEAPON_RUNLOOP_FIX="v19.1R2";
 </script>
 </body>
 </html>
