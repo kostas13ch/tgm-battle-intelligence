@@ -5053,5 +5053,77 @@ window.__TGM_R8_SELFTEST={exactFiveRequired:true,r6Baseline:true,rowRepairOnly:t
 try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R8 · Conservative Weapon OCR Fusion';}catch(e){}
 </script>
 
+
+<script>
+/* ===== v19.1R9: DUPLICATE-SAFE WEAPON OCR =====
+   Keep R8's proven 5-box detector and conservative baseline. The only new rule:
+   when R6/R8 duplicated the SAME non-zero total into damage and shield, use the
+   independently row-locked OCR values to separate the two rows. Never change a
+   non-duplicate plausible pair. This targets the real R8 defender slot-5 failure
+   (10194/10194) without disturbing the recovered 5+5 slots. */
+const __v191r9PreviousParseWeaponCombat=parseWeaponCombat;
+parseWeaponCombat=async function(result,sourceIndex,side,dataUrl){
+  const detectedSide=(side==='Attacker'||side==='Defender')?side:'Unknown';
+  if(detectedSide==='Unknown')return __v191r9PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  const k=detectedSide==='Attacker'?'att':'def';
+  let boxes=[];try{boxes=await v191r6WeaponBoxes(dataUrl)}catch(e){console.warn('R9 weapon boxes',e)}
+  if(boxes.length!==5)return __v191r9PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  boxes=geometryOrder(boxes);
+
+  const items=[];
+  for(let i=0;i<5;i++){
+    const b=boxes[i];
+    let base={activation:0,damage:0,shield:0};
+    try{base=await v81ReadPopup(dataUrl,b,'weapon')}catch(e){}
+    let ra=null,rd=null,rs=null;
+    try{ra=await v182WeaponNumber(dataUrl,b,0,result)}catch(e){}
+    try{rd=await v182WeaponNumber(dataUrl,b,1,result)}catch(e){}
+    try{rs=await v182WeaponNumber(dataUrl,b,2,result)}catch(e){}
+
+    let activation=Number(base.activation||0);
+    if(!(activation>=1&&activation<=8)){
+      if(Number.isFinite(ra)&&ra>=1&&ra<=8)activation=Number(ra);
+      else activation=1;
+    }
+
+    let damage=Number(base.damage||0),shield=Number(base.shield||0);
+    if(damage>0&&damage<1000)damage=0;
+    if(shield>0&&shield<1000)shield=0;
+    if(!damage&&Number.isFinite(rd)&&rd>=1000)damage=Number(rd);
+    if(!shield&&Number.isFinite(rs)&&rs>=1000)shield=Number(rs);
+
+    // R9 surgical repair: a real popup can have damage and shield, but R8's
+    // observed failure copied one OCR value into BOTH fields. Only in that exact
+    // duplicate case may row OCR replace them, and only when it supplies two
+    // distinct plausible values. No cross-row guessing otherwise.
+    if(damage>=1000 && shield>=1000 && damage===shield){
+      const rowDamage=(Number.isFinite(rd)&&rd>=1000)?Number(rd):null;
+      const rowShield=(Number.isFinite(rs)&&rs>=1000)?Number(rs):null;
+      if(rowDamage!==null && rowShield!==null && rowDamage!==rowShield){
+        damage=rowDamage; shield=rowShield;
+      } else if(rowDamage!==null && rowDamage!==damage){
+        damage=rowDamage;
+      } else if(rowShield!==null && rowShield!==shield){
+        shield=rowShield;
+      }
+    }
+
+    items.push({slot:i+1,weapon:'',activation,damage,shield,
+      gx:b.x+b.w/2,gy:b.y+b.h/2});
+  }
+
+  currentWeaponReview[k]=items;
+  reconcileCombatSlots(k);
+  const id=k==='att'?'attWeaponSlots':'defWeaponSlots',value=weaponSlotsText(items);
+  if($(id))$(id).value=value;
+  renderWeaponReview();
+  try{v167SuccessfulDomains.add('Super Weapons')}catch(e){}
+  return [{target:id,value,label:`${detectedSide} Super Weapon slots`,sourceIndex,
+    sourceLine:'v19.1R9 R8 baseline + duplicate-only row separation',confidence:.999}];
+};
+window.__TGM_R9_SELFTEST={exactFiveRequired:true,r8Baseline:true,duplicateOnlyRepair:true,noCrossRowGuess:true};
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R9 · Duplicate-Safe Weapon OCR';}catch(e){}
+</script>
+
 </body>
 </html>
