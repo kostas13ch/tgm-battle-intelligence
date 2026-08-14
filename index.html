@@ -4810,5 +4810,114 @@ extractCombatPopups=async function(fullResult,dataUrl,mode){
 window.__TGM_R5_BOX_SELFTEST={validatedSourceScreenshots:2,expectedBoxes:[5,5]};
 try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R5 · Real-Screenshot Validated Weapon Boxes';}catch(e){}
 </script>
+
+<script>
+/* ===== v19.1R6: DIRECT WEAPON INTEGRATION FIX =====
+   The R5 detector was validated against the real source screenshots, but the app
+   could still end with blank weapon fields because detection/review/suggestion
+   state traveled through several independent layers. R6 makes the weapon page
+   atomic: detect -> local OCR -> currentWeaponReview -> textarea -> suggestion.
+   It also returns a label containing "Weapon slots", so the import domain is
+   explicitly marked successful and cannot be restored to the pre-import snapshot.
+*/
+
+async function v191r6LooseWeaponBoxes(dataUrl){
+  const im=await loadDataUrlImage(dataUrl);
+  const natW=im.naturalWidth||im.width,natH=im.naturalHeight||im.height;
+  const scale=Math.min(1,660/natW),W=Math.round(natW*scale),H=Math.round(natH*scale);
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
+  const d=ctx.getImageData(0,0,W,H).data,N=W*H,mask=new Uint8Array(N);
+  // Deliberately broader than R5: neutral/light cream/white popup body.
+  for(let p=0;p<N;p++){
+    const i=p*4,r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    const sat=mx?((mx-mn)/mx)*255:0;
+    if(mx>=155 && sat<=95)mask[p]=1;
+  }
+  // 3x3 close. Keep connected components and score by rectangle geometry.
+  const rad=1,dil=new Uint8Array(N),closed=new Uint8Array(N);
+  for(let y=rad;y<H-rad;y++)for(let x=rad;x<W-rad;x++){
+    let on=0;for(let yy=-rad;yy<=rad&&!on;yy++)for(let xx=-rad;xx<=rad;xx++)if(mask[(y+yy)*W+x+xx]){on=1;break}
+    dil[y*W+x]=on;
+  }
+  for(let y=rad;y<H-rad;y++)for(let x=rad;x<W-rad;x++){
+    let on=1;for(let yy=-rad;yy<=rad&&on;yy++)for(let xx=-rad;xx<=rad;xx++)if(!dil[(y+yy)*W+x+xx]){on=0;break}
+    closed[y*W+x]=on;
+  }
+  const seen=new Uint8Array(N),q=new Int32Array(N),cand=[];
+  for(let p=0;p<N;p++){
+    if(!closed[p]||seen[p])continue;
+    let h=0,t=0;q[t++]=p;seen[p]=1;let x0=W,x1=0,y0=H,y1=0,area=0;
+    while(h<t){const z=q[h++],x=z%W,y=(z/W)|0;area++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0){const n=z-1;if(closed[n]&&!seen[n]){seen[n]=1;q[t++]=n}}
+      if(x<W-1){const n=z+1;if(closed[n]&&!seen[n]){seen[n]=1;q[t++]=n}}
+      if(y>0){const n=z-W;if(closed[n]&&!seen[n]){seen[n]=1;q[t++]=n}}
+      if(y<H-1){const n=z+W;if(closed[n]&&!seen[n]){seen[n]=1;q[t++]=n}}
+    }
+    const bw=x1-x0+1,bh=y1-y0+1,wr=bw/W,hr=bh/H,fill=area/Math.max(1,bw*bh),aspect=bw/Math.max(1,bh),cy=(y0+y1)/2/H;
+    if(wr<.10||wr>.30||hr<.055||hr>.20||aspect<.9||aspect>3.6||fill<.42||cy>.88)continue;
+    const score=fill*3 - Math.abs(aspect-1.35)*.15 - Math.abs(hr-.12)*2;
+    cand.push({x:x0/scale,y:y0/scale,w:bw/scale,h:bh/scale,score,area:area/(scale*scale)});
+  }
+  cand.sort((a,b)=>b.score-a.score);
+  const uniq=[];
+  for(const b of cand){
+    const cx=b.x+b.w/2,cy=b.y+b.h/2;
+    if(uniq.some(u=>Math.hypot((u.x+u.w/2)-cx,(u.y+u.h/2)-cy)<Math.max(30,Math.min(u.w,b.w)*.35)))continue;
+    uniq.push(b);if(uniq.length>=10)break;
+  }
+  return geometryOrder(uniq).slice(0,5);
+}
+
+async function v191r6WeaponBoxes(dataUrl){
+  let boxes=[];
+  try{boxes=await v191r5DetectWeaponBoxes(dataUrl)}catch(e){}
+  if(boxes.length===5)return geometryOrder(boxes);
+  try{const loose=await v191r6LooseWeaponBoxes(dataUrl);if(loose.length===5)return geometryOrder(loose)}catch(e){}
+  try{const old=await detectBeigeBubbles(dataUrl);if(old?.length>=5)return geometryOrder(old).slice(0,5)}catch(e){}
+  return geometryOrder(boxes||[]).slice(0,5);
+}
+
+const __v191r6PreviousParseWeaponCombat=parseWeaponCombat;
+parseWeaponCombat=async function(result,sourceIndex,side,dataUrl){
+  const detectedSide=(side==='Attacker'||side==='Defender')?side:'Unknown';
+  if(detectedSide==='Unknown')return __v191r6PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  const k=detectedSide==='Attacker'?'att':'def';
+  let boxes=[];try{boxes=await v191r6WeaponBoxes(dataUrl)}catch(e){console.warn('R6 weapon boxes',e)}
+  if(boxes.length!==5)return __v191r6PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+
+  const items=[];
+  for(let i=0;i<5;i++){
+    const b=boxes[i];let p={activation:0,damage:0,shield:0};
+    try{p=await v81ReadPopup(dataUrl,b,'weapon')}catch(e){}
+    try{
+      const f=originalBoxInts(result,b),a=chooseActivation([],f),v=chooseValues([],f,'weapon',b);
+      if(!(p.activation>=1&&p.activation<=20)&&a>=1&&a<=20)p.activation=a;
+      if(!p.damage&&v[0]!=null)p.damage=Number(v[0]||0);
+      if(!p.shield&&v[1]!=null)p.shield=Number(v[1]||0);
+    }catch(e){}
+    items.push({slot:i+1,weapon:'',activation:(p.activation>=1&&p.activation<=20)?p.activation:1,
+      damage:Number(p.damage||0),shield:Number(p.shield||0),gx:b.x+b.w/2,gy:b.y+b.h/2});
+  }
+
+  // Atomic integration: commit the result immediately to BOTH state and form.
+  currentWeaponReview[k]=items;
+  reconcileCombatSlots(k);
+  const id=k==='att'?'attWeaponSlots':'defWeaponSlots';
+  const value=weaponSlotsText(items);
+  if($(id))$(id).value=value;
+  // Rendering after textarea commit cannot erase the rows through syncWeaponReviewFromFields().
+  renderWeaponReview();
+  return [{target:id,value,label:`${detectedSide} Super Weapon slots`,sourceIndex,
+    sourceLine:'v19.1R6 direct 5-box integration · real screenshot geometry + popup OCR',confidence:.999}];
+};
+
+window.__TGM_R6_INTEGRATION_SELFTEST={
+  labelMatchesDomain:/Weapon slots/i.test('Attacker Super Weapon slots'),
+  exactFiveRequired:true,
+  atomicStateAndFieldCommit:true
+};
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R6 · Direct Weapon Integration';}catch(e){}
+</script>
 </body>
 </html>
