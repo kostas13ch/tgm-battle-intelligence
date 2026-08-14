@@ -5419,5 +5419,76 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R15 MANUAL ENFORCER OVERRIDE =====
+   Fix: a manual select change was immediately lost because applyEnforcerReview()
+   reparsed the stale slot textarea and restored the visual guess.
+   Manual choice is now authoritative and is written to state + slot textarea + side list
+   before any re-render. Visual recognition remains only the initial suggestion.
+*/
+(function(){
+  function r15WriteEnforcerState(){
+    if($('attEnforcerSlots')) $('attEnforcerSlots').value=enforcerSlotsText(currentEnforcerReview.att||[]);
+    if($('defEnforcerSlots')) $('defEnforcerSlots').value=enforcerSlotsText(currentEnforcerReview.def||[]);
+    if($('attackerEnforcers')) $('attackerEnforcers').value=[...new Set((currentEnforcerReview.att||[]).map(x=>x.enforcer).filter(Boolean))].join(', ');
+    if($('defenderEnforcers')) $('defenderEnforcers').value=[...new Set((currentEnforcerReview.def||[]).map(x=>x.enforcer).filter(Boolean))].join(', ');
+    renderCompleteness();
+  }
+
+  renderEnforcerReview=function(){
+    const box=$('enforcerReviewOutput'); if(!box)return;
+    // Keep numeric edits from the slot fields, but preserve explicit manual identities.
+    for(const [side,id] of [['att','attEnforcerSlots'],['def','defEnforcerSlots']]){
+      const parsed=parseEnforcerSlotsText($(id)?.value);
+      const cur=currentEnforcerReview[side]||[];
+      if(parsed.length){
+        currentEnforcerReview[side]=parsed.map((p,i)=>({
+          ...(cur[i]||{}), ...p,
+          enforcer:cur[i]?.manualEnforcer ? (cur[i]?.enforcer||'') : (p.enforcer||cur[i]?.enforcer||'')
+        })).slice(0,5);
+      }
+      currentEnforcerReview[side].forEach((x,i)=>x.slot=i+1);
+    }
+
+    const names=v155EnforcerNames();
+    const one=(side,label)=>{
+      const rows=(currentEnforcerReview[side]||[]).slice(0,5);
+      if(!rows.length)return `<div class="rule-box"><strong>${label}</strong><br>Δεν βρέθηκαν Enforcer combat popups.</div>`;
+      return `<div class="rule-box"><strong>${label}</strong> · ${rows.length}/5 slots</div>`+
+        rows.map((r,i)=>`<div class="review-card enforcer-review-card" data-enforcer-review-side="${side}" data-enforcer-review-slot="${i+1}">
+          <div class="weapon-review-line"><strong>Slot ${i+1}</strong><span>${esc(r.enforcer||'Unknown Enforcer')}${r.manualEnforcer?' · manual':''}</span></div>
+          <div class="card-meta">Activations ${Number(r.activation||0)} · Damage ${Number(r.damage||0).toLocaleString('en-US')}</div>
+          <select data-enforcer-side="${side}" data-enforcer-index="${i}">
+            <option value="">Unknown Enforcer</option>
+            ${names.map(n=>`<option value="${esc(n)}" ${v126CanonicalEnforcerName(r.enforcer)===n?'selected':''}>${esc(n)}</option>`).join('')}
+          </select>
+        </div>`).join('');
+    };
+
+    box.innerHTML=one('att','Επιτιθέμενος')+one('def','Αμυνόμενος');
+    box.querySelectorAll('[data-enforcer-side]').forEach(sel=>sel.onchange=()=>{
+      const side=sel.dataset.enforcerSide, idx=+sel.dataset.enforcerIndex;
+      const row=currentEnforcerReview[side]?.[idx]; if(!row)return;
+      row.enforcer=v126CanonicalEnforcerName(sel.value);
+      row.manualEnforcer=true;
+      row.visualConfidence=0;
+      row.visualMargin=0;
+      // CRITICAL: update the text fields BEFORE any function can parse them again.
+      r15WriteEnforcerState();
+      renderEnforcerReview();
+    });
+  };
+
+  // Ensure Save uses the manual state already written into the canonical slot fields.
+  const r15BaseSave=save;
+  save=async function(){ r15WriteEnforcerState(); return await r15BaseSave(); };
+  const sb=$('saveBattleBtn'); if(sb) sb.onclick=save;
+
+  window.__TGM_R15_SELFTEST={manualOverrideAuthoritative:true,visualIsSuggestionOnly:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R15 · Manual Enforcer Override';}catch(e){}
+  try{renderEnforcerReview();}catch(e){}
+})();
+</script>
 </body>
 </html>
