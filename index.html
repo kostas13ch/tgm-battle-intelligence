@@ -3570,6 +3570,108 @@ function mergeOcrSuggestions(items){
 }
 function renderOcrSuggestions(){const box=$("ocrSuggestions");if(!currentOcrSuggestions.length){box.innerHTML='<div class="card-meta">Δεν βρέθηκαν ακόμη προτάσεις.</div>';return}box.innerHTML=currentOcrSuggestions.map((s,i)=>`<div class="ocr-suggestion"><strong>${esc(s.target)}</strong> → ${esc(String(s.value))}<div class="card-meta">Screenshot ${s.sourceIndex+1} · confidence ${Math.round(s.confidence*100)}%<br>${esc(s.sourceLine)}</div><label><input type="checkbox" data-ocr-apply="${i}" checked> εφαρμογή</label></div>`).join("")}
 
+
+/* ===== v19.1R16: STAT RECOVERY + COMPLETENESS GUARD =====
+   R15 weapon/enforcer logic is frozen. This patch only recovers missing numeric
+   stats from the fixed 9-screenshot package and blocks silent saves with holes.
+*/
+function v191R16NumericTokens(result,W){
+  return (result?.data?.words||[]).map(w=>{
+    if(!w?.bbox)return null;
+    const raw=String(w.text||'').replace(/[Oo]/g,'0').replace(/,/g,'.');
+    const m=raw.match(/(?:^|[^\d])(\d{1,4}(?:\.\d+)?)(?:\s*%|$)/);
+    if(!m)return null;
+    const v=Number(m[1]); if(!Number.isFinite(v)||v<0||v>3000)return null;
+    return {v,cx:(w.bbox.x0+w.bbox.x1)/2,cy:(w.bbox.y0+w.bbox.y1)/2,text:raw};
+  }).filter(Boolean);
+}
+function v191R16ClusterByY(tokens,tol=18){
+  const rows=[];
+  for(const t of tokens.slice().sort((a,b)=>a.cy-b.cy)){
+    let r=rows.find(x=>Math.abs(x.cy-t.cy)<=tol);
+    if(!r){r={cy:t.cy,items:[]};rows.push(r)}
+    r.items.push(t);r.cy=r.items.reduce((a,z)=>a+z.cy,0)/r.items.length;
+  }
+  return rows.sort((a,b)=>a.cy-b.cy);
+}
+function v191R16SetMissing(target,value,sourceIndex,label){
+  const e=$(target); if(!e||String(e.value||'').trim()!==''||value==null||!Number.isFinite(Number(value)))return false;
+  currentOcrSuggestions.push({target,value:Number(value),label:label||'R16 stat recovery',sourceIndex,sourceLine:'v19.1R16 geometry recovery',confidence:.985});
+  return true;
+}
+async function v191R16RecoverBuffPreview(shot,sourceIndex){
+  const r=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_char_whitelist:'0123456789.%'});
+  const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width;
+  const toks=v191R16NumericTokens(r,W).filter(x=>x.cx<W*.30||x.cx>W*.70);
+  const rows=v191R16ClusterByY(toks,20).filter(row=>row.items.some(x=>x.cx<W*.30)&&row.items.some(x=>x.cx>W*.70));
+  // Keep the 12 two-sided stat rows; top/bottom unrelated numbers are rejected by pair geometry.
+  if(rows.length<12)return 0;
+  const rr=rows.slice(-12),troops=['Bruiser','Hitman','Biker','Vehicle'],suffixes=['Atk','Def','Hp'];
+  let n=0;
+  for(let sec=0;sec<3;sec++)for(let j=0;j<4;j++){
+    const row=rr[sec*4+j],L=row.items.filter(x=>x.cx<W*.30).sort((a,b)=>b.cx-a.cx)[0],R=row.items.filter(x=>x.cx>W*.70).sort((a,b)=>a.cx-b.cx)[0];
+    if(L)n+=v191R16SetMissing(`attPreview${troops[j]}${suffixes[sec]}`,L.v,sourceIndex,'R16 Buff Preview')?1:0;
+    if(R)n+=v191R16SetMissing(`defPreview${troops[j]}${suffixes[sec]}`,R.v,sourceIndex,'R16 Buff Preview')?1:0;
+  }
+  return n;
+}
+async function v191R16RecoverCoreStats(shot,sourceIndex){
+  const r=await Tesseract.recognize(shot.dataUrl,'eng');
+  const text=String(r?.data?.text||'').toLowerCase();
+  if(!/crew\s*atk|crew\s*def|crew\s*hp/.test(text))return 0;
+  const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width;
+  const toks=v191R16NumericTokens(r,W).filter(x=>x.cx<W*.30||x.cx>W*.70);
+  const rows=v191R16ClusterByY(toks,20).filter(row=>row.items.some(x=>x.cx<W*.30)&&row.items.some(x=>x.cx>W*.70));
+  const ids=['CrewAtk','CrewDef','CrewHp','BruiserAtk','HitmanAtk','BikerAtk','BruiserDef','HitmanDef','BikerDef','BruiserHp','HitmanHp','BikerHp'];
+  if(rows.length<12)return 0;
+  const rr=rows.slice(-12);let n=0;
+  for(let i=0;i<12;i++){
+    const row=rr[i],L=row.items.filter(x=>x.cx<W*.30).sort((a,b)=>b.cx-a.cx)[0],R=row.items.filter(x=>x.cx>W*.70).sort((a,b)=>a.cx-b.cx)[0];
+    if(L)n+=v191R16SetMissing('att'+ids[i],L.v,sourceIndex,'R16 core stats')?1:0;
+    if(R)n+=v191R16SetMissing('def'+ids[i],R.v,sourceIndex,'R16 core stats')?1:0;
+  }
+  return n;
+}
+function v191R16ZeroRecoveryFromLabels(result,sourceIndex){
+  // Tesseract often drops a standalone 0. If a counter-reduction row label is present
+  // and one side has no numeric glyph at all in its value column, recover literal zero.
+  const words=(result?.data?.words||[]).filter(w=>w?.bbox&&String(w.text||'').trim());if(!words.length)return 0;
+  const W=Math.max(...words.map(w=>w.bbox.x1||0),1),rows=rowsFromWords(words);let n=0;
+  for(const row of rows){
+    const txt=row.words.map(w=>w.text).join(' '),kind=modifierKindFromText(txt);
+    if(!/CounterDmgReduction$/.test(kind))continue;
+    for(const [side,prefix] of [['att','att'],['def','def']]){
+      const nums=row.words.map(w=>({cx:(w.bbox.x0+w.bbox.x1)/2,v:numericWordValue(w)})).filter(x=>x.v!=null&&(side==='att'?x.cx<W*.30:x.cx>W*.70));
+      if(!nums.length)n+=v191R16SetMissing(prefix+kind,0,sourceIndex,'R16 explicit zero recovery')?1:0;
+    }
+  }
+  return n;
+}
+async function v191R16RecoverMissingStats(){
+  if(typeof Tesseract==='undefined')return;
+  let recovered=0;
+  for(let i=0;i<currentScreenshots.length;i++){
+    const shot=currentScreenshots[i];
+    try{
+      if(shot.reportType==='Buff Preview')recovered+=await v191R16RecoverBuffPreview(shot,i);
+      if(shot.reportType==='Buff Comparison'){
+        recovered+=await v191R16RecoverCoreStats(shot,i);
+        const r=await Tesseract.recognize(shot.dataUrl,'eng');
+        recovered+=v191R16ZeroRecoveryFromLabels(r,i);
+      }
+    }catch(e){console.warn('R16 stat recovery failed',i,e)}
+  }
+  if(recovered){currentOcrSuggestions=dedupeOcrSuggestions(currentOcrSuggestions);applyOcrSuggestions(true)}
+}
+function v191R16MissingCriticalStats(){
+  const ids=[];
+  const preview=[];for(const side of ['att','def'])for(const troop of ['Bruiser','Hitman','Biker','Vehicle'])for(const s of ['Atk','Def','Hp'])preview.push(`${side}Preview${troop}${s}`);
+  const core=[];for(const side of ['att','def'])for(const s of ['CrewAtk','CrewDef','CrewHp','BruiserAtk','HitmanAtk','BikerAtk','BruiserDef','HitmanDef','BikerDef','BruiserHp','HitmanHp','BikerHp'])core.push(side+s);
+  const counter=[];for(const side of ['att','def'])for(const t of ['Bruiser','Hitman','Biker'])counter.push(`${side}${t}CounterDmgReduction`);
+  for(const id of [...preview,...core,...counter]){const e=$(id);if(e&&String(e.value||'').trim()==='')ids.push(id)}
+  return ids;
+}
+
 /* generic production OCR pipeline */
 
 
@@ -4039,6 +4141,7 @@ async function runOcrImport(){
   applyOcrSuggestions(true);
   v136RunFinalizationGuards();
   v124FillMissingFromRawText($("ocrRawText").value);
+  await v191R16RecoverMissingStats();
 
 
   if((currentTroopReview?.att?.rows?.length||0)||(currentTroopReview?.def?.rows?.length||0))applyTroopReview();
@@ -4214,7 +4317,7 @@ troopReview:JSON.parse(JSON.stringify(currentTroopReview||{att:{rows:[]},def:{ro
 weaponReview:JSON.parse(JSON.stringify(currentWeaponReview||{att:[],def:[]})),
 enforcerReview:JSON.parse(JSON.stringify(currentEnforcerReview||{att:[],def:[]})),
 completenessScore:reportCompleteness().score,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
-async function save(){
+async function save(){const __r16missing=v191R16MissingCriticalStats();if(__r16missing.length){$("formMessage").textContent=`Δεν αποθηκεύτηκε: λείπουν ${__r16missing.length} κρίσιμα stats. Ξανατρέξε OCR ή συμπλήρωσέ τα χειροκίνητα.`;return;}
   try{
     // Keep persisted detailed reviews consistent with directly edited slot textareas.
     // Sync only; do not call apply*Review here, because that could overwrite manual name lists.
@@ -5486,7 +5589,7 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   const sb=$('saveBattleBtn'); if(sb) sb.onclick=save;
 
   window.__TGM_R15_SELFTEST={manualOverrideAuthoritative:true,visualIsSuggestionOnly:true};
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R15 · Manual Enforcer Override';}catch(e){}
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R16 · Stat Recovery + Completeness Guard';}catch(e){}
   try{renderEnforcerReview();}catch(e){}
 })();
 </script>
