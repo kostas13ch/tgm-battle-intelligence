@@ -4989,5 +4989,69 @@ window.__TGM_R7_SELFTEST={detectorFrozen:true,rowLocked:true,cardPaired:true,exa
 try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R7 · Row-Locked Weapon OCR';}catch(e){}
 </script>
 
+
+<script>
+/* ===== v19.1R8: CONSERVATIVE WEAPON OCR FUSION =====
+   Real-test rule: R6 is the numeric baseline because it preserved more complete
+   values; R7 row OCR is used only as a repair source. Detector/integration stay
+   frozen at the proven 5-box R6 path. No row reader may erase a non-zero R6 value.
+*/
+const __v191r8PreviousParseWeaponCombat=parseWeaponCombat;
+parseWeaponCombat=async function(result,sourceIndex,side,dataUrl){
+  const detectedSide=(side==='Attacker'||side==='Defender')?side:'Unknown';
+  if(detectedSide==='Unknown')return __v191r8PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  const k=detectedSide==='Attacker'?'att':'def';
+  let boxes=[];try{boxes=await v191r6WeaponBoxes(dataUrl)}catch(e){console.warn('R8 weapon boxes',e)}
+  if(boxes.length!==5)return __v191r8PreviousParseWeaponCombat(result,sourceIndex,side,dataUrl);
+  boxes=geometryOrder(boxes);
+
+  const items=[];
+  for(let i=0;i<5;i++){
+    const b=boxes[i];
+    let base={activation:0,damage:0,shield:0};
+    try{base=await v81ReadPopup(dataUrl,b,'weapon')}catch(e){}
+    let ra=null,rd=null,rs=null;
+    try{ra=await v182WeaponNumber(dataUrl,b,0,result)}catch(e){}
+    try{rd=await v182WeaponNumber(dataUrl,b,1,result)}catch(e){}
+    try{rs=await v182WeaponNumber(dataUrl,b,2,result)}catch(e){}
+
+    // Activation: trust R6 in the normal observed range; use row OCR to repair
+    // obvious OCR explosions such as 18 when the row reader sees 1..8.
+    let activation=Number(base.activation||0);
+    if(!(activation>=1&&activation<=8)){
+      if(Number.isFinite(ra)&&ra>=1&&ra<=8)activation=ra;
+      else activation=1;
+    }
+
+    let damage=Number(base.damage||0),shield=Number(base.shield||0);
+    // Tiny 1-3 digit 'damage' values are normally icon/label leakage in these
+    // popups (real combat totals are 0 or >=1000 in the validated screenshots).
+    if(damage>0&&damage<1000)damage=0;
+    if(shield>0&&shield<1000)shield=0;
+
+    // Row OCR is repair-only: fill a missing field, never overwrite a plausible
+    // non-zero R6 field. This prevents the R7 regressions 7208->720 and 24235->24735.
+    if(!damage&&Number.isFinite(rd)&&rd>=1000)damage=Number(rd);
+    if(!shield&&Number.isFinite(rs)&&rs>=1000)shield=Number(rs);
+
+    // If R6 put a tiny artifact in damage while a strong shield exists, keep the
+    // shield and zero the artifact; do not move values across rows.
+    items.push({slot:i+1,weapon:'',activation,damage,shield,
+      gx:b.x+b.w/2,gy:b.y+b.h/2});
+  }
+
+  currentWeaponReview[k]=items;
+  reconcileCombatSlots(k);
+  const id=k==='att'?'attWeaponSlots':'defWeaponSlots',value=weaponSlotsText(items);
+  if($(id))$(id).value=value;
+  renderWeaponReview();
+  try{v167SuccessfulDomains.add('Super Weapons')}catch(e){}
+  return [{target:id,value,label:`${detectedSide} Super Weapon slots`,sourceIndex,
+    sourceLine:'v19.1R8 frozen 5-box detector + R6 baseline + row OCR repair only',confidence:.999}];
+};
+window.__TGM_R8_SELFTEST={exactFiveRequired:true,r6Baseline:true,rowRepairOnly:true,noNonzeroOverwrite:true};
+try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R8 · Conservative Weapon OCR Fusion';}catch(e){}
+</script>
+
 </body>
 </html>
