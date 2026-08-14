@@ -127,7 +127,7 @@ details.stat-group[open] summary{border-bottom:1px solid var(--line);color:#facc
 </style>
 </head>
 <body>
-<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1R2 · Run-Loop Weapon Fix</p></header>
+<header class="topbar"><h1>TGM Battle Intelligence</h1><p>v19.1R3 · Light-Popup Weapon Detector</p></header>
 <main class="container">
   <section id="dashboardPage" class="page">
     <div class="hero"><h2>Battle Command Center</h2><p>OCR Import, Explainable Battle Coach και evidence-based ανάλυση.</p></div>
@@ -4588,5 +4588,121 @@ console.info('TGM v19.1R final weapon engine active');
 console.info("TGM v19.1R2: Super Weapon run-loop now calls parseWeaponCombat(result,index,side,dataUrl) -> active final extractCombatPopups engine");
 window.__TGM_WEAPON_RUNLOOP_FIX="v19.1R2";
 </script>
-</body>
+\n<script>
+/* ===== v19.1R3 weapon-only light-popup detector =====
+   The real Super Weapon pages use large cream callout rectangles on a dark red/blue grid.
+   Detect those rectangles directly by luminance/fill geometry. This is intentionally
+   independent of weapon/card order and does not change Enforcer extraction.
+*/
+async function v191r3DetectWeaponPopupBoxes(dataUrl){
+  const im=await loadDataUrlImage(dataUrl);
+  const natW=im.naturalWidth||im.width,natH=im.naturalHeight||im.height;
+  const targetW=700,scale=Math.min(1,targetW/natW);
+  const W=Math.max(1,Math.round(natW*scale)),H=Math.max(1,Math.round(natH*scale));
+  const c=document.createElement("canvas");c.width=W;c.height=H;
+  const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
+  const d=ctx.getImageData(0,0,W,H).data,N=W*H;
+  const mask=new Uint8Array(N);
+  for(let p=0;p<N;p++){
+    const i=p*4,r=d[i],g=d[i+1],b=d[i+2];
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    // Cream popup body: bright, fairly neutral/warm. Dark UI, portraits and gold/purple
+    // cards are rejected. The broad range survives JPEG compression and screenshots.
+    if(r>=168 && g>=158 && b>=145 && mx>=178 && (mx-mn)<=82 && r>=b-5)mask[p]=1;
+  }
+  // Close small text/icon holes so every callout body remains one connected component.
+  const dil=new Uint8Array(N),closed=new Uint8Array(N),rad=2;
+  for(let y=rad;y<H-rad;y++)for(let x=rad;x<W-rad;x++){
+    let on=0;
+    for(let yy=-rad;yy<=rad&&!on;yy++)for(let xx=-rad;xx<=rad;xx++){
+      if(mask[(y+yy)*W+x+xx]){on=1;break}
+    }
+    dil[y*W+x]=on;
+  }
+  for(let y=rad;y<H-rad;y++)for(let x=rad;x<W-rad;x++){
+    let on=1;
+    for(let yy=-rad;yy<=rad&&on;yy++)for(let xx=-rad;xx<=rad;xx++){
+      if(!dil[(y+yy)*W+x+xx]){on=0;break}
+    }
+    closed[y*W+x]=on;
+  }
+  const seen=new Uint8Array(N),queue=new Int32Array(N),comps=[];
+  for(let p=0;p<N;p++){
+    if(!closed[p]||seen[p])continue;
+    let qh=0,qt=0;queue[qt++]=p;seen[p]=1;
+    let minX=W,maxX=0,minY=H,maxY=0,area=0;
+    while(qh<qt){
+      const z=queue[qh++],x=z%W,y=(z/W)|0;area++;
+      if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+      if(x>0){const n=z-1;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(x<W-1){const n=z+1;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(y>0){const n=z-W;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+      if(y<H-1){const n=z+W;if(closed[n]&&!seen[n]){seen[n]=1;queue[qt++]=n}}
+    }
+    const bw=maxX-minX+1,bh=maxY-minY+1,wr=bw/W,hr=bh/H,fill=area/Math.max(1,bw*bh),aspect=bw/Math.max(1,bh);
+    const cy=(minY+maxY)/2/H,cx=(minX+maxX)/2/W;
+    if(wr<.115||wr>.34||hr<.045||hr>.19||fill<.34||aspect<1.05||aspect>4.3)continue;
+    if(cy<.06||cy>.90||cx<.05||cx>.95)continue;
+    // Favor substantial, rectangle-like callouts.
+    const score=fill*4 + Math.min(2,area/(W*H*.012)) - Math.abs(aspect-1.8)*.15;
+    comps.push({x:minX/scale,y:minY/scale,w:bw/scale,h:bh/scale,area:area/(scale*scale),score});
+  }
+  // Remove nested/near-duplicate components before geometry ordering.
+  comps.sort((a,b)=>b.score-a.score);
+  const uniq=[];
+  for(const b of comps){
+    const cx=b.x+b.w/2,cy=b.y+b.h/2;
+    if(uniq.some(u=>Math.hypot((u.x+u.w/2)-cx,(u.y+u.h/2)-cy)<Math.max(28,Math.min(u.w,b.w)*.28)))continue;
+    uniq.push(b);
+  }
+  return geometryOrder(uniq.slice(0,12)).slice(0,5);
+}
+
+const __v191r3ExtractCombatPopups=extractCombatPopups;
+extractCombatPopups=async function(fullResult,dataUrl,mode){
+  if(mode!=="weapon")return __v191r3ExtractCombatPopups(fullResult,dataUrl,mode);
+  let boxes=[];
+  try{boxes=await v191r3DetectWeaponPopupBoxes(dataUrl)}catch(e){console.warn("v19.1R3 light popup detection failed",e)}
+  if(!boxes.length)return __v191r3ExtractCombatPopups(fullResult,dataUrl,mode);
+
+  // Pair to active cards when possible; otherwise stable geometry is formation-safe because
+  // it follows the popup/card positions visible on this exact screenshot.
+  let ordered=boxes;
+  try{
+    const cards=await v127CombatCardCenters(dataUrl,"weapon",5);
+    if(cards?.length>=boxes.length){
+      const pairs=v81AssociatePopupToCards(boxes,cards);
+      if(pairs?.length>=boxes.length)ordered=pairs.sort((a,b)=>a.card.cy-b.card.cy||a.card.cx-b.card.cx).map(x=>x.popup);
+    }
+  }catch(e){}
+  ordered=geometryOrder(ordered).slice(0,5);
+
+  const items=[];
+  for(let i=0;i<ordered.length;i++){
+    const b=ordered[i];
+    let parsed={activation:0,damage:0,shield:0};
+    try{parsed=await v81ReadPopup(dataUrl,b,"weapon")}catch(e){}
+    try{
+      const f=originalBoxInts(fullResult,b);
+      const act=chooseActivation([],f);
+      const vals=chooseValues([],f,"weapon",b);
+      if(act>=1&&act<=20)parsed.activation=act;
+      if((!parsed.damage||parsed.damage===0)&&vals[0]!=null)parsed.damage=Number(vals[0]||0);
+      if((!parsed.shield||parsed.shield===0)&&vals[1]!=null)parsed.shield=Number(vals[1]||0);
+    }catch(e){}
+    items.push({
+      slot:i+1,activation:(parsed.activation>=1&&parsed.activation<=20)?parsed.activation:1,
+      damage:Number(parsed.damage||0),shield:Number(parsed.shield||0),weapon:"",
+      gx:b.x+b.w/2,gy:b.y+b.h/2
+    });
+  }
+  return items.length?items:__v191r3ExtractCombatPopups(fullResult,dataUrl,mode);
+};
+
+// Make the build identity explicit for screenshots/PDF tests.
+try{
+  const p=document.querySelector('header.topbar p');
+  if(p)p.textContent='v19.1R3 · Light-Popup Weapon Detector';
+}catch(e){}
+</script>\n</body>
 </html>
