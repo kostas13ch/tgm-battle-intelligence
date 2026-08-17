@@ -6156,5 +6156,212 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.4: ISOLATED MERCENARY ADDER + SPATIAL FORMATION RECOVERY =====
+   Regression policy:
+   - Regular troop fields are a protected baseline. Mercenary handling can ADD to them, never replace/zero them.
+   - Mercenary row order is never used to infer combat type.
+   - Mercenary type comes from its own icon, with multi-crop visual consensus; uncertain rows remain Unknown.
+   - Formation is recovered per side from the Overview screenshot using left/right spatial crops and repeated OCR.
+   - No report/player-specific values.
+*/
+(function(){
+  const R184_TYPES=['Bruiser','Hitman','Biker','Vehicle'];
+  let r184Baseline={att:null,def:null};
+
+  function r184Field(prefix,type,kind='total'){return troopFieldId(prefix,type,kind)}
+  function r184ReadProtectedBase(side){
+    const p=side==='att'?'att':'def';
+    const out={};
+    for(const type of ['Bruiser','Hitman','Biker']){
+      out[type]={};
+      for(const kind of ['total','kills','losses']){
+        const id=r184Field(p,type,kind),el=$(id),v=Number(el?.value||0);
+        out[type][kind]=Number.isFinite(v)?v:0;
+      }
+    }
+    return out;
+  }
+  function r184RegularRowsBase(side){
+    const out={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0}};
+    for(const r of (currentTroopReview?.[side]?.rows||[])){
+      if(r?.isMercenary||!out[r?.type])continue;
+      out[r.type].total+=Number(r.total||0);out[r.type].kills+=Number(r.kills||0);out[r.type].losses+=Number(r.losses||0);
+    }
+    return out;
+  }
+  function r184MercRows(side){return (currentTroopReview?.[side]?.rows||[]).filter(r=>!!r?.isMercenary)}
+  function r184MergeBaseWithRegularFallback(side,base){
+    const rr=r184RegularRowsBase(side);
+    for(const type of ['Bruiser','Hitman','Biker'])for(const kind of ['total','kills','losses']){
+      if(!Number(base[type][kind]||0)&&Number(rr[type][kind]||0)>0)base[type][kind]=Number(rr[type][kind]);
+    }
+    return base;
+  }
+  function r184ResetBaseline(){r184Baseline={att:null,def:null};}
+
+  // Multi-crop icon classifier. No row-order inference. Explicit OCR troop label can corroborate,
+  // but a Mercenary row is never assigned from previous/next row position.
+  const r184OldClassifier=classifyBattleRowsByIcons;
+  classifyBattleRowsByIcons=async function(dataUrl,candidates,result){
+    if(!dataUrl||!candidates?.length)return null;
+    const im=await loadDataUrlImage(dataUrl),C=document.createElement('canvas');
+    C.width=im.naturalWidth||im.width;C.height=im.naturalHeight||im.height;
+    const ctx=C.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,C.width,C.height);
+    const W=C.width,H=C.height,gaps=[];for(let i=1;i<candidates.length;i++)gaps.push(candidates[i].cy-candidates[i-1].cy);
+    gaps.sort((a,b)=>a-b);const gap=gaps.length?gaps[Math.floor(gaps.length/2)]:H*.065;
+    const out=[];
+    for(const r of candidates){
+      const h=Math.max(46,Math.round(gap*.88)),y=Math.max(0,Math.round(r.cy-h/2));
+      const crops=[
+        [W*.012,W*.090], // full silhouette/icon cell
+        [W*.020,W*.078], // verified historical crop
+        [W*.027,W*.067]  // tighter icon-only crop
+      ];
+      const votes=[];
+      for(const [xa,xb] of crops){
+        const x=Math.round(xa),w=Math.max(20,Math.round(xb-xa));
+        try{
+          const f=visualFeatureFromCanvas(ctx,x,y,Math.min(w,W-x),Math.min(h,H-y));
+          const m=await bestVisualMatch(f,TGM_VISUAL_REFS.troops,.34,.018);
+          if(m?.name)votes.push({name:m.name,score:Number(m.score||0),margin:Number(m.margin||0)});
+        }catch(e){}
+      }
+      const sig=battleDetailRowSignal(r.words||[]);
+      const textType=sig.bruiser?'Bruiser':sig.hitman?'Hitman':sig.biker?'Biker':sig.vehicle?'Vehicle':'';
+      const byType={};for(const v of votes){(byType[v.name]||(byType[v.name]=[])).push(v)}
+      const ranked=Object.entries(byType).map(([name,a])=>({name,count:a.length,score:Math.max(...a.map(x=>x.score)),margin:Math.max(...a.map(x=>x.margin))}))
+        .sort((a,b)=>b.count-a.count||b.margin-a.margin||b.score-a.score);
+      let type='Unknown',confidence=.20;
+      const best=ranked[0],second=ranked[1];
+      if(best){
+        const consensus=best.count>=2;
+        const strong=best.score>=.52&&best.margin>=.045;
+        const textAgree=textType&&textType===best.name;
+        const conflict=second&&second.count===best.count&&Math.abs(second.score-best.score)<.025;
+        if(!conflict&&(consensus||strong||textAgree)){type=best.name;confidence=Math.min(.995,.78+best.count*.055+Math.max(0,best.margin)*.6)}
+      }
+      if(type==='Unknown'&&textType){type=textType;confidence=.74}
+
+      // Mercenary class is read from the row itself (gold/yellow styling or explicit OCR), never from row order.
+      const xg=Math.round(W*.012),wg=Math.round(W*.095),hg=Math.min(h,H-y);let gold=0,total=0;
+      try{const id=ctx.getImageData(xg,y,Math.min(wg,W-xg),hg).data;for(let i=0;i<id.length;i+=16){const [hh,ss,vv]=rgbToHsv255(id[i],id[i+1],id[i+2]);total++;if(hh>=20&&hh<=65&&ss>70&&vv>75)gold++;}}catch(e){}
+      const goldRatio=total?gold/total:0;
+      const isMercenary=!!sig.mercenary || goldRatio>.035;
+      out.push({type,confidence,score:best?.score||0,margin:best?.margin||0,isMercenary,goldRatio,visualVotes:votes});
+    }
+    return out;
+  };
+
+  // Protected write path: regular totals are frozen as baseline; only confidently typed Mercenary rows are added.
+  applyTroopReview=function(){
+    let unresolved=0,mercUnknown=0;
+    for(const side of ['att','def']){
+      if(!r184Baseline[side])r184Baseline[side]=r184MergeBaseWithRegularFallback(side,r184ReadProtectedBase(side));
+      const base=r184Baseline[side],p=side==='att'?'att':'def',merc=r184MercRows(side);
+      const add={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0},Vehicle:{total:0,kills:0,losses:0}};
+      for(const r of merc){
+        if(!r?.type||r.type==='Unknown'||!add[r.type]){mercUnknown++;continue}
+        add[r.type].total+=Number(r.total||0);add[r.type].kills+=Number(r.kills||0);add[r.type].losses+=Number(r.losses||0);
+      }
+      for(const type of ['Bruiser','Hitman','Biker'])for(const kind of ['total','kills','losses']){
+        const id=r184Field(p,type,kind),el=$(id);if(!el)continue;
+        el.value=Number(base[type][kind]||0)+Number(add[type][kind]||0)||'';
+      }
+      unresolved+=(currentTroopReview?.[side]?.rows||[]).filter(r=>!r.type||r.type==='Unknown'||![1,2,3,4,5].includes(Number(r.tier))).length;
+    }
+    preview();renderCompleteness();
+    if($('formMessage'))$('formMessage').textContent=mercUnknown
+      ?`Mercenary review: ${mercUnknown} mercenary row(s) έχουν άγνωστο icon type. Τα Regular totals παρέμειναν κλειδωμένα.`
+      :unresolved?`Απομένουν ${unresolved} troop row(s) για review. Τα Regular totals είναι προστατευμένα.`
+      :'Regular + αναγνωρισμένα Mercenaries συγχωνεύτηκαν χωρίς αντικατάσταση των Regular totals.';
+  };
+  if($('applyTroopReviewBtn'))$('applyTroopReviewBtn').onclick=()=>{applyTroopReview();renderTroopReview()};
+
+  function r184NormForm(v){
+    const m=String(v||'').match(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/i);if(!m)return'';
+    return m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2][0].toUpperCase()+m[2].slice(1).toLowerCase();
+  }
+  async function r184FormationSide(dataUrl,side){
+    const im=await loadDataUrlImage(dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    // Formation is in the Overview upper/middle half. Split by side first; OCR several PSMs and vertical bands.
+    const x0=side==='att'?0:W*.50,w=W*.50;const votes=[];
+    for(const [y0,y1] of [[.12,.70],[.18,.62],[.25,.58]]){
+      let crop;try{crop=await cropDataUrl(dataUrl,x0,H*y0,w,H*(y1-y0))}catch(e){continue}
+      for(const psm of [6,11,12]){
+        try{
+          const rr=await Tesseract.recognize(crop,'eng',{tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1'});
+          const t=String(rr?.data?.text||'').replace(/[|]/g,'I');
+          const forms=[...t.matchAll(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/ig)].map(m=>r184NormForm(m[0]));
+          for(const f of forms)if(f)votes.push(f);
+        }catch(e){}
+      }
+    }
+    if(!votes.length)return{value:'',votes:[]};
+    const c={};for(const v of votes)c[v]=(c[v]||0)+1;const ranked=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+    const [value,count]=ranked[0],second=ranked[1]?.[1]||0;
+    return{value:(count>=2&&count>second)?value:'',votes,confidence:Math.min(.995,.86+count*.025)};
+  }
+  async function r184RecoverFormations(){
+    for(let i=0;i<currentScreenshots.length;i++){
+      const shot=currentScreenshots[i];if(shot?.reportType!=='Overview')continue;
+      for(const [side,target] of [['att','attackerFormation'],['def','defenderFormation']]){
+        try{
+          const r=await r184FormationSide(shot.dataUrl,side);if(!r.value)continue;
+          currentOcrSuggestions.push({target,value:r.value,label:`R18.4 ${side} spatial formation`,sourceIndex:i,sourceLine:`R18.4 ${side==='att'?'attacker':'defender'} spatial crop consensus`,confidence:r.confidence||.96});
+        }catch(e){console.warn('R18.4 formation recovery',side,e)}
+      }
+    }
+    currentOcrSuggestions=dedupeOcrSuggestions(currentOcrSuggestions);
+  }
+
+  // Accept a single geometry-assigned .99 overview formation suggestion; otherwise require consensus.
+  function r184BestFormation(target){
+    const rows=(currentOcrSuggestions||[]).filter(s=>s?.target===target).map(s=>({value:r184NormForm(s.value),confidence:Number(s.confidence||0),line:String(s.sourceLine||''),label:String(s.label||'')})).filter(x=>x.value);
+    if(!rows.length)return'';
+    const g={};for(const r of rows){const a=g[r.value]||(g[r.value]={value:r.value,count:0,max:0,spatial:0});a.count++;a.max=Math.max(a.max,r.confidence);if(/spatial|R18\.4/i.test(r.line+' '+r.label))a.spatial++;}
+    const ranked=Object.values(g).sort((a,b)=>b.count-a.count||b.spatial-a.spatial||b.max-a.max),a=ranked[0],b=ranked[1];
+    if(!a)return'';if(b&&b.count===a.count&&b.spatial===a.spatial&&Math.abs(b.max-a.max)<.03)return'';
+    if(a.count>=2||a.spatial>=1||a.max>=.995)return a.value;return'';
+  }
+  function r184ApplyFormation(){
+    for(const [id,target] of [['attackerFormation','attackerFormation'],['defenderFormation','defenderFormation']]){
+      const el=$(id);if(!el)continue;const v=r184BestFormation(target);if(v)el.value=v;
+    }
+  }
+
+  const r184BaseRecovery=v191R16RecoverMissingStats;
+  v191R16RecoverMissingStats=async function(){
+    await r184BaseRecovery();
+    await r184RecoverFormations();
+    r184ApplyFormation();
+    applyTroopReview();
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
+    preview();renderCompleteness();
+  };
+  const r184BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=r184BaseApply(auto);r184ApplyFormation();applyTroopReview();if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();preview();renderCompleteness();return out;
+  };
+
+  // Reset clears the protected baseline only; regular parser remains untouched.
+  const r184BaseReset=reset;
+  reset=function(){const out=r184BaseReset();r184ResetBaseline();return out};
+
+  // Save no longer blocks just because OCR left formation Unknown; manual selection remains authoritative.
+  const r184BaseSave=save;
+  save=async function(){r184ApplyFormation();applyTroopReview();return await r184BaseSave()};
+  if($('saveBattleBtn'))$('saveBattleBtn').onclick=save;
+
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.4 · Isolated Mercenaries + Spatial Formation';document.title='TGM Battle Intelligence v19.1R18.4';}catch(e){}
+  window.__TGM_R184_SELFTEST={
+    regularTotalsProtected:true,mercenaryAddsOnly:true,rowOrderUsedForMercenaryType:false,
+    mercenaryTypeSource:'own icon multi-crop consensus',formationSource:'per-side overview spatial OCR consensus',
+    reportSpecificValues:false,winnerRule:'fewer total losses',fiveLogicalSlots:true
+  };
+})();
+</script>
+
 </body>
 </html>
