@@ -6343,5 +6343,177 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+<script>
+/* ===== v19.1R18.6: ANCHORED FORMATION + EMPTY-CELL STAT RECOVERY =====
+   Regression policy:
+   - R18.5 mercenary add-only layer is frozen unchanged.
+   - Formation recovery scans every supplied screenshot and anchors on the visible
+     center "Formation" label; it OCRs the left/right value cells independently.
+   - Defense Buff and core ATK/DEF/HP repair only EMPTY fields. They never overwrite
+     an already extracted non-empty value.
+   - No player, battle, troop-count, or formation constants are used.
+*/
+(function(){
+  function r186NormForm(s){
+    s=String(s||'').replace(/[|]/g,' ').replace(/[—–_]+/g,'-').replace(/\s+/g,' ').trim();
+    const unit=/bruis/i.test(s)?'Bruiser':/hitm/i.test(s)?'Hitman':/bik/i.test(s)?'Biker':'';
+    const shape=/wedg/i.test(s)?'Wedge':/(squar|squer|sqvar|squere|sauere)/i.test(s)?'Square':'';
+    return unit&&shape?unit+' '+shape:'';
+  }
+  async function r186OcrText(dataUrl,psm,whitelist){
+    try{
+      const cfg={tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1'};
+      if(whitelist)cfg.tessedit_char_whitelist=whitelist;
+      const r=await Tesseract.recognize(dataUrl,'eng',cfg);
+      return String(r?.data?.text||'').trim();
+    }catch(e){return ''}
+  }
+  function r186PickForm(vals){
+    vals=(vals||[]).map(r186NormForm).filter(Boolean); if(!vals.length)return '';
+    const c={};vals.forEach(v=>c[v]=(c[v]||0)+1);
+    const a=Object.entries(c).sort((x,y)=>y[1]-x[1]);
+    if(a.length>1&&a[0][1]===a[1][1])return '';
+    return a[0][0];
+  }
+  async function r186FormationFromShot(shot){
+    if(!shot?.dataUrl)return {att:'',def:'',anchor:false};
+    let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return {att:'',def:'',anchor:false}}
+    const words=rr?.data?.words||[];
+    const anchors=words.filter(w=>/formation/i.test(String(w?.text||''))&&w?.bbox);
+    if(!anchors.length)return {att:'',def:'',anchor:false};
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    const votes={att:[],def:[]};
+    for(const a of anchors){
+      const cy=(Number(a.bbox.y0)+Number(a.bbox.y1))/2;
+      // Ignore accidental OCR hits outside the central stats area.
+      if(cy<H*.25||cy>H*.88)continue;
+      const hh=Math.max(34,H*.030),y=Math.max(0,cy-hh),h=Math.min(H-y,hh*2);
+      const cells={att:[0,y,W*.43,h],def:[W*.57,y,W*.43,h]};
+      for(const side of ['att','def']){
+        const [x0,y0,w0,h0]=cells[side]; let crop='';
+        try{crop=await cropDataUrl(shot.dataUrl,x0,y0,w0,h0)}catch(e){continue}
+        const texts=[];
+        for(const psm of [6,11,7,13])texts.push(await r186OcrText(crop,psm));
+        const v=r186PickForm(texts); if(v)votes[side].push(v);
+      }
+    }
+    return {att:r186PickForm(votes.att),def:r186PickForm(votes.def),anchor:true};
+  }
+  async function r186RecoverFormations(){
+    const votes={att:[],def:[]};
+    for(const shot of (currentScreenshots||[])){
+      const r=await r186FormationFromShot(shot);
+      if(r.att)votes.att.push(r.att);if(r.def)votes.def.push(r.def);
+    }
+    const af=r186PickForm(votes.att),df=r186PickForm(votes.def);
+    if(af&&$('attackerFormation')){$('attackerFormation').value=af;$('attackerFormation').dataset.r186Source='formation-label-cell';}
+    if(df&&$('defenderFormation')){$('defenderFormation').value=df;$('defenderFormation').dataset.r186Source='formation-label-cell';}
+    return {att:af,def:df};
+  }
+
+  function r186NumCandidates(text){
+    const s=String(text||'').replace(/,/g,'.');
+    return [...s.matchAll(/(?:^|[^0-9])(\d{1,4}(?:\.\d+)?)(?=\s*%|[^0-9.]|$)/g)]
+      .map(m=>Number(m[1])).filter(n=>Number.isFinite(n)&&n>=0&&n<=2500);
+  }
+  function r186PickNumber(samples){
+    const vals=[];
+    for(const t of samples||[]){
+      const a=r186NumCandidates(t); if(a.length)vals.push(a[a.length-1]);
+    }
+    if(!vals.length)return null;
+    const c=new Map();for(const n of vals){const k=(Math.round(n*10)/10).toFixed(1);c.set(k,(c.get(k)||0)+1)}
+    const ranked=[...c.entries()].sort((a,b)=>b[1]-a[1]);
+    if(ranked[0][1]>=2)return Number(ranked[0][0]);
+    vals.sort((a,b)=>a-b);return vals[Math.floor(vals.length/2)];
+  }
+  async function r186ReadPercentCell(dataUrl,x,y,w,h){
+    let crop='';try{crop=await cropDataUrl(dataUrl,x,y,w,h)}catch(e){return null}
+    const samples=[];
+    for(const psm of [7,6,11,13])samples.push(await r186OcrText(crop,psm,'0123456789.+-%'));
+    return r186PickNumber(samples);
+  }
+  function r186FindWord(words,re){return (words||[]).filter(w=>w?.bbox&&re.test(String(w.text||'')))}
+  function r186NearestYWord(words,re,y,maxDy){
+    return r186FindWord(words,re).map(w=>({w,d:Math.abs(((w.bbox.y0+w.bbox.y1)/2)-y)})).filter(x=>x.d<=maxDy).sort((a,b)=>a.d-b.d)[0]?.w||null;
+  }
+  async function r186RecoverDefenseBuffFromShot(shot){
+    if(!shot?.dataUrl)return 0;
+    let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return 0}
+    const words=rr?.data?.words||[]; if(!words.length)return 0;
+    const defs=r186FindWord(words,/^defen[sc]e$/i),hps=r186FindWord(words,/^hp$/i); if(!defs.length||!hps.length)return 0;
+    let best=null;
+    for(const d of defs){const yd=(d.bbox.y0+d.bbox.y1)/2;const b=r186NearestYWord(words,/^buff$/i,yd,45);if(!b)continue;
+      for(const hp of hps){const yh=(hp.bbox.y0+hp.bbox.y1)/2;if(yh<=yd+120)continue;const hb=r186NearestYWord(words,/^buff$/i,yh,45);if(!hb)continue;
+        const gap=yh-yd;if(!best||gap<best.gap)best={yd,yh,gap};}}
+    if(!best)return 0;
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    const names=['Bruiser','Hitman','Biker','Vehicle'];let n=0;
+    for(let i=0;i<4;i++){
+      const cy=best.yd+best.gap*(.18+.207*i),hh=Math.max(30,best.gap*.075),y=Math.max(0,cy-hh),h=Math.min(H-y,hh*2);
+      const lv=await r186ReadPercentCell(shot.dataUrl,W*.03,y,W*.34,h),rv=await r186ReadPercentCell(shot.dataUrl,W*.63,y,W*.34,h);
+      const nm=names[i], ids=[`attPreview${nm}Def`,`defPreview${nm}Def`];
+      for(const [id,v] of [[ids[0],lv],[ids[1],rv]]){const el=$(id);if(el&&String(el.value||'').trim()===''&&Number.isFinite(v)){el.value=v;n++;}}
+    }
+    return n;
+  }
+  const R186_CORE=[
+    ['Bruiser ATK','attBruiserAtk','defBruiserAtk'],['Hitman ATK','attHitmanAtk','defHitmanAtk'],['Biker ATK','attBikerAtk','defBikerAtk'],
+    ['Bruiser DEF','attBruiserDef','defBruiserDef'],['Hitman DEF','attHitmanDef','defHitmanDef'],['Biker DEF','attBikerDef','defBikerDef'],
+    ['Bruiser HP','attBruiserHp','defBruiserHp'],['Hitman HP','attHitmanHp','defHitmanHp'],['Biker HP','attBikerHp','defBikerHp']
+  ];
+  function r186LabelInRow(text,label){return new RegExp('\\b'+label.replace(' ','\\s+')+'\\b','i').test(String(text||''))}
+  async function r186RecoverCoreEmptyFromShot(shot){
+    if(!shot?.dataUrl)return 0;
+    let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return 0}
+    const words=rr?.data?.words||[],rows=rowsFromWords(words);if(!rows.length)return 0;
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;let n=0;
+    for(const [label,aid,did] of R186_CORE){
+      const row=rows.find(r=>r186LabelInRow(r.words.map(w=>w.text).join(' '),label));if(!row)continue;
+      const cy=row.cy,hh=Math.max(28,W*.033),y=Math.max(0,cy-hh),h=Math.min(H-y,hh*2);
+      const av=await r186ReadPercentCell(shot.dataUrl,W*.04,y,W*.18,h),dv=await r186ReadPercentCell(shot.dataUrl,W*.75,y,W*.22,h);
+      for(const [id,v] of [[aid,av],[did,dv]]){const el=$(id);if(el&&String(el.value||'').trim()===''&&Number.isFinite(v)){el.value=v;n++;}}
+    }
+    return n;
+  }
+  async function r186RepairEmptyStats(){
+    let n=0;
+    for(const shot of (currentScreenshots||[])){
+      try{n+=await r186RecoverDefenseBuffFromShot(shot)}catch(e){}
+      try{n+=await r186RecoverCoreEmptyFromShot(shot)}catch(e){}
+    }
+    if(n){preview();renderCompleteness();}
+    return n;
+  }
+
+  // R18.5 run already produces the safe Regular + Mercenary state. Repair only after it completes.
+  const r186BaseRun=runOcrImport;
+  runOcrImport=async function(){
+    const out=await r186BaseRun();
+    await r186RecoverFormations();
+    await r186RepairEmptyStats();
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
+    preview();renderCompleteness();return out;
+  };
+  if($('runOcrBtn'))$('runOcrBtn').onclick=runOcrImport;
+
+  const r186BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=r186BaseApply(auto);
+    // Do not run asynchronous OCR recursively from inside auto-apply.
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();return out;
+  };
+  if($('applyOcrBtn'))$('applyOcrBtn').onclick=async()=>{applyOcrSuggestions(false);await r186RecoverFormations();await r186RepairEmptyStats();preview();renderCompleteness();};
+
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.6 · Anchored Formation + Empty-Cell Recovery';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.6';}catch(e){}
+  window.__TGM_R186_SELFTEST={
+    base:'R18.5',mercenaryLayerChanged:false,formationAnchor:'visible Formation label',formationCells:'left/right independently',
+    statWriteMode:'empty-only',defenseBuffGeometry:'Defense-to-HP anchored',coreStats:'label-row anchored',
+    playerSpecificConstants:false,battleSpecificConstants:false,winnerRule:'fewer total losses',fiveLogicalSlots:true
+  };
+})();
+</script>
+
 </body>
 </html>
