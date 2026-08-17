@@ -6020,101 +6020,139 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 </script>
 
 
+
 <script>
-/* ===== v19.1R18.2: STRICT ICON-FIRST MERCENARY TYPE RECOGNITION =====
-   Binding rule: troop type is NEVER inferred from row position/order.
-   Every Battle Details row is classified independently from its own troop icon.
-   Mercenary is a row class, not a fifth troop type; recognized mercenary rows merge
-   into Bruiser / Hitman / Biker / Vehicle totals. Low-confidence rows stay Unknown.
+/* ===== v19.1R18.3: REGRESSION GUARD / ISOLATED MERCENARIES / SAFE FORMATION =====
+   Goals:
+   - Start from R18.1, NOT R18.2, so the strict classifier regression is removed.
+   - Mercenary type remains icon-based; row order is never used by the active classifier.
+   - Troop review may not erase already extracted regular totals while any troop row is Unknown.
+   - Formation selects start Unknown; no silent Bruiser-Square default.
+   - Formation is applied only from agreeing OCR evidence, otherwise it remains Unknown for review.
+   - R17 fewer-losses winner and R18 5-slot guard remain unchanged.
 */
 (function(){
-  // Disable the old sequence/order fallback everywhere it may still be called.
-  inferBattleDetailTypes=function(rows){
-    return (rows||[]).map(r=>{
-      const sig=battleDetailRowSignal(r?.words||[]);
-      return sig.bruiser?'Bruiser':sig.hitman?'Hitman':sig.biker?'Biker':sig.vehicle?'Vehicle':'Unknown';
-    });
+  const R183_FORMS=new Set(['Bruiser Square','Hitman Square','Biker Square','Bruiser Wedge','Hitman Wedge','Biker Wedge']);
+
+  function r183EnsureUnknownFormationOption(id){
+    const el=$(id); if(!el)return;
+    if(![...el.options].some(o=>o.value==='')) el.insertBefore(new Option('Unknown',''),el.firstChild);
+  }
+  r183EnsureUnknownFormationOption('attackerFormation');
+  r183EnsureUnknownFormationOption('defenderFormation');
+
+  // Remove the dangerous silent default. A missing formation is Unknown, not Bruiser Square.
+  const r183BaseReset=reset;
+  reset=function(){
+    const out=r183BaseReset();
+    r183EnsureUnknownFormationOption('attackerFormation');
+    r183EnsureUnknownFormationOption('defenderFormation');
+    if($('attackerFormation'))$('attackerFormation').value='';
+    if($('defenderFormation'))$('defenderFormation').value='';
+    return out;
   };
 
-  async function r182IconFeature(ctx,W,H,row,gap){
-    // Shared icon column only. Keep tier digit mostly outside the crop and include
-    // the complete combat silhouette; this is independent of attacker/defender side.
-    const x=Math.max(0,Math.round(W*.018));
-    const w=Math.max(28,Math.round(W*.078));
-    const h=Math.max(48,Math.round((gap||H*.065)*.92));
-    const y=Math.max(0,Math.min(H-h,Math.round(Number(row?.cy||0)-h/2)));
-    return {feature:visualFeatureFromCanvas(ctx,x,y,Math.min(w,W-x),Math.min(h,H-y)),x,y,w:Math.min(w,W-x),h:Math.min(h,H-y)};
+  function r183NormFormation(v){
+    const m=String(v||'').match(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/i);
+    if(!m)return '';
+    const v2=m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2][0].toUpperCase()+m[2].slice(1).toLowerCase();
+    return R183_FORMS.has(v2)?v2:'';
+  }
+  function r183FormationConsensus(target){
+    const rows=(currentOcrSuggestions||[]).filter(s=>s?.target===target).map(s=>({
+      value:r183NormFormation(s.value),
+      confidence:Number(s.confidence||0),
+      sourceIndex:Number.isFinite(Number(s.sourceIndex))?Number(s.sourceIndex):-1,
+      line:String(s.sourceLine||'')
+    })).filter(x=>x.value);
+    if(!rows.length)return '';
+    const groups=new Map();
+    for(const r of rows){
+      const g=groups.get(r.value)||{value:r.value,count:0,max:0,sources:new Set(),sideExplicit:0};
+      g.count++;g.max=Math.max(g.max,r.confidence);g.sources.add(r.sourceIndex);
+      if(target==='attackerFormation'&&/attacker/i.test(r.line))g.sideExplicit++;
+      if(target==='defenderFormation'&&/defender/i.test(r.line))g.sideExplicit++;
+      groups.set(r.value,g);
+    }
+    const ranked=[...groups.values()].sort((a,b)=>b.count-a.count||b.sources.size-a.sources.size||b.sideExplicit-a.sideExplicit||b.max-a.max);
+    const a=ranked[0],b=ranked[1];
+    if(!a)return '';
+    // Require corroboration. One lone OCR guess is never authoritative.
+    const corroborated=a.count>=2 || a.sources.size>=2 || (a.max>=.99&&a.sideExplicit>=1&&rows.length===1);
+    const conflict=b && b.count===a.count && b.sources.size===a.sources.size && Math.abs(b.max-a.max)<.03;
+    return corroborated&&!conflict?a.value:'';
+  }
+  function r183ApplyFormationGuard(){
+    for(const [id,target] of [['attackerFormation','attackerFormation'],['defenderFormation','defenderFormation']]){
+      const el=$(id);if(!el)continue;
+      const v=r183FormationConsensus(target);
+      el.value=v||'';
+      el.dataset.r183FormationState=v?'confirmed':'review';
+    }
   }
 
-  async function r182IndependentType(feature){
-    // Two independent reference banks vote on the SAME row icon. We accept only
-    // a clear winner; disagreement or weak margin is reviewable Unknown.
-    let a={name:'',score:0,margin:0}, b={name:'',score:0,margin:0};
-    try{a=await bestVisualMatch(feature,TGM_VISUAL_REFS.troops,.34,.018)}catch(e){}
-    try{b=await v130GroupedTemplateMatch(feature,V130_BATTLE_TROOP_REFS,.34,.025)}catch(e){}
-
-    const candidates=['Bruiser','Hitman','Biker','Vehicle'];
-    const score={};
-    for(const t of candidates){
-      const sa=(a.scores||[]).find(x=>x.name===t)?.score||0;
-      const sb=(b.scores||[]).find(x=>x.name===t)?.score||0;
-      // Prefer the richer grouped Battle Details reference set while retaining
-      // the older verified reference bank as corroboration.
-      score[t]=sb*.62+sa*.38;
+  // Safe troop write: unknown icon rows must NEVER zero a previously extracted Regular type.
+  // Once every row has a known type, Regular + Mercenary rows are merged by icon type as before.
+  applyTroopReview=function(){
+    let unresolvedType=0;
+    for(const side of ['att','def']) unresolvedType+=(currentTroopReview?.[side]?.rows||[]).filter(r=>!r.type||r.type==='Unknown').length;
+    for(const [side,prefix] of [['att','att'],['def','def']]){
+      const rows=currentTroopReview?.[side]?.rows||[];
+      if(!rows.length)continue;
+      const totals=rowTroopTotals(rows);
+      if(unresolvedType===0){
+        for(const type of ['Bruiser','Hitman','Biker']) writeTroopType(prefix,type,totals[type]);
+      } else {
+        // Preserve existing non-zero Regular OCR values. Only fill a genuinely empty field
+        // when the icon review has a positive value for that type.
+        for(const type of ['Bruiser','Hitman','Biker']){
+          const totalId=troopFieldId(prefix,type,'total'),killsId=troopFieldId(prefix,type,'kills'),lossId=troopFieldId(prefix,type,'losses');
+          const t=totals[type];
+          if(!Number($(totalId)?.value||0)&&Number(t.total||0)>0)$(totalId).value=t.total;
+          if(!Number($(killsId)?.value||0)&&Number(t.kills||0)>0)$(killsId).value=t.kills;
+          if(!Number($(lossId)?.value||0)&&Number(t.losses||0)>0)$(lossId).value=t.losses;
+        }
+      }
     }
-    const ranked=Object.entries(score).sort((x,y)=>y[1]-x[1]);
-    const first=ranked[0]||['',0],second=ranked[1]||['',0];
-    const margin=first[1]-second[1];
-    const banksAgree=!!a.name&&!!b.name&&a.name===b.name;
-    const oneStrong=(!a.name&&!!b.name)||(!!a.name&&!b.name);
-    const accepted=(banksAgree&&first[1]>=.34&&margin>=.018)||(oneStrong&&first[1]>=.42&&margin>=.035);
-    return {type:accepted?first[0]:'Unknown',score:first[1],margin,banksAgree,a,b};
-  }
+    preview();renderCompleteness();
+    const unresolved=['att','def'].reduce((n,side)=>n+(currentTroopReview?.[side]?.rows||[])
+      .filter(r=>!r.type||r.type==='Unknown'||![1,2,3,4,5].includes(Number(r.tier))).length,0);
+    $('formMessage').textContent=unresolved
+      ?`Απομένουν ${unresolved} troop rows χωρίς ασφαλές Type/Tier. Τα ήδη αναγνωρισμένα Regular totals προστατεύονται και δεν μηδενίζονται.`
+      :'Όλες οι troop rows έχουν Class + Type + Tier και αθροίστηκαν στα τελικά totals.';
+  };
+  if($('applyTroopReviewBtn'))$('applyTroopReviewBtn').onclick=()=>{applyTroopReview();renderTroopReview()};
 
-  function r182MercenaryClass(ctx,box,typeKnown){
-    if(!typeKnown)return {isMercenary:false,goldRatio:0};
-    const id=ctx.getImageData(box.x,box.y,box.w,box.h).data;
-    let gold=0,total=0;
-    for(let i=0;i<id.length;i+=16){
-      const hsv=rgbToHsv255(id[i],id[i+1],id[i+2]);
-      total++;
-      if(hsv[0]>=20&&hsv[0]<=65&&hsv[1]>70&&hsv[2]>75)gold++;
-    }
-    const goldRatio=total?gold/total:0;
-    return {isMercenary:goldRatio>.035,goldRatio};
-  }
-
-  classifyBattleRowsByIcons=async function(dataUrl,candidates,result){
-    if(!dataUrl||!candidates?.length)return [];
-    const im=await loadDataUrlImage(dataUrl);
-    const C=document.createElement('canvas'); C.width=im.naturalWidth||im.width; C.height=im.naturalHeight||im.height;
-    const ctx=C.getContext('2d',{willReadFrequently:true}); ctx.drawImage(im,0,0,C.width,C.height);
-    const W=C.width,H=C.height;
-    const gaps=[]; for(let i=1;i<candidates.length;i++) if(candidates[i].cy>candidates[i-1].cy) gaps.push(candidates[i].cy-candidates[i-1].cy);
-    gaps.sort((x,y)=>x-y); const gap=gaps.length?gaps[Math.floor(gaps.length/2)]:H*.065;
-    const results=[];
-    for(const row of candidates){
-      const box=await r182IconFeature(ctx,W,H,row,gap);
-      const m=await r182IndependentType(box.feature);
-      const cls=r182MercenaryClass(ctx,box,m.type!=='Unknown');
-      results.push({
-        type:m.type,
-        isMercenary:cls.isMercenary,
-        confidence:m.type==='Unknown'?.20:Math.min(.995,.70+m.score*.24+(m.banksAgree?.04:0)),
-        score:m.score,margin:m.margin,goldRatio:cls.goldRatio,
-        recognition:'independent-icon',needsReview:m.type==='Unknown'
-      });
-    }
-    return results;
+  // Wrap the current apply pipeline, then enforce formation consensus and the safe troop rule.
+  const r183BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=r183BaseApply(auto);
+    r183ApplyFormationGuard();
+    applyTroopReview();
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
+    preview();renderCompleteness();
+    return out;
   };
 
-  // Review text makes the safety rule explicit to the user.
-  try{
-    const n=document.querySelector('#troopReviewOutput')?.previousElementSibling;
-    if(n)n.textContent='Κάθε Regular/Mercenary row αναγνωρίζεται ανεξάρτητα από το δικό της troop icon. Η σειρά των rows δεν χρησιμοποιείται ποτέ για Type. Αβέβαια icons μένουν Unknown για review.';
-  }catch(e){}
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.2 · Strict Icon-First Mercenaries';}catch(e){}
-  window.__TGM_R182_SELFTEST={rowOrderUsedForType:false,mercenaryIsSeparateType:false,independentIconClassifier:true,unknownOnLowConfidence:true};
+  // Save is blocked if a formation remained unconfirmed. Better Unknown than poisoned history.
+  const r183BaseSave=save;
+  save=async function(){
+    r183ApplyFormationGuard();
+    if(!$('attackerFormation')?.value||!$('defenderFormation')?.value){
+      $('formMessage').textContent='Δεν αποθηκεύτηκε: τουλάχιστον ένα formation δεν αναγνωρίστηκε με αρκετή βεβαιότητα. Επίλεξέ το χειροκίνητα.';
+      return;
+    }
+    return await r183BaseSave();
+  };
+  if($('saveBattleBtn'))$('saveBattleBtn').onclick=save;
+
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.3 · Regression Guard + Safe Formation';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.3';}catch(e){}
+  window.__TGM_R183_SELFTEST={
+    basedOn:'R18.1',strictR182Removed:true,rowOrderUsedForActiveType:false,
+    unknownRowsCannotEraseRegularTotals:true,formationDefault:'Unknown',
+    formationNeedsCorroboration:true,winnerRule:'fewer total losses',fiveLogicalSlots:true
+  };
 })();
 </script>
 
