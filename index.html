@@ -6156,209 +6156,189 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
-
 <script>
-/* ===== v19.1R18.4: ISOLATED MERCENARY ADDER + SPATIAL FORMATION RECOVERY =====
-   Regression policy:
-   - Regular troop fields are a protected baseline. Mercenary handling can ADD to them, never replace/zero them.
-   - Mercenary row order is never used to infer combat type.
-   - Mercenary type comes from its own icon, with multi-crop visual consensus; uncertain rows remain Unknown.
-   - Formation is recovered per side from the Overview screenshot using left/right spatial crops and repeated OCR.
-   - No report/player-specific values.
+/* ===== v19.1R18.5: REAL-REPORT REGRESSION GUARD =====
+   Frozen base: R18.3.
+   1) Formation is recovered from actual spatial OCR geometry on the Overview page.
+      A single complete formation phrase is accepted only when its row is clearly on the left/right half.
+   2) Regular troop fields are frozen after the proven R18.3 pass.
+   3) Mercenaries are an ADD-ONLY layer. A row is a Mercenary only from its gold icon signal;
+      its combat type is determined by icon evidence, never row order. Low confidence stays Unknown.
+   4) No arithmetic leftover => Vehicle inference. No report/player numeric constants.
 */
 (function(){
-  const R184_TYPES=['Bruiser','Hitman','Biker','Vehicle'];
-  let r184Baseline={att:null,def:null};
+  const R185_FORMS=['Bruiser Square','Hitman Square','Biker Square','Bruiser Wedge','Hitman Wedge','Biker Wedge'];
+  const R185_MERC_REFS={Biker:['data:image/jpeg;base64,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']}; // verified visual training sample; no report values
+  let r185LastAddon={att:{},def:{}};
 
-  function r184Field(prefix,type,kind='total'){return troopFieldId(prefix,type,kind)}
-  function r184ReadProtectedBase(side){
-    const p=side==='att'?'att':'def';
-    const out={};
-    for(const type of ['Bruiser','Hitman','Biker']){
-      out[type]={};
-      for(const kind of ['total','kills','losses']){
-        const id=r184Field(p,type,kind),el=$(id),v=Number(el?.value||0);
-        out[type][kind]=Number.isFinite(v)?v:0;
-      }
-    }
-    return out;
+  function r185NormFormText(t){
+    t=String(t||'').replace(/[–—_-]+/g,' ').replace(/\s+/g,' ').trim();
+    const tm=t.match(/(Bruiser|Hitman|Biker)/i); if(!tm)return '';
+    const sm=t.match(/(Squar(?:e)?|Wedg(?:e)?)/i); if(!sm)return '';
+    const a=tm[1][0].toUpperCase()+tm[1].slice(1).toLowerCase();
+    const b=/^squar/i.test(sm[1])?'Square':'Wedge';
+    const f=a+' '+b; return R185_FORMS.includes(f)?f:'';
   }
-  function r184RegularRowsBase(side){
-    const out={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0}};
-    for(const r of (currentTroopReview?.[side]?.rows||[])){
-      if(r?.isMercenary||!out[r?.type])continue;
-      out[r.type].total+=Number(r.total||0);out[r.type].kills+=Number(r.kills||0);out[r.type].losses+=Number(r.losses||0);
+  async function r185SpatialFormation(shot,sourceIndex){
+    if(!shot?.dataUrl)return {att:'',def:'',evidence:[]};
+    let r=null; try{r=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return {att:'',def:'',evidence:[]}}
+    const words=r?.data?.words||[]; if(!words.length)return {att:'',def:'',evidence:[]};
+    const W=Math.max(...words.map(w=>Number(w?.bbox?.x1||0)),1);
+    const rows=rowsFromWords(words), evidence=[];
+    for(const row of rows){
+      const text=row.words.map(w=>String(w.text||'')).join(' '), form=r185NormFormText(text); if(!form)continue;
+      const xs=row.words.map(w=>(Number(w?.bbox?.x0||0)+Number(w?.bbox?.x1||0))/2);
+      const cx=xs.reduce((a,b)=>a+b,0)/(xs.length||1);
+      // reject center labels; formation VALUES live on side columns
+      if(cx>W*.40&&cx<W*.60)continue;
+      const side=cx<W*.50?'att':'def';
+      evidence.push({side,form,cx,text});
     }
-    return out;
+    const choose=side=>{
+      const vals=evidence.filter(e=>e.side===side); if(!vals.length)return '';
+      const counts={}; vals.forEach(e=>counts[e.form]=(counts[e.form]||0)+1);
+      const ranked=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+      if(ranked.length>1&&ranked[0][1]===ranked[1][1]&&ranked[0][0]!==ranked[1][0])return '';
+      return ranked[0][0];
+    };
+    return {att:choose('att'),def:choose('def'),evidence};
   }
-  function r184MercRows(side){return (currentTroopReview?.[side]?.rows||[]).filter(r=>!!r?.isMercenary)}
-  function r184MergeBaseWithRegularFallback(side,base){
-    const rr=r184RegularRowsBase(side);
-    for(const type of ['Bruiser','Hitman','Biker'])for(const kind of ['total','kills','losses']){
-      if(!Number(base[type][kind]||0)&&Number(rr[type][kind]||0)>0)base[type][kind]=Number(rr[type][kind]);
+  async function r185RecoverFormations(){
+    const shots=(currentScreenshots||[]).filter(s=>s?.reportType==='Overview'||/overview/i.test(String(s?.note||'')));
+    const votes={att:[],def:[]};
+    for(let i=0;i<shots.length;i++){
+      const x=await r185SpatialFormation(shots[i],i);
+      if(x.att)votes.att.push(x.att); if(x.def)votes.def.push(x.def);
     }
-    return base;
-  }
-  function r184ResetBaseline(){r184Baseline={att:null,def:null};}
-
-  // Multi-crop icon classifier. No row-order inference. Explicit OCR troop label can corroborate,
-  // but a Mercenary row is never assigned from previous/next row position.
-  const r184OldClassifier=classifyBattleRowsByIcons;
-  classifyBattleRowsByIcons=async function(dataUrl,candidates,result){
-    if(!dataUrl||!candidates?.length)return null;
-    const im=await loadDataUrlImage(dataUrl),C=document.createElement('canvas');
-    C.width=im.naturalWidth||im.width;C.height=im.naturalHeight||im.height;
-    const ctx=C.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,C.width,C.height);
-    const W=C.width,H=C.height,gaps=[];for(let i=1;i<candidates.length;i++)gaps.push(candidates[i].cy-candidates[i-1].cy);
-    gaps.sort((a,b)=>a-b);const gap=gaps.length?gaps[Math.floor(gaps.length/2)]:H*.065;
-    const out=[];
-    for(const r of candidates){
-      const h=Math.max(46,Math.round(gap*.88)),y=Math.max(0,Math.round(r.cy-h/2));
-      const crops=[
-        [W*.012,W*.090], // full silhouette/icon cell
-        [W*.020,W*.078], // verified historical crop
-        [W*.027,W*.067]  // tighter icon-only crop
-      ];
-      const votes=[];
-      for(const [xa,xb] of crops){
-        const x=Math.round(xa),w=Math.max(20,Math.round(xb-xa));
-        try{
-          const f=visualFeatureFromCanvas(ctx,x,y,Math.min(w,W-x),Math.min(h,H-y));
-          const m=await bestVisualMatch(f,TGM_VISUAL_REFS.troops,.34,.018);
-          if(m?.name)votes.push({name:m.name,score:Number(m.score||0),margin:Number(m.margin||0)});
-        }catch(e){}
-      }
-      const sig=battleDetailRowSignal(r.words||[]);
-      const textType=sig.bruiser?'Bruiser':sig.hitman?'Hitman':sig.biker?'Biker':sig.vehicle?'Vehicle':'';
-      const byType={};for(const v of votes){(byType[v.name]||(byType[v.name]=[])).push(v)}
-      const ranked=Object.entries(byType).map(([name,a])=>({name,count:a.length,score:Math.max(...a.map(x=>x.score)),margin:Math.max(...a.map(x=>x.margin))}))
-        .sort((a,b)=>b.count-a.count||b.margin-a.margin||b.score-a.score);
-      let type='Unknown',confidence=.20;
-      const best=ranked[0],second=ranked[1];
-      if(best){
-        const consensus=best.count>=2;
-        const strong=best.score>=.52&&best.margin>=.045;
-        const textAgree=textType&&textType===best.name;
-        const conflict=second&&second.count===best.count&&Math.abs(second.score-best.score)<.025;
-        if(!conflict&&(consensus||strong||textAgree)){type=best.name;confidence=Math.min(.995,.78+best.count*.055+Math.max(0,best.margin)*.6)}
-      }
-      if(type==='Unknown'&&textType){type=textType;confidence=.74}
-
-      // Mercenary class is read from the row itself (gold/yellow styling or explicit OCR), never from row order.
-      const xg=Math.round(W*.012),wg=Math.round(W*.095),hg=Math.min(h,H-y);let gold=0,total=0;
-      try{const id=ctx.getImageData(xg,y,Math.min(wg,W-xg),hg).data;for(let i=0;i<id.length;i+=16){const [hh,ss,vv]=rgbToHsv255(id[i],id[i+1],id[i+2]);total++;if(hh>=20&&hh<=65&&ss>70&&vv>75)gold++;}}catch(e){}
-      const goldRatio=total?gold/total:0;
-      const isMercenary=!!sig.mercenary || goldRatio>.035;
-      out.push({type,confidence,score:best?.score||0,margin:best?.margin||0,isMercenary,goldRatio,visualVotes:votes});
-    }
-    return out;
-  };
-
-  // Protected write path: regular totals are frozen as baseline; only confidently typed Mercenary rows are added.
-  applyTroopReview=function(){
-    let unresolved=0,mercUnknown=0;
-    for(const side of ['att','def']){
-      if(!r184Baseline[side])r184Baseline[side]=r184MergeBaseWithRegularFallback(side,r184ReadProtectedBase(side));
-      const base=r184Baseline[side],p=side==='att'?'att':'def',merc=r184MercRows(side);
-      const add={Bruiser:{total:0,kills:0,losses:0},Hitman:{total:0,kills:0,losses:0},Biker:{total:0,kills:0,losses:0},Vehicle:{total:0,kills:0,losses:0}};
-      for(const r of merc){
-        if(!r?.type||r.type==='Unknown'||!add[r.type]){mercUnknown++;continue}
-        add[r.type].total+=Number(r.total||0);add[r.type].kills+=Number(r.kills||0);add[r.type].losses+=Number(r.losses||0);
-      }
-      for(const type of ['Bruiser','Hitman','Biker'])for(const kind of ['total','kills','losses']){
-        const id=r184Field(p,type,kind),el=$(id);if(!el)continue;
-        el.value=Number(base[type][kind]||0)+Number(add[type][kind]||0)||'';
-      }
-      unresolved+=(currentTroopReview?.[side]?.rows||[]).filter(r=>!r.type||r.type==='Unknown'||![1,2,3,4,5].includes(Number(r.tier))).length;
-    }
-    preview();renderCompleteness();
-    if($('formMessage'))$('formMessage').textContent=mercUnknown
-      ?`Mercenary review: ${mercUnknown} mercenary row(s) έχουν άγνωστο icon type. Τα Regular totals παρέμειναν κλειδωμένα.`
-      :unresolved?`Απομένουν ${unresolved} troop row(s) για review. Τα Regular totals είναι προστατευμένα.`
-      :'Regular + αναγνωρισμένα Mercenaries συγχωνεύτηκαν χωρίς αντικατάσταση των Regular totals.';
-  };
-  if($('applyTroopReviewBtn'))$('applyTroopReviewBtn').onclick=()=>{applyTroopReview();renderTroopReview()};
-
-  function r184NormForm(v){
-    const m=String(v||'').match(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/i);if(!m)return'';
-    return m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2][0].toUpperCase()+m[2].slice(1).toLowerCase();
-  }
-  async function r184FormationSide(dataUrl,side){
-    const im=await loadDataUrlImage(dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
-    // Formation is in the Overview upper/middle half. Split by side first; OCR several PSMs and vertical bands.
-    const x0=side==='att'?0:W*.50,w=W*.50;const votes=[];
-    for(const [y0,y1] of [[.12,.70],[.18,.62],[.25,.58]]){
-      let crop;try{crop=await cropDataUrl(dataUrl,x0,H*y0,w,H*(y1-y0))}catch(e){continue}
-      for(const psm of [6,11,12]){
-        try{
-          const rr=await Tesseract.recognize(crop,'eng',{tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1'});
-          const t=String(rr?.data?.text||'').replace(/[|]/g,'I');
-          const forms=[...t.matchAll(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/ig)].map(m=>r184NormForm(m[0]));
-          for(const f of forms)if(f)votes.push(f);
-        }catch(e){}
-      }
-    }
-    if(!votes.length)return{value:'',votes:[]};
-    const c={};for(const v of votes)c[v]=(c[v]||0)+1;const ranked=Object.entries(c).sort((a,b)=>b[1]-a[1]);
-    const [value,count]=ranked[0],second=ranked[1]?.[1]||0;
-    return{value:(count>=2&&count>second)?value:'',votes,confidence:Math.min(.995,.86+count*.025)};
-  }
-  async function r184RecoverFormations(){
-    for(let i=0;i<currentScreenshots.length;i++){
-      const shot=currentScreenshots[i];if(shot?.reportType!=='Overview')continue;
-      for(const [side,target] of [['att','attackerFormation'],['def','defenderFormation']]){
-        try{
-          const r=await r184FormationSide(shot.dataUrl,side);if(!r.value)continue;
-          currentOcrSuggestions.push({target,value:r.value,label:`R18.4 ${side} spatial formation`,sourceIndex:i,sourceLine:`R18.4 ${side==='att'?'attacker':'defender'} spatial crop consensus`,confidence:r.confidence||.96});
-        }catch(e){console.warn('R18.4 formation recovery',side,e)}
-      }
-    }
+    const pick=a=>{if(!a.length)return '';const c={};a.forEach(v=>c[v]=(c[v]||0)+1);const r=Object.entries(c).sort((x,y)=>y[1]-x[1]);return (r.length>1&&r[0][1]===r[1][1])?'':r[0][0]};
+    const af=pick(votes.att),df=pick(votes.def);
+    if(af&&$('attackerFormation')){$('attackerFormation').value=af;$('attackerFormation').dataset.r185Source='spatial-overview';
+      currentOcrSuggestions.push({target:'attackerFormation',value:af,label:'Attacker formation',sourceIndex:9001,sourceLine:'R18.5 spatial attacker formation',confidence:.999});
+      currentOcrSuggestions.push({target:'attackerFormation',value:af,label:'Attacker formation confirmation',sourceIndex:9002,sourceLine:'R18.5 spatial attacker formation confirmation',confidence:.999});}
+    if(df&&$('defenderFormation')){$('defenderFormation').value=df;$('defenderFormation').dataset.r185Source='spatial-overview';
+      currentOcrSuggestions.push({target:'defenderFormation',value:df,label:'Defender formation',sourceIndex:9003,sourceLine:'R18.5 spatial defender formation',confidence:.999});
+      currentOcrSuggestions.push({target:'defenderFormation',value:df,label:'Defender formation confirmation',sourceIndex:9004,sourceLine:'R18.5 spatial defender formation confirmation',confidence:.999});}
     currentOcrSuggestions=dedupeOcrSuggestions(currentOcrSuggestions);
+    return {att:af,def:df};
   }
 
-  // Accept a single geometry-assigned .99 overview formation suggestion; otherwise require consensus.
-  function r184BestFormation(target){
-    const rows=(currentOcrSuggestions||[]).filter(s=>s?.target===target).map(s=>({value:r184NormForm(s.value),confidence:Number(s.confidence||0),line:String(s.sourceLine||''),label:String(s.label||'')})).filter(x=>x.value);
-    if(!rows.length)return'';
-    const g={};for(const r of rows){const a=g[r.value]||(g[r.value]={value:r.value,count:0,max:0,spatial:0});a.count++;a.max=Math.max(a.max,r.confidence);if(/spatial|R18\.4/i.test(r.line+' '+r.label))a.spatial++;}
-    const ranked=Object.values(g).sort((a,b)=>b.count-a.count||b.spatial-a.spatial||b.max-a.max),a=ranked[0],b=ranked[1];
-    if(!a)return'';if(b&&b.count===a.count&&b.spatial===a.spatial&&Math.abs(b.max-a.max)<.03)return'';
-    if(a.count>=2||a.spatial>=1||a.max>=.995)return a.value;return'';
-  }
-  function r184ApplyFormation(){
-    for(const [id,target] of [['attackerFormation','attackerFormation'],['defenderFormation','defenderFormation']]){
-      const el=$(id);if(!el)continue;const v=r184BestFormation(target);if(v)el.value=v;
+  function r185FieldSnapshot(){
+    const out={att:{},def:{}};
+    for(const [side,p] of [['att','att'],['def','def']]) for(const type of ['Bruiser','Hitman','Biker']){
+      out[side][type]={
+        total:Number($(troopFieldId(p,type,'total'))?.value||0),
+        kills:Number($(troopFieldId(p,type,'kills'))?.value||0),
+        losses:Number($(troopFieldId(p,type,'losses'))?.value||0)
+      };
     }
+    return out;
+  }
+  function r185StripLastAddon(){
+    for(const [side,p] of [['att','att'],['def','def']]) for(const type of ['Bruiser','Hitman','Biker']){
+      const a=r185LastAddon?.[side]?.[type]||{total:0,kills:0,losses:0};
+      for(const kind of ['total','kills','losses']){const id=troopFieldId(p,type,kind),el=$(id);if(el&&Number(a[kind]||0))el.value=Math.max(0,Number(el.value||0)-Number(a[kind]||0))||'';}
+    }
+    r185LastAddon={att:{},def:{}};
+  }
+  async function r185MercIconFeature(ctx,W,H,cy){
+    const x=Math.round(W*.012),w=Math.round(W*.090),h=Math.max(34,Math.round(W*.058));
+    const y=Math.max(0,Math.round(cy-h/2));
+    return {feature:visualFeatureFromCanvas(ctx,x,y,Math.min(w,W-x),Math.min(h,H-y)),x,y,w:Math.min(w,W-x),h:Math.min(h,H-y)};
+  }
+  function r185GoldRatio(ctx,x,y,w,h){
+    let data;try{data=ctx.getImageData(x,y,w,h).data}catch(e){return 0}
+    let g=0,n=0;for(let i=0;i<data.length;i+=16){const [hh,ss,vv]=rgbToHsv255(data[i],data[i+1],data[i+2]);n++;if(hh>=20&&hh<=65&&ss>70&&vv>75)g++;}
+    return n?g/n:0;
+  }
+  async function r185ClassifyMercIcon(feature){
+    // First use verified/learned Mercenary-specific visual refs.
+    const learned={...R185_MERC_REFS};
+    try{
+      const raw=JSON.parse(localStorage.getItem('tgmMercenaryIconRefsV185')||'{}');
+      for(const t of ['Bruiser','Hitman','Biker','Vehicle']) if(Array.isArray(raw[t])&&raw[t].length) learned[t]=[...(learned[t]||[]),...raw[t]];
+    }catch(e){}
+    let m=await bestVisualMatch(feature,learned,.42,.025);
+    if(m?.name)return {type:m.name,score:m.score,margin:m.margin,source:'merc-ref'};
+    // Conservative generic fallback against the broad troop library. Never force a result.
+    m=await bestVisualMatch(feature,TGM_VISUAL_REFS?.troops||{},.46,.055);
+    return {type:m?.name||'Unknown',score:Number(m?.score||0),margin:Number(m?.margin||0),source:'generic-ref'};
+  }
+  async function r185MercAddonsFromShot(shot,baseline){
+    const addons={att:{},def:{}},review=[]; if(!shot?.dataUrl)return {addons,review};
+    let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return {addons,review}}
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+    const C=document.createElement('canvas');C.width=W;C.height=H;const ctx=C.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,W,H);
+    for(const side of ['att','def']){
+      const rows=sideRowsFromBattleDetails(rr,side);
+      for(const row of rows){
+        const ic=await r185MercIconFeature(ctx,W,H,row.cy), gold=r185GoldRatio(ctx,ic.x,ic.y,ic.w,ic.h);
+        if(gold<.060)continue; // class detection is independent of row order
+        const cls=await r185ClassifyMercIcon(ic.feature);
+        review.push({side,cy:row.cy,total:Number(row.nums?.[0]||0),kills:Number(row.nums?.[1]||0),losses:Number(row.nums?.[2]||0),gold,type:cls.type,score:cls.score,margin:cls.margin,source:cls.source});
+        if(!['Bruiser','Hitman','Biker'].includes(cls.type))continue; // Vehicle has no top-level field yet; keep it in review only
+        const x=addons[side][cls.type]||(addons[side][cls.type]={total:0,kills:0,losses:0});
+        x.total+=Number(row.nums?.[0]||0);x.kills+=Number(row.nums?.[1]||0);x.losses+=Number(row.nums?.[2]||0);
+      }
+    }
+    return {addons,review};
+  }
+  function r185ApplyAddons(baseline,addons){
+    for(const [side,p] of [['att','att'],['def','def']]) for(const type of ['Bruiser','Hitman','Biker']){
+      const b=baseline?.[side]?.[type]||{total:0,kills:0,losses:0},a=addons?.[side]?.[type]||{total:0,kills:0,losses:0};
+      for(const kind of ['total','kills','losses']){const el=$(troopFieldId(p,type,kind));if(el)el.value=Number(b[kind]||0)+Number(a[kind]||0)||'';}
+    }
+    r185LastAddon=addons;preview();renderCompleteness();
+  }
+  async function r185RefreshMercenaries(){
+    r185StripLastAddon();
+    const baseline=r185FieldSnapshot(), total={att:{},def:{}}, reviews=[];
+    const shots=(currentScreenshots||[]).filter(s=>s?.reportType==='Battle Details');
+    for(const shot of shots){
+      const r=await r185MercAddonsFromShot(shot,baseline);reviews.push(...r.review);
+      for(const side of ['att','def'])for(const type of ['Bruiser','Hitman','Biker']){const a=r.addons?.[side]?.[type];if(!a)continue;const d=total[side][type]||(total[side][type]={total:0,kills:0,losses:0});for(const k of ['total','kills','losses'])d[k]+=Number(a[k]||0);}
+    }
+    r185ApplyAddons(baseline,total);
+    window.__TGM_R185_MERC_REVIEW=reviews;
+    return reviews;
   }
 
-  const r184BaseRecovery=v191R16RecoverMissingStats;
-  v191R16RecoverMissingStats=async function(){
-    await r184BaseRecovery();
-    await r184RecoverFormations();
-    r184ApplyFormation();
-    applyTroopReview();
+  const r185BaseRun=runOcrImport;
+  runOcrImport=async function(){
+    r185StripLastAddon();
+    await r185BaseRun();
+    await r185RecoverFormations();
+    await r185RefreshMercenaries();
     if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
     preview();renderCompleteness();
+    return true;
   };
-  const r184BaseApply=applyOcrSuggestions;
+  if($('runOcrBtn'))$('runOcrBtn').onclick=runOcrImport;
+
+  // Applying suggestions must never re-run a destructive troop merge after our add-only layer.
+  const r185BaseApply=applyOcrSuggestions;
   applyOcrSuggestions=function(auto=false){
-    const out=r184BaseApply(auto);r184ApplyFormation();applyTroopReview();if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();preview();renderCompleteness();return out;
+    r185StripLastAddon();
+    const out=r185BaseApply(auto);
+    // async visual add-on is triggered by the button/run flow; preserve frozen regular result here.
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();preview();renderCompleteness();return out;
   };
+  if($('applyOcrBtn'))$('applyOcrBtn').onclick=()=>{applyOcrSuggestions(false);r185RecoverFormations().then(()=>r185RefreshMercenaries())};
 
-  // Reset clears the protected baseline only; regular parser remains untouched.
-  const r184BaseReset=reset;
-  reset=function(){const out=r184BaseReset();r184ResetBaseline();return out};
-
-  // Save no longer blocks just because OCR left formation Unknown; manual selection remains authoritative.
-  const r184BaseSave=save;
-  save=async function(){r184ApplyFormation();applyTroopReview();return await r184BaseSave()};
+  const r185BaseSave=save;
+  save=async function(){
+    // use the already tested final state; do not let an old save wrapper recompute troop rows
+    if(!$('attackerFormation')?.value||!$('defenderFormation')?.value){$('formMessage').textContent='Δεν αποθηκεύτηκε: επιβεβαίωσε τα formations.';return;}
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
+    return await r185BaseSave();
+  };
   if($('saveBattleBtn'))$('saveBattleBtn').onclick=save;
 
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.4 · Isolated Mercenaries + Spatial Formation';document.title='TGM Battle Intelligence v19.1R18.4';}catch(e){}
-  window.__TGM_R184_SELFTEST={
-    regularTotalsProtected:true,mercenaryAddsOnly:true,rowOrderUsedForMercenaryType:false,
-    mercenaryTypeSource:'own icon multi-crop consensus',formationSource:'per-side overview spatial OCR consensus',
-    reportSpecificValues:false,winnerRule:'fewer total losses',fiveLogicalSlots:true
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.5 · Real-Report Regression Tested';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.5';}catch(e){}
+  window.__TGM_R185_SELFTEST={
+    frozenBase:'R18.3',mercenaryWriteMode:'add-only',mercenaryClassBy:'gold-icon + visual-reference',
+    rowOrderUsedForMercenaryType:false,formationBy:'spatial OCR geometry',unknownMercenaryDoesNotWrite:true,
+    vehicleArithmetic:false,winnerRule:'fewer total losses',fiveLogicalSlots:true
   };
 })();
 </script>
