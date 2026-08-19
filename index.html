@@ -5776,7 +5776,10 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
     for(const side of ['att','def'])for(const s of ['CrewAtk','CrewDef','CrewHp','BruiserAtk','HitmanAtk','BikerAtk','BruiserDef','HitmanDef','BikerDef','BruiserHp','HitmanHp','BikerHp']){
       const id=side+s;if(r17Missing(id))ids.push(id);
     }
-    for(const side of ['att','def'])for(const t of ['Bruiser','Hitman','Biker']){const id=`${side}${t}CounterDmgReduction`;if(r17Missing(id))ids.push(id)}
+    // R18.19: Counter DMG Reduction rows are optional-by-presence. The game report may
+    // legitimately show only one troop-type row (e.g. Biker) and omit Bruiser/Hitman.
+    // Blank optional rows must therefore NOT block saving. Values that are actually
+    // present/read remain untouched and are still saved normally.
     return ids;
   };
 
@@ -7489,8 +7492,8 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
     return await baseSave();
   };
   const btn=document.getElementById('saveBattleBtn'); if(btn) btn.onclick=window.save;
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.18 · Manual Formation Save Fix';}catch(e){}
-  try{document.title='TGM Battle Intelligence v19.1R18.18';}catch(e){}
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.19 · Optional Counter Reduction Save Fix';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.19';}catch(e){}
   window.__TGM_R1817_SELFTEST={manualFormationOverridesOcrConfidence:true,ocrGuardStillActiveForUntouchedFields:true,battleSpecificHardcodes:false};
 })();
 </script>
