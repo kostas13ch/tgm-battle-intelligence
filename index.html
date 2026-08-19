@@ -6863,5 +6863,37 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
-</body>
+\n<script>
+/* ===== v19.1R18.9: FORMATION ANCHOR + COUNTER-REDUCTION ROWS + ENFORCER GEOMETRY ===== */
+(function(){
+  function nform(x){const s=String(x||'').replace(/[—–_]+/g,' ').replace(/\\s+/g,' ');const a=/bruis/i.test(s)?'Bruiser':/hitm/i.test(s)?'Hitman':/bik/i.test(s)?'Biker':'';const b=/wedg/i.test(s)?'Wedge':/squ/i.test(s)?'Square':'';return a&&b?a+' '+b:''}
+  async function cropText(url,x,y,w,h,psm=7){try{const c=await cropDataUrl(url,x,y,w,h);const z=await Tesseract.recognize(c,'eng',{tessedit_pageseg_mode:String(psm)});return String(z?.data?.text||'')}catch(e){return ''}}
+  async function recoverFormation(){
+    const votes={att:[],def:[]};
+    for(const sh of (currentScreenshots||[])){if(!sh?.dataUrl)continue;let rr;try{rr=await Tesseract.recognize(sh.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){continue}
+      const words=rr?.data?.words||[];const im=await loadDataUrlImage(sh.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height;
+      const fw=words.find(w=>/formation/i.test(String(w.text||''))&&w.bbox);if(!fw)continue;const cy=(fw.bbox.y0+fw.bbox.y1)/2,hh=Math.max(22,H*.022);
+      for(const [side,x0,x1] of [['att',.01,.44],['def',.56,.99]]){const fs=[];for(const psm of [6,7,11,13]){const t=await cropText(sh.dataUrl,W*x0,cy-hh,W*(x1-x0),hh*2,psm);const f=nform(t);if(f)fs.push(f)}if(fs.length){const c={};fs.forEach(f=>c[f]=(c[f]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(best[1]>=2)votes[side].push(best[0])}}
+    }
+    for(const [side,id] of [['att','attackerFormation'],['def','defenderFormation']]){const c={};votes[side].forEach(f=>c[f]=(c[f]||0)+1);const a=Object.entries(c).sort((x,y)=>y[1]-x[1]);if(a.length&&(!a[1]||a[0][1]>a[1][1]))$(id).value=a[0][0]}
+    window.__TGM_R189_FORM_VOTES=votes;
+  }
+  function val(t){const m=String(t||'').replace(/,/g,'.').match(/(?:^|\\s)(\\d{1,2}(?:\\.\\d+)?)(?:%|\\s|$)/);if(!m)return null;const n=Number(m[1]);return Number.isFinite(n)&&n>=0&&n<=100?n:null}
+  async function recoverCounterReduction(){
+    for(const sh of (currentScreenshots||[])){if(sh?.reportType!=='Buff Comparison'||!sh?.dataUrl)continue;let rr;try{rr=await Tesseract.recognize(sh.dataUrl,'eng',{tessedit_pageseg_mode:'11'})}catch(e){continue}
+      const words=rr?.data?.words||[],im=await loadDataUrlImage(sh.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height,rows=rowsFromWords(words);
+      const head=rows.find(r=>/counter.*(?:dmg)?.*reduction/i.test((r.words||[]).map(w=>w.text).join(' ')));if(!head)continue;const stop=rows.find(r=>r.cy>head.cy&&/reduced.*damage|receive.*reduced/i.test((r.words||[]).map(w=>w.text).join(' ')));const tail=rows.filter(r=>r.cy>head.cy&&(!stop||r.cy<stop.cy));
+      for(const troop of ['Bruiser','Hitman','Biker']){const rx=troop==='Hitman'?/hitm[ae]n/i:new RegExp(troop,'i');const row=tail.find(r=>rx.test((r.words||[]).map(w=>w.text).join(' ')));if(!row)continue;const dy=Math.max(16,H*.014);for(const [side,x0,x1] of [['att',.01,.31],['def',.69,.99]]){const id=side+troop+'CounterDmgReduction';if(String($(id)?.value||'').trim())continue;let got=null;for(const psm of [6,7,11,13]){const t=await cropText(sh.dataUrl,W*x0,row.cy-dy,W*(x1-x0),dy*2,psm);const n=val(t);if(n!==null){got=n;break}}if(got!==null)$(id).value=got}}
+    }
+  }
+  // The old detector sorted all portrait cards globally by y, which can scramble slots.
+  // Assign the five detected cards to the fixed combat layout: top, left, center-left, center-right, right.
+  function slotOrder(cards){if(!cards||cards.length!==5)return cards||[];const top=[...cards].sort((a,b)=>a.cy-b.cy)[0],rest=cards.filter(x=>x!==top).sort((a,b)=>a.cx-b.cx);return [top,rest[0],rest[1],rest[2],rest[3]]}
+  const oldCenters=v127CombatCardCenters;v127CombatCardCenters=async function(url,mode,count=5){const c=await oldCenters(url,mode,count);return mode==='enforcer'&&c.length===5?slotOrder(c):c};
+  const oldRun=runOcrImport;runOcrImport=async function(){const out=await oldRun();await recoverFormation();await recoverCounterReduction();preview();renderCompleteness();return out};if($('runOcrBtn'))$('runOcrBtn').onclick=runOcrImport;
+  const oldApply=applyOcrSuggestions;applyOcrSuggestions=function(auto=false){const out=oldApply(auto);setTimeout(async()=>{await recoverFormation();await recoverCounterReduction();preview();renderCompleteness()},0);return out};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.9 · Anchored Formation + Counter Reduction + Enforcer Geometry';document.title='TGM Battle Intelligence v19.1R18.9'}catch(e){}
+  window.__TGM_R189_SELFTEST={formation:'label-row consensus',counterReduction:'bounded section rows',enforcerSlots:'fixed spatial order',weaponPipelineUntouched:true,troopPipelineUntouched:true};
+})();
+</script>\n</body>
 </html>
