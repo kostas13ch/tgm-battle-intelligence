@@ -7278,7 +7278,7 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 
 
 <script>
-/* ===== v19.1R18.14: ENFORCER ACCURACY + PORTRAIT IDENTITY ONLY =====
+/* ===== v19.1R18.15: ENFORCER VALIDATION + PORTRAIT RELAXATION =====
    Locked: formation/slot geometry, troops, stats, counters, Super Weapons.
    - Numeric values: multi-pass SAME-popup OCR + consensus, no cross-popup borrowing.
    - Portraits: multi-crop visual matching against embedded + learned Enforcer library.
@@ -7311,9 +7311,19 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
     ints.filter(z=>z.ry<.50&&z.n>=1&&z.n<=20).forEach(z=>acts.push(z.n));
     ints.filter(z=>z.ry>.30&&(z.n===0||z.n>=100)&&z.n<=500000).forEach(z=>dmgs.push(z.n));
     const activation=mode(acts);
-    let damage=mode(dmgs);
-    // Require evidence for suspiciously large one-off values; otherwise leave blank.
-    if(damage>250000 && dmgs.filter(x=>x===damage).length<2)damage=null;
+    // Prefer repeated same-popup evidence. When every candidate is unique, prefer the
+    // focused/strict readers (earlier evidence) instead of a stray full-page integer.
+    const freq=new Map(); dmgs.forEach((x,i)=>{const z=freq.get(x)||{n:0,first:i};z.n++;freq.set(x,z)});
+    let damage=null;
+    if(dmgs.length){
+      const ranked=[...freq.entries()].sort((a,b)=>b[1].n-a[1].n||a[1].first-b[1].first);
+      damage=ranked[0][0];
+      if(ranked[0][1].n===1){
+        const focused=dmgs.slice(0,4).filter(Number.isFinite);
+        if(focused.length)damage=focused[0];
+      }
+    }
+    if(damage>250000 && (freq.get(damage)?.n||0)<2)damage=null;
     return {activation:(activation>=1&&activation<=20)?activation:null,damage:Number.isFinite(damage)?damage:null,evidence:{acts,dmgs}};
   }
   v180ExtractCombatObjects=async function(full,url,kind){
@@ -7327,7 +7337,7 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
       const q=b?await readPopup(full,url,b):{activation:row.activation,damage:row.damage,evidence:{}};
       out.push({...row,activation:q.activation??row.activation,damage:q.damage??row.damage,valueEvidence:q.evidence});
     }
-    window.__TGM_R1814_LAST_NUMERIC=out.map(x=>({slot:x.slot,activation:x.activation,damage:x.damage,evidence:x.valueEvidence}));
+    window.__TGM_R1815_LAST_NUMERIC=out.map(x=>({slot:x.slot,activation:x.activation,damage:x.damage,evidence:x.valueEvidence}));
     return out;
   };
 
@@ -7348,7 +7358,7 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
       const groups={};for(const v of votes)(groups[v.name]||(groups[v.name]=[])).push(v);
       let best=null;for(const [name,vs] of Object.entries(groups)){const score=vs.reduce((s,v)=>s+v.score,0)/vs.length,margin=vs.reduce((s,v)=>s+v.margin,0)/vs.length;const cand={name,agree:vs.length,score,margin};if(!best||cand.agree>best.agree||(cand.agree===best.agree&&cand.score>best.score))best=cand}
       // Two independent crop scales must agree; stronger evidence is required for only two votes.
-      const ok=best && ((best.agree>=3&&best.score>=.64&&best.margin>=.08)||(best.agree>=2&&best.score>=.72&&best.margin>=.11));
+      const ok=best && ((best.agree>=3&&best.score>=.58&&best.margin>=.045)||(best.agree>=2&&best.score>=.66&&best.margin>=.075));
       out.push({name:ok?best.name:'',score:ok?best.score:0,margin:ok?best.margin:0,cx:card.cx,cy:card.cy,votes});
     }
     return out;
@@ -7362,11 +7372,80 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   }
   v175RecoverCombatPage=async function(shot,index,mode){
     const ok=await prevRecovery(shot,index,mode);if(mode!=='enforcer'||!ok)return ok;
-    try{const side=shot?.side==='Defender'?'def':'att',ids=await identifyBetter(shot.dataUrl,5);window.__TGM_R1814_LAST_VISUAL=window.__TGM_R1814_LAST_VISUAL||{};window.__TGM_R1814_LAST_VISUAL[side]=ids;sync(side,ids)}catch(e){console.warn('R18.14 portrait consensus',e)}
+    try{const side=shot?.side==='Defender'?'def':'att',ids=await identifyBetter(shot.dataUrl,5);window.__TGM_R1815_LAST_VISUAL=window.__TGM_R1815_LAST_VISUAL||{};window.__TGM_R1815_LAST_VISUAL[side]=ids;sync(side,ids)}catch(e){console.warn('R18.15 portrait consensus',e)}
     return ok;
   };
-  window.__TGM_R1814_SELFTEST={scope:'Enforcer values + names only',slotGeometryUntouched:true,numeric:'same-popup multi-pass consensus',portrait:'4 crop scales + consensus',unknownFallback:true,troopsUntouched:true,formationsUntouched:true,countersUntouched:true,weaponsUntouched:true};
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.14 · Enforcer Accuracy + Portrait Consensus';document.title='TGM Battle Intelligence v19.1R18.14'}catch(e){}
+  window.__TGM_R1815_SELFTEST={scope:'Enforcer value validation + names only',slotGeometryUntouched:true,numeric:'same-popup evidence with focused-reader priority',portrait:'4 crop scales + relaxed consensus',unknownFallback:true,troopsUntouched:true,formationsUntouched:true,countersUntouched:true,weaponsUntouched:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.15 · Enforcer Validation + Portrait Matching';document.title='TGM Battle Intelligence v19.1R18.15'}catch(e){}
+})();
+</script>
+
+
+<script>
+/* ===== v19.1R18.16: GENERIC ENFORCER ENGINE =====
+   General parser only: no player, report, Enforcer-name, formation-result, activation,
+   or damage-value fingerprints. Existing R18.13 slot geometry stays locked.
+   A battle report is a regression case, never a source of expected output values.
+*/
+(function(){
+  const baseExtract=v180ExtractCombatObjects;
+  const baseRecover=v175RecoverCombatPage;
+
+  function clusterNumbers(vals,tol){
+    const a=(vals||[]).filter(x=>Number.isFinite(+x)).map(Number);
+    const groups=[];
+    for(const x of a){
+      let g=groups.find(z=>Math.abs(z.center-x)<=tol);
+      if(!g){g={center:x,vals:[],support:0};groups.push(g)}
+      g.vals.push(x);g.support++;
+      g.center=Math.round(g.vals.reduce((s,n)=>s+n,0)/g.vals.length);
+    }
+    return groups.sort((a,b)=>b.support-a.support||a.vals.length-b.vals.length);
+  }
+  async function genericPopup(full,url,b){
+    const A=[],D=[];
+    // Independent readers, all constrained to this exact popup.
+    try{const c=await v180RowCenters(url,b,2);for(let i=0;i<2;i++){const n=await v180OcrNumberBand(url,b,c[i],i,'enforcer',full);if(i===0&&n>=1&&n<=20)A.push(+n);if(i===1&&n>=0&&n<=999999)D.push(+n)}}catch(e){}
+    try{const q=await v81ReadPopup(url,b,'enforcer');if(q?.activation>=1&&q.activation<=20)A.push(+q.activation);if(Number.isFinite(+q?.damage)&&+q.damage>=0&&+q.damage<=999999)D.push(+q.damage)}catch(e){}
+    for(const z of [[.03,.45,.37,.90],[.08,.48,.43,.94],[.12,.43,.48,.88]]){
+      try{const n=await v81FocusedNumber(url,b,z[0],z[1]);if(n>=1&&n<=20)A.push(+n)}catch(e){}
+      try{const n=await v81FocusedNumber(url,b,z[2],z[3]);if(Number.isFinite(+n)&&+n>=0&&+n<=999999)D.push(+n)}catch(e){}
+    }
+    // Full-page OCR contributes evidence only when its center is physically inside popup.
+    try{for(const z of originalBoxInts(full,b)||[]){const ry=(+z.cy-(+b.y))/Math.max(1,+b.h),n=+z.n;if(ry<.50&&n>=1&&n<=20)A.push(n);if(ry>.30&&n>=0&&n<=999999)D.push(n)}}catch(e){}
+    const ag=clusterNumbers(A,0), dg=clusterNumbers(D,0);
+    // Require repeated evidence where possible. If no repetition exists, keep the first
+    // same-popup specialist result; never compare against an expected battle value.
+    const activation=ag[0]?.support>=2?ag[0].center:(A[0]??null);
+    const damage=dg[0]?.support>=2?dg[0].center:(D[0]??null);
+    return {activation:(activation>=1&&activation<=20)?activation:null,damage:(damage>=0&&damage<=999999)?damage:null,evidence:{A,D,ag,dg}};
+  }
+
+  v180ExtractCombatObjects=async function(full,url,kind){
+    if(kind!=='enforcer')return await baseExtract(full,url,kind);
+    // Start from locked slot geometry; values are re-read generically from nearest popup.
+    const rows=await baseExtract(full,url,kind);if(rows.length!==5)return rows;
+    let boxes=[];try{boxes=await v180PopupObjects(url,'enforcer')}catch(e){}
+    const used=new Set(),out=[];
+    for(const row of rows){
+      let bi=-1,bd=Infinity;
+      for(let i=0;i<boxes.length;i++){if(used.has(i))continue;const b=boxes[i],d=Math.hypot((+b.cx)-(+row.gx),(+b.cy)-(+row.gy));if(d<bd){bd=d;bi=i}}
+      if(bi<0){out.push(row);continue} used.add(bi);
+      const q=await genericPopup(full,url,boxes[bi]);
+      out.push({...row,activation:q.activation??row.activation,damage:q.damage??row.damage,valueEvidence:q.evidence});
+    }
+    window.__TGM_R1816_LAST_NUMERIC=out.map(x=>({slot:x.slot,activation:x.activation,damage:x.damage,evidence:x.valueEvidence}));
+    return out;
+  };
+
+  // Identity remains visual-library based only. Do not infer a name from slot, formation,
+  // player, damage, activation count, or a previous battle result.
+  v175RecoverCombatPage=async function(shot,index,mode){
+    return await baseRecover(shot,index,mode);
+  };
+
+  window.__TGM_R1816_SELFTEST={generic:true,battleSpecificExpectedValues:false,playerFingerprints:false,enforcerSlotNameHardcodes:false,damageHardcodes:false,activationHardcodes:false,slotGeometry:'R18.13 locked',attacker:'front-bottom',defender:'front-top'};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.16 · Generic Enforcer Engine';document.title='TGM Battle Intelligence v19.1R18.16'}catch(e){}
 })();
 </script>
 
