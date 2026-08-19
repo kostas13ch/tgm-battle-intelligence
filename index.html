@@ -7276,5 +7276,99 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.14: ENFORCER ACCURACY + PORTRAIT IDENTITY ONLY =====
+   Locked: formation/slot geometry, troops, stats, counters, Super Weapons.
+   - Numeric values: multi-pass SAME-popup OCR + consensus, no cross-popup borrowing.
+   - Portraits: multi-crop visual matching against embedded + learned Enforcer library.
+   - Unknown is preferred to a weak identity guess.
+*/
+(function(){
+  const prevExtract=v180ExtractCombatObjects, prevRecovery=v175RecoverCombatPage;
+  function mode(xs){
+    xs=(xs||[]).map(Number).filter(Number.isFinite); if(!xs.length)return null;
+    const m=new Map(); xs.forEach(x=>m.set(x,(m.get(x)||0)+1));
+    return [...m].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0][0];
+  }
+  function insideInts(full,b){
+    let a=[];try{a=originalBoxInts(full,b)||[]}catch(e){}
+    return a.filter(z=>Number.isFinite(Number(z.n))).map(z=>({n:Number(z.n),ry:(Number(z.cy)-Number(b.y))/Math.max(1,Number(b.h))}));
+  }
+  async function readPopup(full,url,b){
+    const acts=[],dmgs=[];
+    // Existing strict row centers.
+    try{const c=await v180RowCenters(url,b,2);for(let i=0;i<2;i++){const n=await v180OcrNumberBand(url,b,c[i],i,'enforcer',full);if(i===0&&n>=1&&n<=20)acts.push(+n);if(i===1&&n>=0&&n<=500000)dmgs.push(+n)}}catch(e){}
+    // Whole popup reader.
+    try{const q=await v81ReadPopup(url,b,'enforcer');if(q?.activation>=1&&q.activation<=20)acts.push(+q.activation);if(Number.isFinite(+q?.damage)&&+q.damage>=0&&+q.damage<=500000)dmgs.push(+q.damage)}catch(e){}
+    // Focused rows, with two slightly different bands to survive bubble/arrow overlap.
+    for(const [a0,a1,d0,d1] of [[.03,.45,.37,.90],[.08,.48,.43,.94]]){
+      try{const n=await v81FocusedNumber(url,b,a0,a1);if(n>=1&&n<=20)acts.push(+n)}catch(e){}
+      try{const n=await v81FocusedNumber(url,b,d0,d1);if(Number.isFinite(+n)&&+n>=0&&+n<=500000)dmgs.push(+n)}catch(e){}
+    }
+    // Full-page OCR evidence physically inside this popup only.
+    const ints=insideInts(full,b);
+    ints.filter(z=>z.ry<.50&&z.n>=1&&z.n<=20).forEach(z=>acts.push(z.n));
+    ints.filter(z=>z.ry>.30&&(z.n===0||z.n>=100)&&z.n<=500000).forEach(z=>dmgs.push(z.n));
+    const activation=mode(acts);
+    let damage=mode(dmgs);
+    // Require evidence for suspiciously large one-off values; otherwise leave blank.
+    if(damage>250000 && dmgs.filter(x=>x===damage).length<2)damage=null;
+    return {activation:(activation>=1&&activation<=20)?activation:null,damage:Number.isFinite(damage)?damage:null,evidence:{acts,dmgs}};
+  }
+  v180ExtractCombatObjects=async function(full,url,kind){
+    if(kind!=='enforcer')return await prevExtract(full,url,kind);
+    const base=await prevExtract(full,url,kind); if(base.length!==5)return base;
+    const out=[];
+    for(const row of base){
+      // Recover the exact popup nearest the stored popup center, preserving R18.13 slot geometry.
+      let boxes=[];try{boxes=await v180PopupObjects(url,'enforcer')}catch(e){}
+      const b=boxes.sort((x,y)=>Math.hypot(x.cx-row.gx,x.cy-row.gy)-Math.hypot(y.cx-row.gx,y.cy-row.gy))[0];
+      const q=b?await readPopup(full,url,b):{activation:row.activation,damage:row.damage,evidence:{}};
+      out.push({...row,activation:q.activation??row.activation,damage:q.damage??row.damage,valueEvidence:q.evidence});
+    }
+    window.__TGM_R1814_LAST_NUMERIC=out.map(x=>({slot:x.slot,activation:x.activation,damage:x.damage,evidence:x.valueEvidence}));
+    return out;
+  };
+
+  async function identifyBetter(url,count=5){
+    const im=await loadDataUrlImage(url),C=document.createElement('canvas');C.width=im.naturalWidth||im.width;C.height=im.naturalHeight||im.height;
+    const ctx=C.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0,C.width,C.height);
+    const cards=await v127CombatCardCenters(url,'enforcer',count);
+    let lib={...V127_COMBAT_ENFORCER_REFS};
+    try{const learned=learnedVisualRefs('enforcer');for(const [name,urls] of Object.entries(learned||{}))(urls||[]).forEach((u,j)=>lib[`${name}@@learn${j}`]=u)}catch(e){}
+    const out=[];
+    for(const card of cards.slice(0,count)){
+      const votes=[];
+      for(const size of [86,96,106,116]){
+        const x=Math.max(0,card.cx-size/2),y=Math.max(0,card.cy-size/2),w=Math.min(size,C.width-x),h=Math.min(size,C.height-y);
+        const f=visualFeatureFromCanvas(ctx,x,y,w,h),m=await v127GroupedVisualMatch(f,lib,.60,.08);
+        if(m?.name)votes.push({name:v126CanonicalEnforcerName(m.name),score:+m.score||0,margin:+m.margin||0});
+      }
+      const groups={};for(const v of votes)(groups[v.name]||(groups[v.name]=[])).push(v);
+      let best=null;for(const [name,vs] of Object.entries(groups)){const score=vs.reduce((s,v)=>s+v.score,0)/vs.length,margin=vs.reduce((s,v)=>s+v.margin,0)/vs.length;const cand={name,agree:vs.length,score,margin};if(!best||cand.agree>best.agree||(cand.agree===best.agree&&cand.score>best.score))best=cand}
+      // Two independent crop scales must agree; stronger evidence is required for only two votes.
+      const ok=best && ((best.agree>=3&&best.score>=.64&&best.margin>=.08)||(best.agree>=2&&best.score>=.72&&best.margin>=.11));
+      out.push({name:ok?best.name:'',score:ok?best.score:0,margin:ok?best.margin:0,cx:card.cx,cy:card.cy,votes});
+    }
+    return out;
+  }
+  function sync(side,ids){
+    const rows=currentEnforcerReview?.[side]||[];if(rows.length!==5||ids.length!==5)return;
+    const unused=new Set(ids.map((_,i)=>i));
+    for(const row of rows){let bi=-1,bd=Infinity;for(const i of unused){const q=ids[i],d=Math.hypot((+row.cardX||0)-(+q.cx||0),(+row.cardY||0)-(+q.cy||0));if(d<bd){bd=d;bi=i}}if(bi<0)continue;unused.delete(bi);const q=ids[bi];row.enforcer=q.name||'';row.visualConfidence=q.score||0;row.visualMargin=q.margin||0}
+    const slotId=side==='att'?'attEnforcerSlots':'defEnforcerSlots',nameId=side==='att'?'attackerEnforcers':'defenderEnforcers';
+    if($(slotId))$(slotId).value=v180SlotText(rows,'enforcer');if($(nameId))$(nameId).value=[...new Set(rows.map(x=>x.enforcer).filter(Boolean))].join(', ');try{renderEnforcerReview()}catch(e){}
+  }
+  v175RecoverCombatPage=async function(shot,index,mode){
+    const ok=await prevRecovery(shot,index,mode);if(mode!=='enforcer'||!ok)return ok;
+    try{const side=shot?.side==='Defender'?'def':'att',ids=await identifyBetter(shot.dataUrl,5);window.__TGM_R1814_LAST_VISUAL=window.__TGM_R1814_LAST_VISUAL||{};window.__TGM_R1814_LAST_VISUAL[side]=ids;sync(side,ids)}catch(e){console.warn('R18.14 portrait consensus',e)}
+    return ok;
+  };
+  window.__TGM_R1814_SELFTEST={scope:'Enforcer values + names only',slotGeometryUntouched:true,numeric:'same-popup multi-pass consensus',portrait:'4 crop scales + consensus',unknownFallback:true,troopsUntouched:true,formationsUntouched:true,countersUntouched:true,weaponsUntouched:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.14 · Enforcer Accuracy + Portrait Consensus';document.title='TGM Battle Intelligence v19.1R18.14'}catch(e){}
+})();
+</script>
+
 </body>
 </html>
