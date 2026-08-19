@@ -6669,5 +6669,199 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.8: ROW IDENTITY + SIDE-EXPLICIT FORMATION + VALUE GUARD =====
+   Fixes R18.7 regression without report-specific constants.
+   1) One physical Battle Details row may contribute exactly once. Classification updates metadata;
+      it never creates a second quantity.
+   2) Final troop totals are rebuilt from canonical rows only, which also neutralizes the older
+      R18.5 visual mercenary add-on when the same mercenary row is already present in review.
+   3) Formation evidence is side-explicit first. Single-side Enforcer/formation screens outrank
+      generic spatial guesses. Overview spatial cells are accepted only from Overview screenshots.
+   4) Suspicious core-stat OCR values are invalidated only by a generic pair-consistency guard and
+      then re-read from the anchored row. No player/report numeric constants.
+*/
+(function(){
+  function r188Num(v){const n=Number(v);return Number.isFinite(n)?n:0}
+  function r188RowSignature(r){
+    // Combat numbers identify a physical troop row across classifier passes. cy is intentionally
+    // omitted because OCR geometry can shift a few pixels between passes.
+    return [r188Num(r?.total),r188Num(r?.kills),r188Num(r?.losses)].join('|');
+  }
+  function r188CanonicalRows(rows){
+    const out=[],bySig=new Map();
+    for(const raw of (rows||[])){
+      if(!raw)continue;
+      const r={...raw},sig=r188RowSignature(r);
+      if(sig==='0|0|0')continue;
+      if(!bySig.has(sig)){
+        const x={...r,rowUid:'combat:'+sig};out.push(x);bySig.set(sig,x);continue;
+      }
+      const x=bySig.get(sig);
+      // Same physical row seen again: keep the strongest metadata, NEVER sum it again.
+      const rc=Number(r.confidence||0),xc=Number(x.confidence||0);
+      if((!x.type||x.type==='Unknown')&&r.type&&r.type!=='Unknown')x.type=r.type;
+      else if(r.type&&r.type!=='Unknown'&&rc>xc+.08)x.type=r.type;
+      if(r.isMercenary===true)x.isMercenary=true;
+      if(!x.tier&&r.tier)x.tier=r.tier;
+      x.confidence=Math.max(xc,rc);
+      if(!x.sourceText&&r.sourceText)x.sourceText=r.sourceText;
+    }
+    return out.map((r,i)=>({...r,id:i}));
+  }
+  // Replace the legacy merge key: classification changes are updates to a row, not new rows.
+  v143MergeTroopRows=function(oldRows,newRows){return r188CanonicalRows([...(oldRows||[]),...(newRows||[])])};
+
+  function r188NormalizeReview(){
+    for(const side of ['att','def']){
+      if(!currentTroopReview?.[side])continue;
+      currentTroopReview[side].rows=r188CanonicalRows(currentTroopReview[side].rows||[]);
+    }
+  }
+  function r188WriteCanonicalTotals(){
+    r188NormalizeReview();
+    for(const [side,prefix] of [['att','att'],['def','def']]){
+      const rows=currentTroopReview?.[side]?.rows||[];
+      if(!rows.length)continue; // never erase a valid OCR baseline when review has no rows
+      const totals=rowTroopTotals(rows);
+      for(const type of ['Bruiser','Hitman','Biker'])writeTroopType(prefix,type,totals[type]);
+    }
+    renderTroopReview();preview();renderCompleteness();
+  }
+  applyTroopReview=function(){
+    r188WriteCanonicalTotals();
+    const unresolved=['att','def'].reduce((n,side)=>n+(currentTroopReview?.[side]?.rows||[])
+      .filter(r=>!r.type||r.type==='Unknown'||(!r.isMercenary&&![1,2,3,4,5].includes(Number(r.tier)))).length,0);
+    if($('formMessage'))$('formMessage').textContent=unresolved
+      ?`Απομένουν ${unresolved} μοναδικές troop rows χωρίς ασφαλές Class/Type/Tier.`
+      :'Όλες οι μοναδικές troop rows καταμετρήθηκαν ακριβώς μία φορά.';
+  };
+  if($('applyTroopReviewBtn'))$('applyTroopReviewBtn').onclick=()=>{applyTroopReview();renderTroopReview()};
+
+  function r188NormForm(s){
+    s=String(s||'').replace(/[|]/g,' ').replace(/[—–_]+/g,'-').replace(/\s+/g,' ').trim();
+    const u=/bruis/i.test(s)?'Bruiser':/hitm/i.test(s)?'Hitman':/bik/i.test(s)?'Biker':'';
+    const sh=/wedg/i.test(s)?'Wedge':/(squar|squer|sqvar|squere|sauere)/i.test(s)?'Square':'';
+    return u&&sh?u+' '+sh:'';
+  }
+  function r188FormsInText(t){
+    const s=String(t||''),out=[];
+    const re=/(Bruiser|Hitman|Biker)\s*[-–_]?\s*(Square|Wedge)/ig;let m;
+    while((m=re.exec(s)))out.push(r188NormForm(m[0]));
+    return [...new Set(out.filter(Boolean))];
+  }
+  function r188WeightedPick(votes){
+    const score={};for(const v of votes||[])if(v?.form)score[v.form]=(score[v.form]||0)+Number(v.weight||1);
+    const a=Object.entries(score).sort((x,y)=>y[1]-x[1]);
+    if(!a.length)return '';if(a[1]&&a[0][1]===a[1][1])return '';
+    return a[0][0];
+  }
+  async function r188OcrShotText(shot){
+    if(!shot?.dataUrl)return '';
+    if(shot.__r188Text!==undefined)return shot.__r188Text;
+    try{const r=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});return shot.__r188Text=String(r?.data?.text||'')}catch(e){return shot.__r188Text=''}
+  }
+  async function r188OverviewCells(shot){
+    // Reuse the proven R18.6 geometry only on a screenshot explicitly classified Overview.
+    if(shot?.reportType!=='Overview'||!shot?.dataUrl)return {att:'',def:''};
+    let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){return {att:'',def:''}}
+    const words=rr?.data?.words||[],a=words.find(w=>/formation/i.test(String(w?.text||''))&&w?.bbox);if(!a)return {att:'',def:''};
+    const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width,H=im.naturalHeight||im.height,cy=(a.bbox.y0+a.bbox.y1)/2;
+    const hh=Math.max(34,H*.030),y=Math.max(0,cy-hh),h=Math.min(H-y,hh*2),out={att:'',def:''};
+    for(const [side,x,w] of [['att',0,W*.43],['def',W*.57,W*.43]]){
+      let crop='';try{crop=await cropDataUrl(shot.dataUrl,x,y,w,h)}catch(e){continue}
+      const texts=[];for(const psm of [6,7,11,13]){try{const z=await Tesseract.recognize(crop,'eng',{tessedit_pageseg_mode:String(psm)});texts.push(String(z?.data?.text||''))}catch(e){}}
+      const fs=texts.flatMap(r188FormsInText);if(fs.length){const c={};fs.forEach(f=>c[f]=(c[f]||0)+1);out[side]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0][0]}
+    }
+    return out;
+  }
+  async function r188RecoverFormations(){
+    const votes={att:[],def:[]};
+    for(const shot of (currentScreenshots||[])){
+      const text=await r188OcrShotText(shot),forms=r188FormsInText(text),hasA=/\battacker\b/i.test(text),hasD=/\bdefender\b/i.test(text);
+      // Single-side combat screen: explicit side + exactly one formation is strongest evidence.
+      if(forms.length===1&&hasA&&!hasD)votes.att.push({form:forms[0],weight:6,source:'side-explicit'});
+      if(forms.length===1&&hasD&&!hasA)votes.def.push({form:forms[0],weight:6,source:'side-explicit'});
+      const ov=await r188OverviewCells(shot);if(ov.att)votes.att.push({form:ov.att,weight:4,source:'overview'});if(ov.def)votes.def.push({form:ov.def,weight:4,source:'overview'});
+    }
+    const af=r188WeightedPick(votes.att),df=r188WeightedPick(votes.def);
+    if(af&&$('attackerFormation')){$('attackerFormation').value=af;$('attackerFormation').dataset.r188Source='side-explicit/overview';}
+    if(df&&$('defenderFormation')){$('defenderFormation').value=df;$('defenderFormation').dataset.r188Source='side-explicit/overview';}
+    window.__TGM_R188_FORM_VOTES=votes;return {att:af,def:df};
+  }
+
+  function r188PairGuard(aid,did){
+    const a=$(aid),d=$(did);if(!a||!d)return;
+    const av=Number(a.value),dv=Number(d.value);
+    if(Number.isFinite(av)&&Number.isFinite(dv)){
+      // Generic OCR-corruption signature: one side lost decimal digits while its paired stat is normal.
+      if(av>0&&av<50&&dv>150)a.value='';
+      if(dv>0&&dv<50&&av>150)d.value='';
+    }
+  }
+  function r188InvalidateSuspiciousCore(){
+    for(const k of ['CrewAtk','CrewDef','CrewHp','BruiserAtk','HitmanAtk','BikerAtk','BruiserDef','HitmanDef','BikerDef','BruiserHp','HitmanHp','BikerHp'])r188PairGuard('att'+k,'def'+k);
+  }
+
+  function r188PercentWord(w){
+    const raw=String(w?.text||'').replace(/,/g,'.').replace(/[^0-9.+%-]/g,'');
+    const m=raw.match(/([0-9]{1,4}(?:\.[0-9]+)?)/);if(!m)return null;
+    const n=Number(m[1]);return Number.isFinite(n)&&n>=0&&n<=2500?n:null;
+  }
+  async function r188RecoverEmptyCoreFromWords(){
+    const defs=[
+      ['Crew ATK','attCrewAtk','defCrewAtk'],['Crew DEF','attCrewDef','defCrewDef'],['Crew HP','attCrewHp','defCrewHp'],
+      ['Bruiser ATK','attBruiserAtk','defBruiserAtk'],['Hitman ATK','attHitmanAtk','defHitmanAtk'],['Biker ATK','attBikerAtk','defBikerAtk'],
+      ['Bruiser DEF','attBruiserDef','defBruiserDef'],['Hitman DEF','attHitmanDef','defHitmanDef'],['Biker DEF','attBikerDef','defBikerDef'],
+      ['Bruiser HP','attBruiserHp','defBruiserHp'],['Hitman HP','attHitmanHp','defHitmanHp'],['Biker HP','attBikerHp','defBikerHp']
+    ];
+    let fixed=0;
+    for(const shot of (currentScreenshots||[])){
+      if(shot?.reportType!=='Buff Comparison'||!shot?.dataUrl)continue;
+      let rr=null;try{rr=await Tesseract.recognize(shot.dataUrl,'eng',{tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'})}catch(e){continue}
+      const words=rr?.data?.words||[];if(!words.length)continue;
+      const im=await loadDataUrlImage(shot.dataUrl),W=im.naturalWidth||im.width;
+      const rows=rowsFromWords(words);
+      for(const [label,aid,did] of defs){
+        if(String($(aid)?.value||'').trim()&&String($(did)?.value||'').trim())continue;
+        const re=new RegExp('\\b'+label.replace(' ','\\s+')+'\\b','i');
+        const row=rows.find(r=>re.test((r.words||[]).map(w=>w.text).join(' ')));if(!row)continue;
+        const cy=row.cy,tol=Math.max(18,W*.018);
+        const candidates=words.map(w=>{const cx=((w.bbox?.x0||0)+(w.bbox?.x1||0))/2,wy=((w.bbox?.y0||0)+(w.bbox?.y1||0))/2;return {w,cx,wy,n:r188PercentWord(w)}})
+          .filter(x=>x.n!==null&&Math.abs(x.wy-cy)<=tol);
+        const left=candidates.filter(x=>x.cx<W*.34).sort((a,b)=>Math.abs(a.wy-cy)-Math.abs(b.wy-cy)||b.cx-a.cx)[0];
+        const right=candidates.filter(x=>x.cx>W*.66).sort((a,b)=>Math.abs(a.wy-cy)-Math.abs(b.wy-cy)||a.cx-b.cx)[0];
+        if(!String($(aid)?.value||'').trim()&&left){$(aid).value=left.n;fixed++;}
+        if(!String($(did)?.value||'').trim()&&right){$(did).value=right.n;fixed++;}
+      }
+    }
+    return fixed;
+  }
+
+  const r188BaseRun=runOcrImport;
+  runOcrImport=async function(){
+    const out=await r188BaseRun();
+    // R18.5 may have added a mercenary row for a second time after R18.7 had already aggregated it.
+    // Rebuild from unique physical rows as the final authority.
+    r188WriteCanonicalTotals();
+    await r188RecoverFormations();
+    r188InvalidateSuspiciousCore();
+    await r188RecoverEmptyCoreFromWords();
+    if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();
+    preview();renderCompleteness();return out;
+  };
+  if($('runOcrBtn'))$('runOcrBtn').onclick=runOcrImport;
+
+  const r188BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){const out=r188BaseApply(auto);r188WriteCanonicalTotals();r188InvalidateSuspiciousCore();if(typeof r17WinnerFromLosses==='function')r17WinnerFromLosses();preview();return out};
+  if($('applyOcrBtn'))$('applyOcrBtn').onclick=async()=>{applyOcrSuggestions(false);await r188RecoverFormations();r188InvalidateSuspiciousCore();await r188RecoverEmptyCoreFromWords();preview();renderCompleteness();};
+
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.8 · Unique Rows + Side-Explicit Formation Guard';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.8';}catch(e){}
+  window.__TGM_R188_SELFTEST={uniquePhysicalRows:true,rowIdentity:'total|kills|losses',doubleMercenaryWriteBlocked:true,formationPriority:'side-explicit > overview only',genericCorePairGuard:true,reportSpecificConstants:false,winnerRule:'fewer losses'};
+})();
+</script>
+
 </body>
 </html>
