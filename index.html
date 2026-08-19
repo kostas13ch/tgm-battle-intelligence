@@ -7135,5 +7135,146 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.13: FORMATION-LATTICE ENFORCERS + COORDINATE ID SYNC =====
+   Enforcers only.
+   - Geometry is selected by the recognized formation family (Square/Wedge).
+   - Attacker front is bottom; Defender front is top.
+   - Portrait identity is attached by CARD COORDINATE, never by array index.
+   - If portrait detection is incomplete, five real popups can still be read safely.
+   - Troops, stats, counters and Super Weapons are untouched.
+*/
+(function(){
+  const r1813PrevExtract=v180ExtractCombatObjects;
+  const r1813PrevRecovery=v175RecoverCombatPage;
+
+  function r1813NormForm(v){
+    v=String(v||'').toLowerCase();
+    const t=/bruis/.test(v)?'bruiser':/hitm/.test(v)?'hitman':/bik/.test(v)?'biker':'';
+    const sh=/wedg/.test(v)?'wedge':/squ/.test(v)?'square':'';
+    return t&&sh?t+'-'+sh:'';
+  }
+  function r1813Formation(full,side){
+    const ids=side==='att'?['attackerFormation','attFormation']:['defenderFormation','defFormation'];
+    for(const id of ids){const e=document.getElementById(id),f=r1813NormForm(e?.value);if(f)return f}
+    const txt=String(full?.data?.text||'');
+    return r1813NormForm(txt);
+  }
+  async function r1813Side(dataUrl,boxes,full){
+    const txt=String(full?.data?.text||'').toLowerCase();
+    const hasA=/attacker\s*\[?our side\]?/.test(txt),hasD=/\bdefender\b/.test(txt);
+    if(hasA&&!hasD)return'att'; if(hasD&&!hasA)return'def';
+    try{
+      const im=await loadDataUrlImage(dataUrl),c=document.createElement('canvas');
+      c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+      const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);
+      let r=0,b=0,n=0;
+      for(const q of (boxes||[]))for(const [sx,sy] of [[q.x-q.w*.15,q.cy],[q.x+q.w*1.15,q.cy]]){
+        const xx=Math.max(0,Math.min(c.width-1,Math.round(sx))),yy=Math.max(0,Math.min(c.height-1,Math.round(sy)));
+        const d=x.getImageData(xx,yy,1,1).data;r+=d[0];b+=d[2];n++;
+      }
+      if(n&&r>b*1.15)return'def'; if(n&&b>r*1.05)return'att';
+    }catch(e){}
+    return'att';
+  }
+  function r1813PairAnchor(p){
+    return {cx:Number(p?.card?.cx??p?.popup?.cx??0),cy:Number(p?.card?.cy??p?.popup?.cy??0),h:Number(p?.card?.h??p?.popup?.h??100)};
+  }
+  function r1813FormationOrder(pairs,side,formation){
+    const a=(pairs||[]).slice(); if(a.length!==5)return a;
+    const shape=String(formation||'').includes('wedge')?'wedge':'square';
+    const anchors=a.map((p,i)=>({...r1813PairAnchor(p),p,i}));
+    const hs=anchors.map(z=>z.h||100).sort((x,y)=>x-y),medH=hs[2]||100;
+    // Wedge rows spread a little more diagonally; Square rows are tighter horizontal bands.
+    const tol=medH*(shape==='wedge'?.68:.52), rows=[];
+    for(const z of anchors.sort((u,v)=>u.cy-v.cy||u.cx-v.cx)){
+      let row=rows.find(r=>Math.abs(z.cy-r.cy)<=tol);
+      if(!row){row={cy:z.cy,items:[]};rows.push(row)}
+      row.items.push(z);row.cy=row.items.reduce((s,q)=>s+q.cy,0)/row.items.length;
+    }
+    rows.sort((u,v)=>side==='att'?v.cy-u.cy:u.cy-v.cy);
+    const ordered=[];
+    for(const row of rows){
+      // Same combat line: preserve physical left->right order. Slot identity is now tied to
+      // the formation line + position, not to detector return order.
+      row.items.sort((u,v)=>u.cx-v.cx).forEach(z=>ordered.push(z.p));
+    }
+    return ordered.length===5?ordered:a;
+  }
+  async function r1813ReadPopup(full,dataUrl,b){
+    const centers=await v180RowCenters(dataUrl,b,2),vals=[];
+    for(let i=0;i<2;i++)vals.push(await v180OcrNumberBand(dataUrl,b,centers[i],i,'enforcer',full));
+    let activation=Number(vals[0]),damage=Number(vals[1]);
+    if(!Number.isInteger(activation)||activation<0||activation>20)activation=null;
+    if(!Number.isFinite(damage)||damage<0||damage>500000)damage=null;
+    return{activation,damage};
+  }
+  v180ExtractCombatObjects=async function(full,dataUrl,mode){
+    if(mode!=='enforcer')return await r1813PrevExtract(full,dataUrl,mode);
+    let boxes=[];try{boxes=await v180PopupObjects(dataUrl,'enforcer')}catch(e){}
+    if(boxes.length!==5)return[];
+    let cards=[];try{cards=await v127CombatCardCenters(dataUrl,'enforcer',5)}catch(e){}
+    const side=await r1813Side(dataUrl,boxes,full),formation=r1813Formation(full,side);
+    let pairs=v180PairPopupCards(boxes,cards||[]);
+    // v180PairPopupCards keeps all popups even when fewer than five portraits are found.
+    pairs=r1813FormationOrder(pairs,side,formation);
+    if(pairs.length!==5)return[];
+    const out=[];
+    for(let i=0;i<5;i++){
+      const p=pairs[i],q=await r1813ReadPopup(full,dataUrl,p.popup);
+      out.push({slot:i+1,activation:q.activation,damage:q.damage,enforcer:'',gx:p.popup.cx,gy:p.popup.cy,
+        cardX:p.card?.cx??null,cardY:p.card?.cy??null,formation,side});
+    }
+    window.__TGM_R1813_LAST=window.__TGM_R1813_LAST||{};
+    window.__TGM_R1813_LAST[side]={formation,shape:formation.includes('wedge')?'wedge':'square',orientation:side==='att'?'front-bottom':'front-top',rows:out.map(x=>({...x}))};
+    return out;
+  };
+
+  function r1813SyncIdentityByCoordinate(side){
+    const rows=currentEnforcerReview?.[side]||[],ids=window.__TGM_R14_LAST_VISUAL?.[side]||[];
+    if(!rows.length||!ids.length)return false;
+    const unused=new Set(ids.map((_,i)=>i));let changed=false;
+    for(const row of rows){
+      if(!Number.isFinite(Number(row.cardX))||!Number.isFinite(Number(row.cardY)))continue;
+      let best=-1,bd=Infinity;
+      for(const i of unused){const q=ids[i];if(!Number.isFinite(Number(q?.cx))||!Number.isFinite(Number(q?.cy)))continue;
+        const d=Math.hypot(Number(row.cardX)-Number(q.cx),Number(row.cardY)-Number(q.cy));if(d<bd){bd=d;best=i}}
+      if(best<0)continue;unused.delete(best);const q=ids[best];
+      row.enforcer=q?.name?v126CanonicalEnforcerName(q.name):'';
+      row.visualConfidence=q?.name?Number(q.score||0):0;row.visualMargin=q?.name?Number(q.margin||0):0;changed=true;
+    }
+    if(changed){
+      const slotId=side==='att'?'attEnforcerSlots':'defEnforcerSlots',nameId=side==='att'?'attackerEnforcers':'defenderEnforcers';
+      if($(slotId))$(slotId).value=v180SlotText(rows,'enforcer');
+      if($(nameId))$(nameId).value=[...new Set(rows.map(x=>x.enforcer).filter(Boolean))].join(', ');
+      try{renderEnforcerReview()}catch(e){}
+    }
+    return changed;
+  }
+
+  v175RecoverCombatPage=async function(shot,index,mode){
+    const ok=await r1813PrevRecovery(shot,index,mode);
+    if(mode==='enforcer'){
+      const side=shot?.side==='Defender'?'def':'att';
+      try{r1813SyncIdentityByCoordinate(side)}catch(e){console.warn('R18.13 coordinate identity sync',e)}
+    }
+    return ok;
+  };
+
+  // Also resync after OCR suggestions, because older R14 index-based commits can run later.
+  const r1813BaseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=r1813BaseApply(auto);
+    try{r1813SyncIdentityByCoordinate('att');r1813SyncIdentityByCoordinate('def')}catch(e){}
+    return out;
+  };
+  if($('applyOcrBtn'))$('applyOcrBtn').onclick=()=>applyOcrSuggestions(false);
+
+  window.__TGM_R1813_SELFTEST={scope:'Enforcers only',formationLayouts:{'bruiser-square':'square','hitman-square':'square','biker-square':'square','bruiser-wedge':'wedge','hitman-wedge':'wedge','biker-wedge':'wedge'},attacker:'front-bottom',defender:'front-top',identityBinding:'nearest card coordinate',popupFallbackWhenPortraitMissing:true,troopsUntouched:true,statsUntouched:true,countersUntouched:true,weaponsUntouched:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.13 · Formation Lattice + Enforcer Coordinate Sync';document.title='TGM Battle Intelligence v19.1R18.13'}catch(e){}
+})();
+</script>
+
 </body>
 </html>
