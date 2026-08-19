@@ -7072,5 +7072,68 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.12: ENFORCER FIELD-TEMPLATE MAPPER =====
+   Enforcers only. Real TGM geometry rules supplied by the user:
+   attacker front is at the BOTTOM, defender front is at the TOP.
+   Side is detected from the panel itself (blue/red), not from absolute page half.
+   Numeric values are read only from each popup's own two rows.
+*/
+(function(){
+  const r1812WeaponBase=v180ExtractCombatObjects;
+  function r1812NormForm(v){v=String(v||'').toLowerCase();for(const t of ['bruiser','hitman','biker'])for(const sh of ['square','wedge'])if(v.includes(t)&&v.includes(sh))return t+'-'+sh;return ''}
+  function r1812FormFromText(full,side){
+    const txt=String(full?.data?.text||''); const n=r1812NormForm(txt); if(n)return n;
+    const ids=side==='att'?['attFormation','attackerFormation']:['defFormation','defenderFormation'];
+    for(const id of ids){const e=document.getElementById(id);const x=r1812NormForm(e?.value);if(x)return x} return '';
+  }
+  async function r1812SideFromPanel(dataUrl,boxes,full){
+    const txt=String(full?.data?.text||'').toLowerCase();
+    if(/attacker\s*\[?our side\]?/.test(txt)&&!/^\s*defender/m.test(txt))return'att';
+    if(/\bdefender\b/.test(txt)&&!/attacker\s*\[?our side\]?/.test(txt))return'def';
+    try{
+      const im=await loadDataUrlImage(dataUrl),c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+      const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);let R=0,B=0,N=0;
+      for(const b of boxes){for(const [sx,sy] of [[b.x-b.w*.18,b.cy],[b.x+b.w*1.18,b.cy]]){const xx=Math.max(0,Math.min(c.width-1,Math.round(sx))),yy=Math.max(0,Math.min(c.height-1,Math.round(sy)));const d=x.getImageData(xx,yy,1,1).data;R+=d[0];B+=d[2];N++}}
+      if(N)return R>B*1.18?'def':'att';
+    }catch(e){}
+    return'att';
+  }
+  function r1812DepthOrder(cards,side){
+    const a=(cards||[]).slice().filter(Boolean);if(a.length!==5)return a;
+    const medH=Math.max(45,Math.min(180,a.map(z=>z.h||100).sort((x,y)=>x-y)[2]||100));
+    const rows=[];
+    for(const c of a.sort((x,y)=>(+x.cy)-(+y.cy)||(+x.cx)-(+y.cx))){
+      let r=rows.find(q=>Math.abs((+c.cy)-q.cy)<=medH*.52);if(!r){r={cy:+c.cy,items:[]};rows.push(r)}
+      r.items.push(c);r.cy=r.items.reduce((s,z)=>s+(+z.cy),0)/r.items.length;
+    }
+    rows.sort((x,y)=>side==='att'?y.cy-x.cy:x.cy-y.cy);
+    return rows.flatMap(r=>r.items.sort((x,y)=>(+x.cx)-(+y.cx)));
+  }
+  async function r1812ReadPopup(full,dataUrl,b){
+    const centers=await v180RowCenters(dataUrl,b,2), vals=[];
+    for(let i=0;i<2;i++)vals.push(await v180OcrNumberBand(dataUrl,b,centers[i],i,'enforcer',full));
+    let activation=Number(vals[0]),damage=Number(vals[1]);
+    if(!Number.isInteger(activation)||activation<1||activation>20)activation=null;
+    if(!Number.isFinite(damage)||damage<0||damage>500000)damage=null;
+    return{activation,damage};
+  }
+  v180ExtractCombatObjects=async function(full,dataUrl,mode){
+    if(mode!=='enforcer')return await r1812WeaponBase(full,dataUrl,mode);
+    let boxes=[];try{boxes=await v180PopupObjects(dataUrl,'enforcer')}catch(e){};if(boxes.length!==5)return[];
+    let cards=[];try{cards=await v127CombatCardCenters(dataUrl,'enforcer',5)}catch(e){};if(cards.length!==5)return[];
+    const side=await r1812SideFromPanel(dataUrl,boxes,full),formation=r1812FormFromText(full,side);
+    const ordered=r1812DepthOrder(cards,side);let raw=v180PairPopupCards(boxes,cards);
+    const pairs=ordered.map(c=>raw.find(p=>p.card===c)).filter(Boolean);if(pairs.length!==5)return[];
+    const out=[];for(let i=0;i<5;i++){const p=pairs[i],q=await r1812ReadPopup(full,dataUrl,p.popup);out.push({slot:i+1,activation:q.activation,damage:q.damage,enforcer:'',gx:p.popup.cx,gy:p.popup.cy,cardX:p.card.cx,cardY:p.card.cy})}
+    window.__TGM_R1812_LAST={side,formation,orientation:side==='att'?'front-bottom':'front-top',rows:out.map(x=>({slot:x.slot,cardX:x.cardX,cardY:x.cardY,activation:x.activation,damage:x.damage}))};return out;
+  };
+  // Save weapon extractor before this patch; weapons are intentionally untouched.
+  window.__TGM_R1812_SELFTEST={scope:'Enforcers only',sideDetection:'panel color/text',attacker:'front-bottom',defender:'front-top',values:'same-popup rows only',damageGuard:500000,troopsUntouched:true,formationsUntouched:true,countersUntouched:true,weaponsUntouched:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.12 · Enforcer Field Templates';document.title='TGM Battle Intelligence v19.1R18.12'}catch(e){}
+})();
+</script>
+
 </body>
 </html>
