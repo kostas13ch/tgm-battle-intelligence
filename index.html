@@ -7017,5 +7017,60 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+<script>
+/* ===== v19.1R18.11: FORMATION-AWARE ENFORCER ORIENTATION =====
+   Attacker front = bottom; Defender front = top.
+   Uses the already-recognized formation as context. No troop/stat/weapon writes.
+*/
+(function(){
+  function normForm(v){v=String(v||'').toLowerCase();for(const t of ['bruiser','hitman','biker'])for(const sh of ['square','wedge'])if(v.includes(t)&&v.includes(sh))return t+'-'+sh;return ''}
+  function formFor(side){
+    const ids=side==='att'?['attFormation','attackerFormation']:['defFormation','defenderFormation'];
+    for(const id of ids){const e=document.getElementById(id);const n=normForm(e?.value);if(n)return n}
+    return '';
+  }
+  // Cluster five portrait centers into visual depth bands, then traverse battlefield depth.
+  // Attacker: front is bottom => y descending. Defender: front is top => y ascending.
+  function depthOrder(cards,side,formation){
+    const a=(cards||[]).slice().filter(Boolean); if(a.length!==5)return a;
+    const ys=a.map(x=>+x.cy||0).sort((a,b)=>a-b), gaps=[];for(let i=1;i<ys.length;i++)gaps.push(ys[i]-ys[i-1]);
+    const pg=gaps.filter(x=>x>8).sort((a,b)=>a-b), med=pg.length?pg[Math.floor(pg.length/2)]:90;
+    const tol=Math.max(28,Math.min(80,med*.42)), rows=[];
+    for(const c of a.slice().sort((x,y)=>(+x.cy)-(+y.cy))){let r=rows.find(z=>Math.abs((+c.cy)-z.cy)<=tol);if(!r){r={cy:+c.cy,items:[]};rows.push(r)}r.items.push(c);r.cy=r.items.reduce((q,z)=>q+(+z.cy),0)/r.items.length}
+    rows.sort((x,y)=>side==='att'?y.cy-x.cy:x.cy-y.cy);
+    // Within a depth line preserve screen-left -> screen-right. Formation is retained in diagnostics
+    // because square/wedge have different depth-band geometry, but no fixed pixels are assumed.
+    return rows.flatMap(r=>r.items.sort((x,y)=>(+x.cx)-(+y.cx)));
+  }
+  const base=v127CombatCardCenters;
+  v127CombatCardCenters=async function(url,mode,count=5){
+    const c=await base(url,mode,count); if(mode!=='enforcer'||c?.length!==5)return c;
+    // Side is resolved later when pairing; keep raw centers here to avoid destructive global ordering.
+    return c.slice();
+  };
+  const extractBase=v180ExtractCombatObjects;
+  v180ExtractCombatObjects=async function(full,dataUrl,mode){
+    if(mode!=='enforcer')return await extractBase(full,dataUrl,mode);
+    let boxes=[];try{boxes=await v180PopupObjects(dataUrl,'enforcer')}catch(e){} if(boxes.length!==5)return[];
+    let cards=[];try{cards=await v127CombatCardCenters(dataUrl,'enforcer',5)}catch(e){}; if(cards.length!==5)return[];
+    // infer side from popup field: top half is attacker in the game's combined Enforcer screen, bottom half defender.
+    const H=(await loadDataUrlImage(dataUrl)).naturalHeight||1; const avg=boxes.reduce((q,b)=>q+(+b.cy||0),0)/boxes.length;
+    const side=avg < H*.56 ? 'att':'def', formation=formFor(side);
+    const ordered=depthOrder(cards,side,formation); let pairs=v180PairPopupCards(boxes,ordered);
+    // pair by portrait identity, then emit in formation/orientation-aware portrait order
+    pairs=ordered.map(c=>pairs.find(p=>p.card===c)).filter(Boolean);
+    const out=[];
+    for(let i=0;i<pairs.length;i++){const p=pairs[i];let q={activation:null,damage:null,evidence:{}};try{q=await r1810ReadPopup(full,dataUrl,p.popup)}catch(e){}
+      // Strong guard against digit concatenation / neighboring-value capture.
+      let d=Number(q.damage);if(!Number.isFinite(d)||d<0||d>500000)d=null;let a=Number(q.activation);if(!Number.isInteger(a)||a<1||a>20)a=null;
+      out.push({slot:i+1,activation:a,damage:d,enforcer:'',gx:p.popup.cx,gy:p.popup.cy,cardX:p.card?.cx??null,cardY:p.card?.cy??null,valueEvidence:q.evidence||{}})}
+    window.__TGM_R1811_LAST={side,formation,orientation:side==='att'?'front-bottom':'front-top',rows:out.map(x=>({slot:x.slot,cardX:x.cardX,cardY:x.cardY,activation:x.activation,damage:x.damage}))};
+    return out;
+  };
+  window.__TGM_R1811_SELFTEST={scope:'Enforcers only',formations:['Bruiser Square','Hitman Square','Biker Square','Bruiser Wedge','Hitman Wedge','Biker Wedge'],attackerOrientation:'front-bottom',defenderOrientation:'front-top',fixedPixels:false,troopsUntouched:true,statsUntouched:true,countersUntouched:true,weaponsUntouched:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.11 · Formation-Aware Enforcers';document.title='TGM Battle Intelligence v19.1R18.11'}catch(e){}
+})();
+</script>
+
 </body>
 </html>
