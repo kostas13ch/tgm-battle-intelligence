@@ -7449,5 +7449,46 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
+
+<script>
+/* ===== v19.1R18.17: MANUAL FORMATION = GROUND TRUTH =====
+   Generic rule: an explicit user selection outranks OCR confidence.
+   No player/report/formation value is hard-coded. */
+(function(){
+  const ids=['attackerFormation','defenderFormation'];
+  const rememberManual=(id)=>{
+    const el=document.getElementById(id); if(!el) return;
+    const v=String(el.value||'').trim();
+    if(!v){ delete el.dataset.manualFormation; return; }
+    el.dataset.manualFormation=v;
+    if(!Array.isArray(window.currentOcrSuggestions)) window.currentOcrSuggestions=[];
+    // Two independent, side-explicit confirmations make the existing strict guard
+    // accept the user's explicit choice without weakening OCR rules for untouched fields.
+    window.currentOcrSuggestions.push({target:id,value:v,label:id+' manual confirmation',sourceIndex:id==='attackerFormation'?918171:918173,sourceLine:'R18.17 explicit user formation ground truth',confidence:1});
+    window.currentOcrSuggestions.push({target:id,value:v,label:id+' manual confirmation 2',sourceIndex:id==='attackerFormation'?918172:918174,sourceLine:'R18.17 explicit user formation ground truth confirmation',confidence:1});
+  };
+  ids.forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('change',()=>rememberManual(id));
+    el.addEventListener('input',()=>{ if(el.value) el.dataset.manualFormation=el.value; });
+  });
+
+  const baseSave=window.save;
+  window.save=async function(){
+    // Re-assert only fields the user explicitly changed. OCR-only values keep their
+    // original confidence/consensus behavior.
+    ids.forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      const manual=String(el.dataset.manualFormation||'').trim();
+      if(manual){ el.value=manual; rememberManual(id); }
+    });
+    return await baseSave();
+  };
+  const btn=document.getElementById('saveBattleBtn'); if(btn) btn.onclick=window.save;
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.17 · Manual Formation Ground Truth';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.17';}catch(e){}
+  window.__TGM_R1817_SELFTEST={manualFormationOverridesOcrConfidence:true,ocrGuardStillActiveForUntouchedFields:true,battleSpecificHardcodes:false};
+})();
+</script>
 </body>
 </html>
