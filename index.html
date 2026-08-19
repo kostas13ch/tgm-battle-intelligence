@@ -6895,5 +6895,127 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.9 · Anchored Formation + Counter Reduction + Enforcer Geometry';document.title='TGM Battle Intelligence v19.1R18.9'}catch(e){}
   window.__TGM_R189_SELFTEST={formation:'label-row consensus',counterReduction:'bounded section rows',enforcerSlots:'fixed spatial order',weaponPipelineUntouched:true,troopPipelineUntouched:true};
 })();
-</script>\n</body>
+</script>\n
+<script>
+/* ===== v19.1R18.10: ENFORCER SLOT + POPUP VALUE READER ONLY =====
+   Scope lock: formation, troop/mercenary, stats/counter-reduction and Super Weapons are untouched.
+   Fixes two Enforcer-only issues:
+   1) restore slot order by visual ROW bands (top row -> next row left-to-right -> next row left-to-right),
+      instead of R18.9's global x-sort of every non-top portrait;
+   2) read activation/damage from the SAME beige popup using independent whole-popup, focused-row,
+      and full-page-word evidence. Disagreement falls back to consensus/blank, never cross-popup scanning.
+*/
+(function(){
+  function r1810BandOrder(items){
+    const a=(items||[]).slice().filter(Boolean);
+    if(a.length<2)return a;
+    const ys=a.map(x=>Number(x.cy||0)).sort((x,y)=>x-y);
+    const diffs=[];for(let i=1;i<ys.length;i++)diffs.push(ys[i]-ys[i-1]);
+    const positive=diffs.filter(x=>x>2).sort((x,y)=>x-y);
+    const med=positive.length?positive[Math.floor(positive.length/2)]:70;
+    // Adaptive: same-row portraits have small y drift; different rows have a much larger gap.
+    const tol=Math.max(34,Math.min(95,med*.48));
+    const rows=[];
+    for(const it of a.sort((x,y)=>Number(x.cy||0)-Number(y.cy||0)||Number(x.cx||0)-Number(y.cx||0))){
+      let row=rows.find(r=>Math.abs(Number(it.cy||0)-r.cy)<=tol);
+      if(!row){row={cy:Number(it.cy||0),items:[]};rows.push(row)}
+      row.items.push(it);row.cy=row.items.reduce((s,z)=>s+Number(z.cy||0),0)/row.items.length;
+    }
+    rows.sort((x,y)=>x.cy-y.cy);
+    return rows.flatMap(r=>r.items.sort((x,y)=>Number(x.cx||0)-Number(y.cx||0)));
+  }
+
+  // R18.9 reordered the five portraits as [top, every-other-card x-sorted], which moves a middle-right
+  // portrait to slot 5 on the real layout. Keep the detector, but restore row-band geometry ordering.
+  const r1810CentersBase=v127CombatCardCenters;
+  v127CombatCardCenters=async function(url,mode,count=5){
+    const cards=await r1810CentersBase(url,mode,count);
+    return mode==='enforcer'&&cards?.length===5?r1810BandOrder(cards):cards;
+  };
+
+  function r1810Mode(vals,allowZero=false){
+    const xs=(vals||[]).filter(x=>Number.isFinite(Number(x))).map(Number).filter(x=>allowZero?x>=0:x>0);
+    if(!xs.length)return null;
+    const m=new Map();for(const x of xs)m.set(x,(m.get(x)||0)+1);
+    return [...m.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0][0];
+  }
+  function r1810FullCandidates(full,b){
+    let arr=[];try{arr=originalBoxInts(full,b)||[]}catch(e){}
+    const h=Math.max(1,Number(b.h||1));
+    return arr.map(z=>({n:Number(z.n),relY:(Number(z.cy)-Number(b.y||0))/h})).filter(z=>Number.isFinite(z.n));
+  }
+  async function r1810ReadPopup(full,dataUrl,b){
+    const act=[],dmg=[];
+    // A. existing whole-popup reader; useful, but no longer final authority by itself.
+    try{const p=await v81ReadPopup(dataUrl,b,'enforcer');if(p){if(p.activation>=1&&p.activation<=20)act.push(Number(p.activation));if(Number.isFinite(Number(p.damage)))dmg.push(Number(p.damage))}}catch(e){}
+    // B. exact focused bands inside THIS popup only.
+    try{const a=await v81FocusedNumber(dataUrl,b,.06,.43);if(a>=1&&a<=20)act.push(Number(a))}catch(e){}
+    try{const d=await v81FocusedNumber(dataUrl,b,.40,.86);if(Number.isFinite(Number(d))&&Number(d)>=0)dmg.push(Number(d))}catch(e){}
+    // C. full-page OCR words whose centers are physically inside THIS popup.
+    const fw=r1810FullCandidates(full,b);
+    const fa=fw.filter(z=>z.n>=1&&z.n<=20&&z.relY<.48).sort((x,y)=>x.relY-y.relY);
+    if(fa[0])act.push(fa[0].n);
+    const fd=fw.filter(z=>(z.n===0||z.n>=100)&&z.relY>.30).sort((x,y)=>x.relY-y.relY);
+    if(fd[0])dmg.push(fd[0].n);
+
+    let activation=r1810Mode(act,false);
+    let damage=r1810Mode(dmg,true);
+    if(!(activation>=1&&activation<=20))activation=null;
+
+    // If two strong readers disagree on damage and there is no consensus, do one strict row-band read.
+    const unique=[...new Set(dmg.filter(x=>Number.isFinite(x)))];
+    if(unique.length>1){
+      const counts=new Map();dmg.forEach(x=>counts.set(x,(counts.get(x)||0)+1));
+      const max=Math.max(...counts.values());
+      if(max<2){
+        try{
+          const d2=await v180OcrNumberBand(dataUrl,b,Number(b.y)+Number(b.h)*.63,1,'enforcer',full);
+          if(Number.isFinite(Number(d2)))dmg.push(Number(d2));
+        }catch(e){}
+        damage=r1810Mode(dmg,true);
+      }
+    }
+    // Generic corruption guard: a gigantic one-off value is never accepted over two agreeing smaller reads.
+    const sane=dmg.filter(x=>x>=0&&x<=500000),huge=dmg.filter(x=>x>500000);
+    if(huge.length&&sane.length>=2){const s=r1810Mode(sane,true);if(s!==null)damage=s;}
+    if(!Number.isFinite(Number(damage)))damage=null;
+    return {activation,damage,evidence:{activation:act,damage:dmg}};
+  }
+
+  const r1810BaseV180=v180ExtractCombatObjects;
+  v180ExtractCombatObjects=async function(fullResult,dataUrl,mode){
+    if(mode!=='enforcer')return await r1810BaseV180(fullResult,dataUrl,mode);
+    let boxes=[];try{boxes=await v180PopupObjects(dataUrl,'enforcer')}catch(e){}
+    if(boxes.length!==5)return[];
+    let cards=[];try{cards=await v127CombatCardCenters(dataUrl,'enforcer',5)}catch(e){}
+    let pairs=v180PairPopupCards(boxes,cards);
+    // Slot = visual row sequence of the portrait/card, not popup y alone and never global x-sort.
+    const orderedCards=r1810BandOrder(pairs.map(p=>p.card).filter(Boolean));
+    if(orderedCards.length===5){
+      pairs=orderedCards.map(c=>pairs.find(p=>p.card===c)).filter(Boolean);
+    }else{
+      pairs=r1810BandOrder(pairs.map(p=>({ ...p, cx:p.popup.cx, cy:p.popup.cy })));
+    }
+    const out=[];
+    for(let i=0;i<pairs.length;i++){
+      const p=pairs[i],q=await r1810ReadPopup(fullResult,dataUrl,p.popup);
+      out.push({slot:i+1,activation:q.activation,damage:q.damage,enforcer:'',
+        gx:p.popup.cx,gy:p.popup.cy,cardX:p.card?.cx??null,cardY:p.card?.cy??null,
+        valueEvidence:q.evidence});
+    }
+    window.__TGM_R1810_LAST_NUMERIC=out.map(x=>({slot:x.slot,activation:x.activation,damage:x.damage,evidence:x.valueEvidence}));
+    return out;
+  };
+
+  // Diagnostics only; no report/player constants and no writes to non-Enforcer modules.
+  window.__TGM_R1810_SELFTEST={
+    scope:'Enforcers only',slotOrder:'visual row bands then x',popupPairing:'nearest portrait',
+    numericSources:['whole popup','focused activation row','focused damage row','full-page words inside same popup'],
+    crossPopupScan:false,formationUntouched:true,troopsUntouched:true,counterReductionUntouched:true,weaponsUntouched:true
+  };
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.10 · Enforcer Slot + Popup Value Reader';document.title='TGM Battle Intelligence v19.1R18.10'}catch(e){}
+})();
+</script>
+
+</body>
 </html>
