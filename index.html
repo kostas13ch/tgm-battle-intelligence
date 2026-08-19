@@ -6085,7 +6085,11 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   function r183ApplyFormationGuard(){
     for(const [id,target] of [['attackerFormation','attackerFormation'],['defenderFormation','defenderFormation']]){
       const el=$(id);if(!el)continue;
-      const v=r183FormationConsensus(target);
+      // R18.18: an explicit manual selection is authoritative and must survive
+      // the legacy OCR consensus guard. OCR consensus is used only when the user
+      // has not manually selected a formation.
+      const manual=String(el.dataset.manualFormation||'').trim();
+      const v=manual || r183FormationConsensus(target);
       el.value=v||'';
       el.dataset.r183FormationState=v?'confirmed':'review';
     }
@@ -7485,8 +7489,8 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
     return await baseSave();
   };
   const btn=document.getElementById('saveBattleBtn'); if(btn) btn.onclick=window.save;
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.17 · Manual Formation Ground Truth';}catch(e){}
-  try{document.title='TGM Battle Intelligence v19.1R18.17';}catch(e){}
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.18 · Manual Formation Save Fix';}catch(e){}
+  try{document.title='TGM Battle Intelligence v19.1R18.18';}catch(e){}
   window.__TGM_R1817_SELFTEST={manualFormationOverridesOcrConfidence:true,ocrGuardStillActiveForUntouchedFields:true,battleSpecificHardcodes:false};
 })();
 </script>
