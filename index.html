@@ -5377,65 +5377,9 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
 })();
 </script>
 
-\n<script>
-/* ===== v19.1R13 GOLDEN BATTLE ENFORCER + WINNER GUARD =====
-   Fixes the verified Kaiser the II vs Vani Arsenal report without changing
-   the stable Super Weapon pipeline. The exact-value guard is deliberately
-   fingerprinted to this report so it cannot contaminate unrelated battles.
-*/
-(function(){
-  function r13Norm(x){return String(x||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ');}
-  function r13IsGoldenBattle(){
-    const a=r13Norm($('attacker')?.value), d=r13Norm($('defender')?.value);
-    const ar=Number($('attackerRaid')?.value||0), dr=Number($('defenderRaid')?.value||0);
-    return a.includes('kaiser the ii') && d.includes('vani') && ar===2958010 && dr===2872276;
-  }
-  function r13ApplyGoldenGuard(){
-    // Winner is visible in the source overview: Successfully Defended / Defensive Victory.
-    const raw=String($('ocrRawText')?.value||'');
-    if(/successfully\\s+defended|defensive\\s+victory/i.test(raw) || r13IsGoldenBattle()){
-      if($('winnerSide')) $('winnerSide').value='defender';
-    }
-    if(!r13IsGoldenBattle()) return;
-
-    const att=[65959,62755,67068,4517,8218];
-    const def=[13696,21479,26039,45952,69878];
-    const attAct=[4,4,4,4,2], defAct=[4,4,7,4,8];
-    const oldAtt=currentEnforcerReview?.att||[], oldDef=currentEnforcerReview?.def||[];
-    currentEnforcerReview.att=att.map((damage,i)=>({
-      ...(oldAtt[i]||{}),slot:i+1,activation:attAct[i],damage,
-      enforcer:(oldAtt[i]?.enforcer||'')
-    }));
-    currentEnforcerReview.def=def.map((damage,i)=>({
-      ...(oldDef[i]||{}),slot:i+1,activation:defAct[i],damage,
-      // Never inherit the known false Hellcat guess on defender slot 3.
-      enforcer:(oldDef[i]?.enforcer||'')
-    }));
-    if($('attEnforcerSlots')) $('attEnforcerSlots').value=v180SlotText(currentEnforcerReview.att,'enforcer');
-    if($('defEnforcerSlots')) $('defEnforcerSlots').value=v180SlotText(currentEnforcerReview.def,'enforcer');
-    renderEnforcerReview();
-  }
-
-  const r13BaseApply=applyOcrSuggestions;
-  applyOcrSuggestions=function(auto=false){
-    const out=r13BaseApply(auto);
-    r13ApplyGoldenGuard();
-    preview(); renderCompleteness();
-    return out;
-  };
-
-  const r13BaseSave=save;
-  save=async function(){
-    r13ApplyGoldenGuard();
-    return await r13BaseSave();
-  };
-  const saveBtn=$('saveBattleBtn'); if(saveBtn) saveBtn.onclick=save;
-
-  // Also repair the already-rendered state after import/finalization.
-  setTimeout(r13ApplyGoldenGuard,0);
-  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R13 · Verified Enforcer + Winner Guard';}catch(e){}
-})();
-</script>\n
+\n
+<!-- R18.20: removed legacy battle-specific R13 golden guard -->
+\n
 
 <script>
 /* ===== v19.1R14 TRUE VISUAL ENFORCER RECOGNITION =====
@@ -7495,6 +7439,169 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.19 · Optional Counter Reduction Save Fix';}catch(e){}
   try{document.title='TGM Battle Intelligence v19.1R18.19';}catch(e){}
   window.__TGM_R1817_SELFTEST={manualFormationOverridesOcrConfidence:true,ocrGuardStillActiveForUntouchedFields:true,battleSpecificHardcodes:false};
+})();
+</script>
+\n<script>
+/* ===== v19.1R18.20 GENERIC REGRESSION + INTEGRITY GATE =====
+   Generic only: no player/report fingerprints and no expected battle values.
+   1) Formation confidence is multi-source: Overview + Enforcer evidence can confirm.
+   2) Enforcer slot mapping is trusted only when the side formation is confirmed/manual.
+   3) Troop totals are checked against raid/Total Associates before save.
+   4) Invalid OCR stays visible for review but cannot silently enter the database.
+*/
+(function(){
+  const FORMS=new Set(['Bruiser Square','Hitman Square','Biker Square','Bruiser Wedge','Hitman Wedge','Biker Wedge']);
+  function normForm(v){
+    const m=String(v||'').match(/\b(Bruiser|Hitman|Biker)\s*[-–]?\s*(Square|Wedge)\b/i);
+    if(!m)return '';
+    return m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2][0].toUpperCase()+m[2].slice(1).toLowerCase();
+  }
+  function formEvidence(target){
+    const rows=[];
+    for(const s of (currentOcrSuggestions||[])){
+      if(s?.target!==target)continue;
+      const value=normForm(s.value); if(!FORMS.has(value))continue;
+      const idx=Number.isFinite(Number(s.sourceIndex))?Number(s.sourceIndex):-1;
+      const shot=idx>=0?currentScreenshots?.[idx]:null;
+      const rt=String(shot?.reportType||'');
+      const domain=/enforcer/i.test(rt)?'enforcer':(/overview|crew details|battle/i.test(rt)?'overview':'other');
+      rows.push({value,idx,domain,confidence:Number(s.confidence||0),line:String(s.sourceLine||'')});
+    }
+    return rows;
+  }
+  function consensus(target){
+    const rows=formEvidence(target); if(!rows.length)return {value:'',confirmed:false,reason:'no-evidence'};
+    const groups=new Map();
+    for(const r of rows){
+      const g=groups.get(r.value)||{value:r.value,count:0,sources:new Set(),domains:new Set(),max:0,sideExplicit:0};
+      g.count++;g.sources.add(r.idx);g.domains.add(r.domain);g.max=Math.max(g.max,r.confidence);
+      if(target==='attackerFormation'&&/attacker/i.test(r.line))g.sideExplicit++;
+      if(target==='defenderFormation'&&/defender/i.test(r.line))g.sideExplicit++;
+      groups.set(r.value,g);
+    }
+    const ranked=[...groups.values()].sort((a,b)=>
+      b.domains.size-a.domains.size||b.sources.size-a.sources.size||b.count-a.count||b.sideExplicit-a.sideExplicit||b.max-a.max);
+    const a=ranked[0],b=ranked[1];
+    const crossSource=a && a.domains.has('overview') && a.domains.has('enforcer');
+    const multiShot=a && a.sources.size>=2;
+    const repeated=a && a.count>=2;
+    const strongSingle=a && a.max>=.995 && a.sideExplicit>=1;
+    const conflict=b && b.value!==a.value && (
+      (b.domains.size===a.domains.size && b.sources.size===a.sources.size && b.count===a.count) ||
+      (b.domains.has('overview')&&b.domains.has('enforcer'))
+    );
+    return {value:(!conflict&&(crossSource||multiShot||repeated||strongSingle))?a.value:'',confirmed:!conflict&&(crossSource||multiShot||repeated||strongSingle),reason:conflict?'conflict':crossSource?'overview+enforcer':multiShot?'multi-shot':repeated?'repeated':'single'};
+  }
+  function refreshFormationState(){
+    for(const [id,target] of [['attackerFormation','attackerFormation'],['defenderFormation','defenderFormation']]){
+      const el=$(id); if(!el)continue;
+      const manual=String(el.dataset.manualFormation||'').trim();
+      if(manual && FORMS.has(manual)){
+        el.value=manual; el.dataset.r183FormationState='confirmed'; el.dataset.r1820FormationSource='manual'; continue;
+      }
+      const c=consensus(target);
+      if(c.confirmed){el.value=c.value;el.dataset.r183FormationState='confirmed';el.dataset.r1820FormationSource=c.reason;}
+      else {el.dataset.r183FormationState='review';el.dataset.r1820FormationSource=c.reason;}
+    }
+  }
+  function sideVehicle(side){
+    try{
+      const rows=currentTroopReview?.[side]?.rows||[];
+      if(typeof rowTroopTotals==='function')return Number(rowTroopTotals(rows)?.Vehicle?.total||0);
+    }catch(e){}
+    return 0;
+  }
+  function n(id){return Number($(id)?.value||0)||0;}
+  function troopIntegrity(side){
+    const isAtt=side==='att';
+    const raid=n(isAtt?'attackerRaid':'defenderRaid');
+    const totalAssoc=n(isAtt?'attTotalAssociates':'defTotalAssociates');
+    const expected=totalAssoc||raid;
+    const b=n(isAtt?'attBruisers':'defBruisers'),h=n(isAtt?'attHitmen':'defHitmen'),bi=n(isAtt?'attBikers':'defBikers'),v=sideVehicle(isAtt?'att':'def');
+    const sum=b+h+bi+v;
+    if(!expected)return {ok:true,expected:0,sum,diff:0,reason:'no-reference'};
+    const diff=Math.abs(expected-sum);
+    const tol=Math.max(100,expected*0.005); // 0.5%; allows tiny vehicle/rounding differences, rejects missing rows.
+    const anyBlank=[b,h,bi].some((x,i)=>x===0 && String($(isAtt?['attBruisers','attHitmen','attBikers'][i]:['defBruisers','defHitmen','defBikers'][i])?.value||'').trim()==='');
+    return {ok:diff<=tol&&!anyBlank,expected,sum,diff,tol,anyBlank};
+  }
+  function renderIntegrity(){
+    const a=troopIntegrity('attacker'),d=troopIntegrity('defender');
+    let box=$('r1820IntegrityBox');
+    if(!box){
+      box=document.createElement('div');box.id='r1820IntegrityBox';box.className='storage-warning';
+      const host=$('smartImportSummary')?.parentElement||$('ocrStatus')?.parentElement;
+      if(host)host.appendChild(box);
+    }
+    if(box){
+      const fmt=x=>Number(x||0).toLocaleString('el-GR');
+      const line=(name,x)=>`${name}: ${x.ok?'✅':'⚠️'} troops ${fmt(x.sum)} / expected ${fmt(x.expected)}${x.ok?'':` · διαφορά ${fmt(x.diff)}`}`;
+      box.innerHTML=`<strong>Regression / consistency gate</strong><br>${line('Attacker',a)}<br>${line('Defender',d)}`;
+    }
+    window.__TGM_R1820_LAST_INTEGRITY={att:a,def:d};
+    return {att:a,def:d};
+  }
+  function enforcerFormationGate(){
+    const a=$('attackerFormation'),d=$('defenderFormation');
+    const okA=a?.dataset.r183FormationState==='confirmed';
+    const okD=d?.dataset.r183FormationState==='confirmed';
+    for(const [side,ok] of [['att',okA],['def',okD]]){
+      const arr=currentEnforcerReview?.[side]||[];
+      for(const x of arr)x.formationConfirmed=!!ok;
+    }
+    return okA&&okD;
+  }
+
+  // Track explicit manual choices. Programmatic OCR assignments do not fire change.
+  for(const id of ['attackerFormation','defenderFormation']){
+    const el=$(id); if(el)el.addEventListener('change',()=>{
+      const v=normForm(el.value); el.dataset.manualFormation=FORMS.has(v)?v:'';
+      el.dataset.r183FormationState=FORMS.has(v)?'confirmed':'review';
+      el.dataset.r1820FormationSource=FORMS.has(v)?'manual':'review';
+      enforcerFormationGate();
+    });
+  }
+
+  const baseApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    const out=baseApply(auto);
+    refreshFormationState(); enforcerFormationGate(); renderIntegrity();
+    return out;
+  };
+  const basePreview=preview;
+  preview=function(){const out=basePreview();refreshFormationState();enforcerFormationGate();renderIntegrity();return out;};
+  const baseSave=save;
+  save=async function(){
+    refreshFormationState();
+    const formOK=enforcerFormationGate();
+    const integ=renderIntegrity();
+    if(!formOK){
+      $('formMessage').textContent='Δεν αποθηκεύτηκε: το formation δεν έχει επιβεβαιωθεί από πολλαπλές πηγές (Overview/Enforcers) ή χειροκίνητα.';
+      return;
+    }
+    if(!integ.att.ok||!integ.def.ok){
+      const bad=[];if(!integ.att.ok)bad.push('επιτιθέμενος');if(!integ.def.ok)bad.push('αμυνόμενος');
+      $('formMessage').textContent=`Δεν αποθηκεύτηκε: ασυμφωνία troop totals/raid (${bad.join(' + ')}). Διόρθωσε το OCR/review πριν αποθήκευση.`;
+      return;
+    }
+    return await baseSave();
+  };
+  const saveBtn=$('saveBattleBtn');if(saveBtn)saveBtn.onclick=save;
+
+  // Built-in generic regression checks: valid near-equality must pass; missing large chunks must fail.
+  function arithmeticCase(expected,parts){const sum=parts.reduce((a,b)=>a+b,0),diff=Math.abs(expected-sum),tol=Math.max(100,expected*.005);return {expected,sum,diff,pass:diff<=tol};}
+  window.__TGM_R1820_REGRESSION={
+    genericOnly:true,
+    noPlayerFingerprint:true,
+    arithmetic:[
+      arithmeticCase(2958010,[1340693,813902,803412]),
+      arithmeticCase(2999117,[1296546,816868,885703]),
+      arithmeticCase(2958010,[1325870,778183,151577]),
+      arithmeticCase(3030906,[1356590,776101,0])
+    ]
+  };
+  refreshFormationState();enforcerFormationGate();renderIntegrity();
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.20 · Generic Regression + Integrity Gate';}catch(e){}
 })();
 </script>
 </body>
