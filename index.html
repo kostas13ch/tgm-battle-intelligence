@@ -7604,5 +7604,95 @@ try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R
   try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.20 · Generic Regression + Integrity Gate';}catch(e){}
 })();
 </script>
+
+<script>
+/* ===== v19.1R18.21 DETERMINISTIC OCR CONSENSUS =====
+   Generic stabilization layer. No battle/player fingerprints and no expected report values.
+   Prevents duplicate OCR suggestions for the same field from overwriting each other in DOM order.
+   Core combat stats use range + agreement evidence; uncertain values are left blank/reviewable.
+*/
+(function(){
+  const CORE=/^(att|def)(Crew(Atk|Def|Hp)|(Bruiser|Hitman|Biker)(Atk|Def|Hp))$/;
+  const PREVIEW=/^(att|def)Preview(Bruiser|Hitman|Biker|Vehicle)(Atk|Def|Hp)$/;
+  const RAID=/^(attackerRaid|defenderRaid)$/;
+  function finite(v){const n=Number(String(v??'').replace(/,/g,''));return Number.isFinite(n)?n:null}
+  function plausible(target,v){
+    const n=finite(v); if(n===null)return false;
+    if(CORE.test(target))return n>=100&&n<=5000;
+    if(PREVIEW.test(target))return n>=100&&n<=5000;
+    if(RAID.test(target))return Number.isInteger(n)&&n>=10000&&n<=10000000;
+    return true;
+  }
+  function choose(target,arr){
+    const valid=arr.filter(x=>plausible(target,x.s.value));
+    if(!valid.length)return null;
+    if(valid.length===1)return valid[0];
+    // Cluster numeric candidates by relative closeness. Repeated independent reads beat one outlier.
+    const nums=valid.map(x=>({...x,n:finite(x.s.value)}));
+    let best=null;
+    for(const x of nums){
+      const tol=Math.max(CORE.test(target)||PREVIEW.test(target)?2:1,Math.abs(x.n)*.012);
+      const cluster=nums.filter(y=>Math.abs(y.n-x.n)<=tol);
+      const sources=new Set(cluster.map(y=>Number(y.s.sourceIndex)).filter(Number.isFinite)).size;
+      const score=cluster.length*10+sources*5+cluster.reduce((a,y)=>a+Number(y.s.confidence||0),0);
+      if(!best||score>best.score)best={x,score,cluster};
+    }
+    // With conflicting singleton reads, use confidence only if clearly stronger; otherwise require review.
+    if(best.cluster.length===1){
+      const ranked=[...nums].sort((a,b)=>Number(b.s.confidence||0)-Number(a.s.confidence||0));
+      if(ranked.length>1&&Number(ranked[0].s.confidence||0)-Number(ranked[1].s.confidence||0)<.08)return null;
+      return ranked[0];
+    }
+    return best.x;
+  }
+  function stabilizeSuggestionChecks(){
+    const checks=[...document.querySelectorAll('[data-ocr-apply]')];
+    const by=new Map();
+    for(const c of checks){
+      const i=Number(c.dataset.ocrApply),s=currentOcrSuggestions?.[i];if(!s?.target)continue;
+      if(!by.has(s.target))by.set(s.target,[]);by.get(s.target).push({c,s,i});
+    }
+    const uncertain=[];
+    for(const [target,arr] of by){
+      if(arr.length<2 && !CORE.test(target) && !PREVIEW.test(target) && !RAID.test(target))continue;
+      const pick=choose(target,arr);
+      for(const x of arr)x.c.checked=!!pick&&x.i===pick.i;
+      if(!pick&&(CORE.test(target)||PREVIEW.test(target)||RAID.test(target)))uncertain.push(target);
+    }
+    window.__TGM_R1821_UNCERTAIN=uncertain;
+    return uncertain;
+  }
+  function clearImplausibleCore(){
+    const bad=[];
+    for(const el of document.querySelectorAll('input[id]')){
+      if(!(CORE.test(el.id)||PREVIEW.test(el.id)))continue;
+      if(!String(el.value||'').trim())continue;
+      if(!plausible(el.id,el.value)){bad.push(el.id);el.value='';}
+    }
+    window.__TGM_R1821_REJECTED=bad;return bad;
+  }
+  const prevApply=applyOcrSuggestions;
+  applyOcrSuggestions=function(auto=false){
+    stabilizeSuggestionChecks();
+    const out=prevApply(auto);
+    clearImplausibleCore();
+    try{renderIntegrity();renderCompleteness();preview()}catch(e){}
+    return out;
+  };
+  const prevSave=save;
+  save=async function(){
+    const bad=clearImplausibleCore();
+    const uncertain=window.__TGM_R1821_UNCERTAIN||[];
+    if(bad.length||uncertain.length){
+      $('formMessage').textContent=`Δεν αποθηκεύτηκε: ${bad.length?'απορρίφθηκαν ύποπτα core stats '+bad.join(', '):''}${bad.length&&uncertain.length?' · ':''}${uncertain.length?'OCR conflict σε '+uncertain.join(', '):''}. Χρειάζεται review, όχι αυτόματη αποδοχή.`;
+      return;
+    }
+    return await prevSave();
+  };
+  const btn=$('saveBattleBtn');if(btn)btn.onclick=save;
+  window.__TGM_R1821_SELFTEST={genericOnly:true,duplicateTargetConsensus:true,coreStatPlausibility:[100,5000],raidPlausibility:[10000,10000000],noExpectedBattleValues:true};
+  try{const p=document.querySelector('header.topbar p');if(p)p.textContent='v19.1R18.21 · Deterministic OCR Consensus';}catch(e){}
+})();
+</script>
 </body>
 </html>
