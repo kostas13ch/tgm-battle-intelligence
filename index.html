@@ -934,6 +934,42 @@ function parseOverviewWords(result,sourceIndex){
   }
   return out
 }
+// Crew Details tab (Total Associates / Wounded / Dead / Alive / Losses) is a
+// 3-column row layout: <attacker number> <label> <defender number> on the same
+// visual row. Plain text-line matching (parseOverviewText's pairLabels) is
+// fragile here because Tesseract doesn't always preserve left-to-right column
+// order within a merged text line for multi-column layouts. Read it from word
+// bounding boxes instead: group words into rows by y-position (column-agnostic),
+// then within a matched row take the leftmost and rightmost purely-numeric
+// tokens as attacker/defender values respectively.
+function parseCrewDetailsWords(result,sourceIndex){
+  const words=result?.data?.words||[]; if(!words.length)return[];
+  const rows=rowsFromWords(words);
+  const LABELS=[
+    [/losses/i,"Losses"],
+    [/total\s*associates/i,"TotalAssociates"],
+    [/wounded/i,"Wounded"],
+    [/\bdead\b/i,"Dead"],
+    [/\balive\b/i,"Alive"],
+  ];
+  const out=[];
+  for(const r of rows){
+    const rowText=r.words.map(w=>w.text).join(" ");
+    for(const [rx,base] of LABELS){
+      if(!rx.test(rowText))continue;
+      const numericWords=r.words
+        .filter(w=>/^[-+]?[\d,]+(?:\.\d+)?$/.test(String(w.text||"").trim()))
+        .sort((a,b)=>a.bbox.x0-b.bbox.x0);
+      if(numericWords.length<2)break;
+      const leftVal=ocrNumber(numericWords[0].text),rightVal=ocrNumber(numericWords[numericWords.length-1].text);
+      if(leftVal==null||rightVal==null)break;
+      out.push({target:`att${base}`,value:leftVal,label:`att${base}`,sourceIndex,sourceLine:rowText,confidence:.96});
+      out.push({target:`def${base}`,value:rightVal,label:`def${base}`,sourceIndex,sourceLine:rowText,confidence:.96});
+      break;
+    }
+  }
+  return out;
+}
 function parseOverviewText(text,sourceIndex){
   const lines=text.split(/\n/).map(normalizeOcrLine).filter(Boolean),out=[];
   const pairLabels=[
@@ -4001,6 +4037,7 @@ async function runOcrImport(){
       if((shot.reportType||"")==="Overview"){
         const parsed=parseOverviewWords(result,i);
         currentOcrSuggestions.push(...parsed);
+        currentOcrSuggestions.push(...parseCrewDetailsWords(result,i));
       }
       if((shot.reportType||"")==="Buff Preview"){
         const parsed=parseBuffPreviewText(text,i);
